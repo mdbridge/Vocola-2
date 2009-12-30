@@ -1,3 +1,12 @@
+New in 2.6.5:
+
+* debug code for printing data structures now correctly quotes word
+  actions.
+
+* Fixed a bug where using a formal reference containing a digit in a
+  quoted string (e.g., "<$arg1>") produced a runtime crash.
+
+
 New in 2.6.4:
 
 ! Command sequences work again for DNS 7.0 and later; complicated
