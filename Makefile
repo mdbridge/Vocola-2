@@ -62,13 +62,15 @@ short_compare_installer: prepare
 compare_installer: prepare
 	diff -r -b build/installer-Vocola ${NATLINK}/Vocola  | more
 
-compare:
+compare: prepare
 	diff -b build/Vocola/exec/_vocola_main.py \
                 ${NATLINK}/Vocola/exec/_vocola_main.py | more
 
-install:
-	rm ${NATLINK}/Vocola/exec/_vocola_main.py
-	rm ${NATLINK}/Vocola/exec/VocolaUtils.py
+install: prepare
+	rm -f ${NATLINK}/Vocola/exec/_vocola_main.py
+	rm -f ${NATLINK}/Vocola/exec/VocolaUtils.py
 	(cd ${NATLINK}/Vocola/exec;ln -s ../../MacroSystem/_vocola_main.py .)
 	(cd ${NATLINK}/Vocola/exec;ln -s ../../MacroSystem/core/VocolaUtils.py .)
 	(cd build/installer-Vocola; find . -type f -exec cp {} ${NATLINK}/Vocola/{} \;)
+	@echo
+	@echo "***** Do not forget to update version number in natlinkInstaller/setupnatlinkwithinno.py"
