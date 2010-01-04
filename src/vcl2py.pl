@@ -7,7 +7,7 @@
 #                  (default is "_vcl")
 #   -f          -- force processing even if file(s) not out of date
 #
-# This file is copyright (c) 2002-2009 by Rick Mohr. It may be redistributed 
+# This file is copyright (c) 2002-2010 by Rick Mohr. It may be redistributed 
 # in any way as long as this copyright notice remains.
 #
 # 09/06/2009  ml  New $set directive replaces old non-working sequence directive
