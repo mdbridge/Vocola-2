@@ -42,6 +42,10 @@ prepare:
 	# HACK for now:  <<<>>>
 	cp ${NATLINK}/MacroSystem/_vocola_main.py build/installer-Vocola/exec/
 
+request_compilation: prepare
+	cp src/vcl2py.pl                         to_Rick/
+	cp build/installer-Vocola/exec/vcl2py.pl to_Rick/vcl2py-i.pl
+
 clean::
 	chmod -R u+w build
 	rm -rf build/*
