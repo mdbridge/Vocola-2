@@ -1,6 +1,8 @@
 New in 2.6.5:
 
-* debug code for printing data structures now correctly quotes word
+* Now works with Python 2.6.
+
+* Debug code for printing data structures now correctly quotes word
   actions.
 
 * Fixed a bug where using a formal reference containing a digit in a
