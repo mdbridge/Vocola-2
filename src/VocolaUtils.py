@@ -6,6 +6,7 @@
 import natlink
 from types import *
 import string
+import re
 
 
 # attempt to import Unimacro, suppressing errors, and noting success status:
@@ -16,6 +17,9 @@ try:
 except ImportError:
     pass
 
+
+class VocolaRuntimeError(Exception):
+    pass
 
 class ConversionError(Exception):
     pass
@@ -289,3 +293,53 @@ def combineDictationWords(fullResults):
             i = i + 1
             inDictation = 0
     return fullResults
+
+
+# EvalF built-in function:
+
+def evalf(template, *arguments):
+    variables = {}
+    
+    waiting = list(arguments)
+    def get_argument():
+        if len(waiting) == 0:
+            raise VocolaRuntimeError("insufficient number of arguments passed to EvalF")
+        return waiting.pop(0)
+            
+    def get_variable(value):
+        argument_number = len(arguments)-len(waiting)
+        name = "v" + str(argument_number)
+        variables[name] = value
+        return name
+    
+    # is string the canonical representation of a long?
+    def isCanonicalNumber(string):
+        try:
+            return str(long(string)) == string
+        except ValueError:
+            return 0
+    
+    def handle_descriptor(m):
+        descriptor = m.group()
+        if descriptor == "%%":
+            return "%"
+        elif descriptor == "%s":
+            return get_variable(str(get_argument()))
+        elif descriptor == "%i":
+            a = get_argument()
+            try:
+                return get_variable(long(a))
+            except ValueError:
+                raise ConversionError("unable to convert value " + a \
+                                      + " into an integer")
+        elif descriptor == "%a":
+            a = get_argument()
+            if isCanonicalNumber(a):
+                return get_variable(long(a))
+            else:
+                return get_variable(str(a))
+        else:
+            return descriptor
+    
+    expression = re.sub(r'%.', handle_descriptor, template)
+    return eval('str(' + expression + ')', variables)
