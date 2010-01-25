@@ -10,7 +10,7 @@
 # This file is copyright (c) 2002-2010 by Rick Mohr. It may be redistributed 
 # in any way as long as this copyright notice remains.
 #
-# 12/28/2009  ml  New EvalF built-in function
+# 12/28/2009  ml  New EvalTemplate built-in function
 # 09/06/2009  ml  New $set directive replaces old non-working sequence directive
 #                 binary Use Command Sequences replaced by n-ary MaximumCommands
 # 01/19/2009  ml  Unimacro built-in added
@@ -374,7 +374,7 @@ sub convert_filename
 
 %Vocola_functions = (
                      Eval              => [1,1],
-                     EvalF             => [1,-1],
+                     EvalTemplate      => [1,-1],
                      Repeat            => [2,2],
                      Unimacro          => [1,1],
                      );
@@ -1685,10 +1685,10 @@ sub emit_call
     elsif ($callType eq "user"  ) {&emit_user_call}
     elsif ($callType eq "vocola") {
         my $functionName = $call->{TEXT};
-        if    ($functionName eq "Eval")     {&emit_call_eval}
-        elsif ($functionName eq "EvalF")    {&emit_call_evalf}
-        elsif ($functionName eq "Repeat")   {&emit_call_repeat}
-        elsif ($functionName eq "Unimacro") {&emit_call_Unimacro}
+        if    ($functionName eq "Eval")         {&emit_call_eval}
+        elsif ($functionName eq "EvalTemplate") {&emit_call_eval_template}
+        elsif ($functionName eq "Repeat")       {&emit_call_repeat}
+        elsif ($functionName eq "Unimacro")     {&emit_call_Unimacro}
         else {die "Unknown Vocola function: '$functionName'\n"}
     } else {die "Unknown function call type: '$callType'\n"}
     end_nested_call();
@@ -1739,22 +1739,22 @@ sub get_nested_value_name
     return ($NestedCallLevel == 1) ? $root : "$root$NestedCallLevel";
 }
 
-sub emit_call_evalf
+sub emit_call_eval_template
 {
     my ($collector, $call, $indent) = @_;
 
     my $i=0;
-    my $evalf_call = "evalf(";
+    my $eval_template_call = "eval_template(";
     for my $argument (@{ $call->{ARGUMENTS} }) {
-	if ($i ne 0) { $evalf_call .= ", "; }
+	if ($i ne 0) { $eval_template_call .= ", "; }
 	$i += 1;
-	my $value = get_nested_value_name("evalf") . "no$i";
+	my $value = get_nested_value_name("eval_template") . "no$i";
 	emit($indent, "$value = Value()\n");
 	emit_actions("$value.augment", $argument, $indent);
-	$evalf_call .= "str($value)";
+	$eval_template_call .= "str($value)";
     }
-    $evalf_call .= ")";
-    emit($indent, "$collector($evalf_call)\n");
+    $eval_template_call .= ")";
+    emit($indent, "$collector($eval_template_call)\n");
 }
 
 # Eval() is a special form that takes a single argument, which is

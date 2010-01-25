@@ -295,15 +295,15 @@ def combineDictationWords(fullResults):
     return fullResults
 
 
-# EvalF built-in function:
+# EvalTemplate built-in function:
 
-def evalf(template, *arguments):
+def eval_template(template, *arguments):
     variables = {}
     
     waiting = list(arguments)
     def get_argument():
         if len(waiting) == 0:
-            raise VocolaRuntimeError("insufficient number of arguments passed to EvalF")
+            raise VocolaRuntimeError("insufficient number of arguments passed to EvalTemplate")
         return waiting.pop(0)
             
     def get_variable(value):
