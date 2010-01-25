@@ -1343,6 +1343,20 @@ sub transform_call
     return $new_call;
 }
 
+# Eval() is a special form that takes a single argument, which is
+# composed of a series of actions.  A call to EvalTemplate is
+# constructed at compile time from the actions where each word action
+# supplies a piece of template text and each non-word action denotes a
+# hole in the template (represented by "%a") that will be "filled" at
+# runtime by the result of evaluating that non-word action.
+#
+# Example: the template for Eval(1 + $2-$3) is "1+%a-%a", yielding the
+# call EvalTemplate("1+%a-%a", $2, $3); assuming $2 has value "3" and
+# $3 has value "5", this evaluates to "8".
+#
+# (Values are treated as integers by %a if and only if they have the
+# form of a canonical integer; e.g., 13 but not "013".)
+
 sub transform_eval
 {
     my $call = shift;
@@ -1798,10 +1812,11 @@ sub emit_call
     elsif ($callType eq "user"  ) {&emit_user_call}
     elsif ($callType eq "vocola") {
         my $functionName = $call->{TEXT};
-        if    ($functionName eq "Eval")         {&emit_call_eval}
-        elsif ($functionName eq "EvalTemplate") {&emit_call_eval_template}
-        elsif ($functionName eq "Repeat")       {&emit_call_repeat}
-        elsif ($functionName eq "Unimacro")     {&emit_call_Unimacro}
+        if    ($functionName eq "Eval")         {
+	    die "Compiler error: Eval not transformed away\n";
+	} elsif ($functionName eq "EvalTemplate") {&emit_call_eval_template}
+        elsif ($functionName eq   "Repeat")       {&emit_call_repeat}
+        elsif ($functionName eq   "Unimacro")     {&emit_call_Unimacro}
         else {die "Unknown Vocola function: '$functionName'\n"}
     } else {die "Unknown function call type: '$callType'\n"}
     end_nested_call();
@@ -1868,52 +1883,6 @@ sub emit_call_eval_template
     }
     $eval_template_call .= ")";
     emit($indent, "$collector($eval_template_call)\n");
-}
-
-# Eval() is a special form that takes a single argument, which is
-# composed of a series of actions.  A template is constructed at
-# compile time from the actions where each word action supplies a
-# piece of template text and each non-word action denotes a hole in
-# the template (represented by an appropriately named variable) that
-# will be "filled" at runtime by the result of evaluating that
-# non-word action.
-#
-# Hole filling and Python evaluation are done by evaluating the
-# template under appropriate bindings of the variables to the results
-# of the non-word actions.
-#
-# Example: the template for Eval(1 + $2-$3) is "1+v2-v3"; assuming $2
-# has value "3" and $3 has value "5", we evaluate the template under
-# the bindings [v2 -> 3; v3 -> 5], yielding "8".
-#
-#
-# (Values are treated as integers if and only if they have the form of
-# a canonical integer; e.g., 13 but not "013".)
-
-sub emit_call_eval
-{
-    my ($collector, $call, $indent) = @_;
-    my @arguments = @{ $call->{ARGUMENTS} };
-    my $expression = "";
-    my $evaluator = get_nested_value_name("evaluator");
-    emit($indent, "$evaluator = Evaluator()\n");
-    my $exp_no = 0;
-    for my $action (@{$arguments[0]}) {
-        my $type = $action->{TYPE};
-        my $text = $action->{TEXT};
-        if ($type ne "word") {
-	    $text = "v" . $text;
-	    if ($type eq "call") {
-		$exp_no += 1;
-		$text = "exp$exp_no";
-	    }
-	    emit($indent, "$evaluator.setNextVariableName('$text')\n");
-	    emit_argument("$evaluator.setVariable", [$action], $indent);
-	}
-        $expression .= $text;
-    }
-    my $expression = make_safe_python_string($expression);
-    emit($indent, "$collector($evaluator.evaluate('$expression'))\n");
 }
 
 sub emit_call_repeat
