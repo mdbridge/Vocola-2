@@ -49,8 +49,9 @@ eval add 0..9 0..9              = Eval($1 + $2);
 
 repeated eval add 0..9 0..9     = Eval('($1 + $2) * $1');
 
+  # = -5
 all sorts of (arguments=3) 1..1 = 
-	Eval(2 + $1 - $2 + Eval(3*3) - ID(12) - EvalF(%i*2, 3));    # = -5
+	Eval(2 + $1 - $2 + Eval(3*3) - ID(12) - EvalTemplate(%i*2, 3));
 
 more eval arguments = Eval(1 + Repeat(3, 1));                       # = 112
 eval with Dragon    = Eval(SendDragonKeys(Fred));		    # error
@@ -71,5 +72,6 @@ test ambiguous arguments <case> = Eval($1-2);
           | zero = 0 | double zero = 00 | leading zero = 03
 	  ); 
 
+  # = 1-14450
 eval (everywhere=Eval(1)) = $1 F(1) Repeat(Eval(3-1), Eval(2+2)) 
 	                    Eval(Eval(2+3)) SendDragonKeys(Eval(2-2));
