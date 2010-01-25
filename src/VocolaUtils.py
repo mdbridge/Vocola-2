@@ -236,38 +236,6 @@ class UnimacroCall:
 
  
 
-# The Evaluator class represents a Vocola "Eval" expression.  Vocola's
-# generated Python code uses this class to build up a string containing
-# a Python expression to be evaluated, and then evaluates it.
-
-class Evaluator:
-    def __init__(self):
-        self.variables = {}
-
-    def setNextVariableName(self, name):
-        self.nextName = name
-
-    def setVariable(self, value):
-        string = str(value)
-        # Convert to number if has form of a canonical number:
-        if self.isCanonicalNumber(string):
-            self.variables[self.nextName] = long(string)
-        else: self.variables[self.nextName] = string
-
-    def evaluate(self, expression):
-        string = 'str(' + expression + ')'
-        #print 'Evaluating expression:  ' + string
-        return eval(string, self.variables)
-
-    # is string the canonical representation of a long?
-    def isCanonicalNumber(self, string):  # private
-        try:
-            return str(long(string)) == string
-        except ValueError:
-            return 0
-
-
-
 # Massage recognition results to make a single entry for each
 # <dgndictation> result.
 
