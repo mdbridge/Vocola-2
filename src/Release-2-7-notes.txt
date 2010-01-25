@@ -1,3 +1,5 @@
 New in 2.7:
 
 ! New built-in EvalTemplate, which provides a more powerful version of Eval.
+
+* Eval is now implemented via transformation to EvalTemplate.

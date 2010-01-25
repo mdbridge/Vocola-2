@@ -36,3 +36,40 @@ nested evaluation          = EvalTemplate(-%i, ID(EvalTemplate(%i/2, 20)));
   # check Python eval errors (both runtime errors):
 bad Python                 = EvalTemplate('nonsense 1 %i 3', 2);
 bad Python two             = EvalTemplate(1 / 0);
+
+
+
+## 
+## Test transform of Eval into EvalTemplate:
+## 
+
+no arguments eval               = Eval(2+2);
+eval add 0..9 0..9              = Eval($1 + $2);
+
+
+repeated eval add 0..9 0..9     = Eval('($1 + $2) * $1');
+
+all sorts of (arguments=3) 1..1 = 
+	Eval(2 + $1 - $2 + Eval(3*3) - ID(12) - EvalF(%i*2, 3));    # = -5
+
+more eval arguments = Eval(1 + Repeat(3, 1));                       # = 112
+eval with Dragon    = Eval(SendDragonKeys(Fred));		    # error
+
+F(x) := Eval($x - 2);
+eval in a function  = F(7);                                         # = 5
+
+
+Unrolling(x,y) := $x + $y;
+eval with unrolling = Eval(Unrolling(2,3));                         # = 2+3
+
+
+test string (Argument)          = Eval('$1.lower()');
+test ambiguous arguments <case> = Eval($1-2);
+
+  # works: number, minus, zero
+<case> := (string    | number = 13      | plus = +14        | minus = -3 
+          | zero = 0 | double zero = 00 | leading zero = 03
+	  ); 
+
+eval (everywhere=Eval(1)) = $1 F(1) Repeat(Eval(3-1), Eval(2+2)) 
+	                    Eval(Eval(2+3)) SendDragonKeys(Eval(2-2));

@@ -10,6 +10,7 @@
 # This file is copyright (c) 2002-2010 by Rick Mohr. It may be redistributed 
 # in any way as long as this copyright notice remains.
 #
+# 12/30/2009  ml  Eval is now implemented via transformation to EvalTemplate
 # 12/28/2009  ml  New EvalTemplate built-in function
 # 09/06/2009  ml  New $set directive replaces old non-working sequence directive
 #                 binary Use Command Sequences replaced by n-ary MaximumCommands
@@ -205,6 +206,8 @@ sub convert_file
     }
 
     #print_statements (*LOG, @statements);
+    transform_nodes(@statements);
+    #print_statements (*LOG, @statements);
 
     # Handle $set directives:
     $maximum_commands = $default_maximum_commands;
@@ -366,6 +369,7 @@ sub convert_filename
 #    call:
 #       TEXT      - name of function called
 #       CALLTYPE  - dragon/vocola/user
+#       ARGTYPES  - [dragon only] types of call arguments
 #       ARGUMENTS - list of lists of actions, to be passed in call
 
 # ---------------------------------------------------------------------------
@@ -1260,6 +1264,115 @@ sub print_argument
     my ($out, $argument) = @_;
     print_actions($out, @{$argument});
 }
+
+# ---------------------------------------------------------------------------
+# Transform Eval into EvalTemplate
+
+  # takes a list of non-action nodes
+sub transform_nodes
+{
+    foreach my $node (@_) {
+	transform_node($node);
+    }
+}
+
+sub transform_node
+{
+    my $node = shift;
+
+    if ($node->{COMMANDS})  { transform_nodes(@{ $node->{COMMANDS} }); }
+    if ($node->{TERMS})     { transform_nodes(@{ $node->{TERMS} }); }
+    if ($node->{MENU})      { transform_node(    $node->{MENU}); }
+
+    if ($node->{ACTIONS})   { 
+	$node->{ACTIONS} = transform_actions(@{ $node->{ACTIONS} }); 
+    }
+}
+
+# transforms above are destructive, transforms below are functional
+# except transform_eval
+
+sub transform_actions
+{
+    my @new_actions = ();
+
+    foreach my $action (@_) {
+	push(@new_actions, transform_action($action));
+    }
+
+    return \@new_actions;
+}
+
+sub transform_arguments          # lists of actions
+{
+    my @new_arguments = ();
+
+    foreach my $argument (@_) {
+	push(@new_arguments, transform_actions(@{$argument}));
+    }
+
+    return \@new_arguments;
+}
+
+sub transform_action
+{
+    my $action = shift;
+
+    if ($action->{TYPE} eq "call") { $action = transform_call($action); }
+
+    return $action;
+}
+
+sub transform_call
+{
+    my $call = shift;
+
+    my $new_call = {};
+    $new_call->{TYPE}      = $call->{TYPE};
+    $new_call->{TEXT}      = $call->{TEXT};
+    $new_call->{CALLTYPE}  = $call->{CALLTYPE};
+    if ($call->{ARGTYPES}) { $new_call->{ARGTYPES}  = $call->{ARGTYPES}; }
+    $new_call->{ARGUMENTS} = $call->{ARGUMENTS};
+
+    if ($new_call->{CALLTYPE} eq "vocola" and $new_call->{TEXT} eq "Eval") {
+	transform_eval($new_call);
+    }
+
+    $new_call->{ARGUMENTS} = transform_arguments(@{$new_call->{ARGUMENTS}});
+
+    return $new_call;
+}
+
+sub transform_eval
+{
+    my $call = shift;
+    my @arguments = @{ $call->{ARGUMENTS} };
+
+    my $template = "";
+    my @new_arguments = ();
+    foreach my $action (@{ $arguments[0] }) {
+	if ($action->{TYPE} eq "word") {
+	    $template .= $action->{TEXT};
+	} else {
+	    $template .= "%a";
+	    my @new_argument = ();
+	    push(@new_argument, $action);
+	    push(@new_arguments, \@new_argument);
+	}
+    }
+
+    my $template_word = {};
+    $template_word->{TYPE} = "word";
+    $template_word->{TEXT} = $template;
+
+    my @template_argument = ();
+    push(@template_argument, $template_word);
+    unshift(@new_arguments, \@template_argument);
+
+    $call->{TEXT}      = "EvalTemplate"; 
+    $call->{ARGUMENTS} = \@new_arguments;
+}
+
 
 # ---------------------------------------------------------------------------
 # Emit NatLink output
