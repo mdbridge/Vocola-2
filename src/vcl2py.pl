@@ -1861,7 +1861,7 @@ sub emit_call_eval_template
     for my $argument (@{ $call->{ARGUMENTS} }) {
 	if ($i ne 0) { $eval_template_call .= ", "; }
 	$i += 1;
-	my $value = get_nested_value_name("eval_template") . "no$i";
+	my $value = get_nested_value_name("eval_template") . "_arg$i";
 	emit($indent, "$value = Value()\n");
 	emit_actions("$value.augment", $argument, $indent);
 	$eval_template_call .= "str($value)";
