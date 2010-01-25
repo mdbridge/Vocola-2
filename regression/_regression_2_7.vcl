@@ -75,3 +75,5 @@ test ambiguous arguments <case> = Eval($1-2);
   # = 1-14450
 eval (everywhere=Eval(1)) = $1 F(1) Repeat(Eval(3-1), Eval(2+2)) 
 	                    Eval(Eval(2+3)) SendDragonKeys(Eval(2-2));
+
+test templates with percent (sign=2) = Eval(4 % $1) Eval("'%a %i %s %x %%'");

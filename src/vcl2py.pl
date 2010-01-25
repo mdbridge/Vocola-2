@@ -1366,7 +1366,9 @@ sub transform_eval
     my @new_arguments = ();
     foreach my $action (@{ $arguments[0] }) {
 	if ($action->{TYPE} eq "word") {
-	    $template .= $action->{TEXT};
+	    my $text = $action->{TEXT};
+	    $text =~ s/%/%%/g;
+	    $template .= $text;
 	} else {
 	    $template .= "%a";
 	    my @new_argument = ();
