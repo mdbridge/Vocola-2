@@ -1440,7 +1440,7 @@ sub emit_output
     for my $statement (@statements) {
         my $type = $statement->{TYPE};
         if    ($type eq "definition") {emit_definition_actions ($statement)}
-        if    ($type eq "function")   {emit_function_actions ($statement)}
+        if    ($type eq "function")   {}
         elsif ($type eq "command")    {emit_top_command_actions ($statement)}
     }
     &emit_file_trailer;
@@ -1688,16 +1688,6 @@ sub emit_definition_actions
     emit(1, "def get_$definition->{NAME}(self, word):\n");
     emit(2, "actions = Value()\n");
     emit_menu_actions("actions.augment", $definition->{MENU}, 2);
-    emit(2, "return actions\n\n");
-}
-
-sub emit_function_actions
-{
-    my $function = shift;
-    my $formals = join(', ', ("self", @{ $function->{FORMALS} }));
-    emit(1, "def do_$function->{NAME}($formals):\n");
-    emit(2, "actions = Value()\n");
-    emit_actions("actions.augment", $function->{ACTIONS}, 2);
     emit(2, "return actions\n\n");
 }
 
