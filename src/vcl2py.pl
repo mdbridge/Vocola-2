@@ -1752,7 +1752,7 @@ sub emit_actions
         if ($type eq "reference") {
             emit_reference($collector, $action, $indent);
         } elsif ($type eq "formalref") {
-            emit($indent, "$collector($action->{TEXT})\n");
+	    die "Compiler Error: not all formal references transformed away.\n";
         } elsif ($type eq "word") {
             my $safe_text = make_safe_python_string($action->{TEXT});
             emit($indent, "$collector('$safe_text')\n");
