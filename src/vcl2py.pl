@@ -10,6 +10,7 @@
 # This file is copyright (c) 2002-2010 by Rick Mohr. It may be redistributed 
 # in any way as long as this copyright notice remains.
 #
+# 01/01/2010  ml  User functions are now implemented via unrolling
 # 12/30/2009  ml  Eval is now implemented via transformation to EvalTemplate
 # 12/28/2009  ml  New EvalTemplate built-in function
 # 09/06/2009  ml  New $set directive replaces old non-working sequence directive
@@ -187,6 +188,7 @@ sub convert_file
 
     %Definitions = ();
     %Functions = ();
+    %Function_definitions = ();
     @Forward_references = ();
     @Included_files = ();
     @Include_stack = ();
@@ -640,6 +642,7 @@ sub parse_function_definition   # function = prototype ':=' action* ';'
         defined ($Functions{$functionName})
             and die "Redefinition of $functionName()\n";
         $Functions{$functionName} = @formals;  # remember number of formals
+        $Function_definitions{$functionName} = $statement;
         if ($Debug>=1) {print_function_definition (*LOG, $statement)}
         return $statement;
     }
@@ -1266,7 +1269,7 @@ sub print_argument
 }
 
 # ---------------------------------------------------------------------------
-# Transform Eval into EvalTemplate
+# Transform Eval into EvalTemplate, unroll user functions
 
   # takes a list of non-action nodes
 sub transform_nodes
@@ -1285,7 +1288,7 @@ sub transform_node
     if ($node->{MENU})      { transform_node(    $node->{MENU}); }
 
     if ($node->{ACTIONS})   { 
-	$node->{ACTIONS} = transform_actions(@{ $node->{ACTIONS} }); 
+	$node->{ACTIONS} = transform_actions({}, @{ $node->{ACTIONS} }); 
     }
 }
 
@@ -1294,10 +1297,11 @@ sub transform_node
 
 sub transform_actions
 {
+    my $substitution = shift;
     my @new_actions = ();
 
     foreach my $action (@_) {
-	push(@new_actions, transform_action($action));
+	push(@new_actions, transform_action($substitution, $action));
     }
 
     return \@new_actions;
@@ -1305,10 +1309,11 @@ sub transform_actions
 
 sub transform_arguments          # lists of actions
 {
+    my $substitution = shift;
     my @new_arguments = ();
 
     foreach my $argument (@_) {
-	push(@new_arguments, transform_actions(@{$argument}));
+	push(@new_arguments, transform_actions($substitution, @{$argument}));
     }
 
     return \@new_arguments;
@@ -1316,16 +1321,25 @@ sub transform_arguments          # lists of actions
 
 sub transform_action
 {
-    my $action = shift;
+    my ($substitution, $action) = @_;
 
-    if ($action->{TYPE} eq "call") { $action = transform_call($action); }
+    if ($action->{TYPE} eq "formalref") { 
+	my $name = $action->{TEXT};
+	if ($substitution->{$name}) {
+	    return @{ $substitution->{$name} };
+	}
+    }
+
+    if ($action->{TYPE} eq "call") { 
+	return transform_call($substitution, $action); 
+    }
 
     return $action;
 }
 
 sub transform_call
 {
-    my $call = shift;
+    my ($substitution, $call) = @_;
 
     my $new_call = {};
     $new_call->{TYPE}      = $call->{TYPE};
@@ -1338,7 +1352,25 @@ sub transform_call
 	transform_eval($new_call);
     }
 
-    $new_call->{ARGUMENTS} = transform_arguments(@{$new_call->{ARGUMENTS}});
+    $new_call->{ARGUMENTS} = transform_arguments($substitution, 
+						 @{$new_call->{ARGUMENTS}});
+
+    if ($new_call->{CALLTYPE} eq "user") {
+        my @arguments  = @{ $new_call->{ARGUMENTS} };
+
+        my $definition = $Function_definitions{$new_call->{TEXT}};
+        my @formals    = @{ $definition->{FORMALS} };
+        my $body       = $definition->{ACTIONS};
+
+	my $bindings = {};
+	my $i = 0;
+	foreach $argument (@arguments) {
+	    $bindings->{$formals[$i]} = $argument;
+	    $i += 1;
+	}
+
+	return @{ transform_actions($bindings, @{ $body }) };
+    }
 
     return $new_call;
 }

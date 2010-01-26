@@ -3,3 +3,7 @@ New in 2.7:
 ! New built-in EvalTemplate, which provides a more powerful version of Eval.
 
 * Eval is now implemented via transformation to EvalTemplate.
+
+! User functions are now implemented by unrolling; this allows passing
+  instructions like SendDragonKeys(-), not just string-valued
+  expressions.
