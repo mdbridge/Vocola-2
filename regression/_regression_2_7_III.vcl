@@ -78,3 +78,12 @@ repeat is special        = Repeat(2, Beep());
 the (Unimacro = Unimacro(foo) | Dragon = Beep() | Eval = Eval(2+2)
     | Repeat = Repeat(2,1)) call is functional = SendKeys($1);
 
+
+## 
+## Test semantics of nested calls:
+## 
+
+nested calls = MsgBoxConfirm(x Eval(2+2) EvalTemplate(%i*2,3) Repeat(2,z) q, 
+                             0, 0);
+
+nested eval = Eval(Eval(2) + Eval(3) - Eval(Eval(1)));
