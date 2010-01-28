@@ -54,3 +54,27 @@ eval template does not flush = { EvalTemplate('"up"') };
 
 
 Unimacro does flush = { Unimacro('"up"') };
+
+
+## 
+## Test procedural calls not permitted in functional contexts:
+## 
+
+top-level okay = Beep();
+
+inline (menu = Beep())     ok = $1;
+inline (menu = Beep()) not ok = Wait($1);
+
+<lists> := (one = Beep());
+
+<lists>     ok = $1;
+<lists> not ok = Wait($1);
+
+arguments not okay one   = EvalTemplate(Beep());
+arguments not okay two   = Unimacro(Beep());
+arguments not okay three = Repeat(Beep(), x);
+repeat is special        = Repeat(2, Beep());
+
+the (Unimacro = Unimacro(foo) | Dragon = Beep() | Eval = Eval(2+2)
+    | Repeat = Repeat(2,1)) call is functional = SendKeys($1);
+

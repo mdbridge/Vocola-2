@@ -1687,8 +1687,9 @@ sub emit_range_grammar
 sub emit_definition_actions
 {
     my $definition = shift;
-    emit(1, "def get_$definition->{NAME}(self, list_buffer, word):\n");
-    emit_menu_actions("list_buffer", $definition->{MENU}, 2);
+    emit(1, 
+	 "def get_$definition->{NAME}(self, list_buffer, functional, word):\n");
+    emit_menu_actions("list_buffer", "functional", $definition->{MENU}, 2);
     emit(2, "return list_buffer\n\n");
 }
 
@@ -1706,8 +1707,8 @@ sub emit_top_command_actions
     emit(1, "def $function(self, words, fullResults):\n");
     emit_optional_term_fixup(@terms);
     emit(2, "top_buffer = ''\n");
-    emit_actions("top_buffer", $command->{ACTIONS}, 2);
-    emit_flush("top_buffer", 2);
+    emit_actions("top_buffer", "False", $command->{ACTIONS}, 2);
+    emit_flush("top_buffer", "False", 2);
     emit(2, "self.firstWord += $nterms\n");
 
     # If repeating a command with no <variable> terms (e.g. "Scratch That
@@ -1721,7 +1722,12 @@ sub emit_top_command_actions
 
 sub emit_flush
 {
-    my ($buffer, $indent) = @_;
+    my ($buffer, $functional, $indent) = @_;
+
+    if ($functional ne "False") {
+	emit($indent,   "if $functional:\n");
+	emit($indent+1,     "raise VocolaRuntimeError('attempt to call Unimacro or a Dragon call in a functional context!')\n");
+    }
 
     emit($indent,   "if $buffer != '':\n");
     emit($indent+1,     "natlink.playString($buffer);\n");
@@ -1756,18 +1762,18 @@ sub emit_optional_term_fixup
 
 sub emit_actions
 {
-    my ($buffer, $actions, $indent) = @_;
+    my ($buffer, $functional, $actions, $indent) = @_;
     for my $action (@{$actions}) {
         my $type = $action->{TYPE};
         if ($type eq "reference") {
-            emit_reference($buffer, $action, $indent);
+            emit_reference($buffer, $functional, $action, $indent);
         } elsif ($type eq "formalref") {
 	    die "Compiler Error: not all formal references transformed away.\n";
         } elsif ($type eq "word") {
             my $safe_text = make_safe_python_string($action->{TEXT});
             emit($indent, "$buffer += '$safe_text'\n");
         } elsif ($type eq "call") {
-            emit_call($buffer, $action, $indent);
+            emit_call($buffer, $functional, $action, $indent);
         } else {
             die "Unknown action type: '$type'\n";
         }
@@ -1790,7 +1796,7 @@ sub get_variable_terms
 
 sub emit_reference
 {
-    my ($buffer, $action, $indent) = @_;
+    my ($buffer, $functional, $action, $indent) = @_;
     my $reference_number = $action->{TEXT} - 1;
     my $variable = $Variable_terms[$reference_number];
     my $term_number = $variable->{NUMBER};
@@ -1802,18 +1808,18 @@ sub emit_reference
     }
     emit($indent, "word = fullResults[$term_number + self.firstWord][0]\n");
     if ($variable->{TYPE} eq "menu") {
-        emit_menu_actions($buffer, $variable, $indent);
+        emit_menu_actions($buffer, $functional, $variable, $indent);
     } elsif ($variable->{TYPE} eq "range" or $variable->{TYPE} eq "dictation") {
         emit($indent, "$buffer += word\n");
     } elsif ($variable->{TYPE} eq "variable") {
         my $function = "self.get_$variable->{TEXT}";
-        emit($indent, "$buffer = $function($buffer, word)\n");
+        emit($indent, "$buffer = $function($buffer, $functional, word)\n");
     }
 }
 
 sub emit_menu_actions
 {
-    my ($buffer, $menu, $indent) = @_;
+    my ($buffer, $functional, $menu, $indent) = @_;
     if (not menu_has_actions($menu)) {
         emit($indent, "$buffer += word\n");
     } else {
@@ -1825,7 +1831,8 @@ sub emit_menu_actions
             emit($indent, "$if word == '$text':\n");
             if ($command->{ACTIONS}) {
 		if (@{$command->{ACTIONS}}) {
-		    emit_actions($buffer, $command->{ACTIONS}, $indent+1);
+		    emit_actions($buffer, $functional, 
+				 $command->{ACTIONS}, $indent+1);
 		} else {
 		    emit($indent+1, "pass  # no actions\n");
 		}
@@ -1839,7 +1846,7 @@ sub emit_menu_actions
 
 sub emit_call
 {
-    my ($buffer, $call, $indent) = @_;
+    my ($buffer, $functional, $call, $indent) = @_;
     my $callType = $call->{CALLTYPE};
     begin_nested_call();
     if    ($callType eq "dragon") {&emit_dragon_call}
@@ -1867,14 +1874,14 @@ sub get_nested_buffer_name
 
 sub emit_call_repeat
 {
-    my ($buffer, $call, $indent) = @_;
+    my ($buffer, $functional, $call, $indent) = @_;
     my @arguments = @{ $call->{ARGUMENTS} };
 
     my $argument_buffer = get_nested_buffer_name("limit");
     emit($indent, "$argument_buffer = ''\n");
-    emit_actions("$argument_buffer", $arguments[0], $indent);
+    emit_actions("$argument_buffer", "True", $arguments[0], $indent);
     emit($indent, "for i in range(int($argument_buffer)):\n");
-    emit_actions($buffer, $arguments[1], $indent+1);
+    emit_actions($buffer, $functional, $arguments[1], $indent+1);
 }
 
 sub emit_arguments
@@ -1888,7 +1895,7 @@ sub emit_arguments
 	$i += 1;
 	my $argument_buffer = get_nested_buffer_name($name) . "_arg$i";
 	emit($indent, "$argument_buffer = ''\n");
-	emit_actions($argument_buffer, $argument, $indent);
+	emit_actions($argument_buffer, "True", $argument, $indent);
 	$arguments .= $argument_buffer;
     }
 
@@ -1897,11 +1904,11 @@ sub emit_arguments
 
 sub emit_dragon_call
 {
-    my ($buffer, $call, $indent) = @_;
+    my ($buffer, $functional, $call, $indent) = @_;
     my $functionName  = $call->{TEXT};
     my $argumentTypes = $call->{ARGTYPES};
 
-    emit_flush($buffer, $indent);
+    emit_flush($buffer, $functional, $indent);
     my $arguments = emit_arguments($call, "dragon", $indent);
     emit($indent, 
 	 "call_Dragon('$functionName', '$argumentTypes', [$arguments])\n");
@@ -1909,7 +1916,7 @@ sub emit_dragon_call
 
 sub emit_call_eval_template
 {
-    my ($buffer, $call, $indent) = @_;
+    my ($buffer, $functional, $call, $indent) = @_;
 
     my $arguments = emit_arguments($call, "eval_template", $indent);
     emit($indent, "$buffer += eval_template($arguments)\n");
@@ -1917,9 +1924,9 @@ sub emit_call_eval_template
 
 sub emit_call_Unimacro
 {
-    my ($buffer, $call, $indent) = @_;
+    my ($buffer, $functional, $call, $indent) = @_;
 
-    emit_flush($buffer, $indent);
+    emit_flush($buffer, $functional, $indent);
     my $arguments = emit_arguments($call, "unimacro", $indent);
     emit($indent, "call_Unimacro($arguments)\n");
 }
