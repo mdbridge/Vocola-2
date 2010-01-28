@@ -10,6 +10,8 @@
 # This file is copyright (c) 2002-2010 by Rick Mohr. It may be redistributed 
 # in any way as long as this copyright notice remains.
 #
+# 01/27/2010  ml  Actions now implemented via direct translation to
+#                 Python, with no delay of Dragon calls, etc.
 # 01/01/2010  ml  User functions are now implemented via unrolling
 # 12/30/2009  ml  Eval is now implemented via transformation to EvalTemplate
 # 12/28/2009  ml  New EvalTemplate built-in function
@@ -1685,10 +1687,9 @@ sub emit_range_grammar
 sub emit_definition_actions
 {
     my $definition = shift;
-    emit(1, "def get_$definition->{NAME}(self, word):\n");
-    emit(2, "actions = Value()\n");
-    emit_menu_actions("actions.augment", $definition->{MENU}, 2);
-    emit(2, "return actions\n\n");
+    emit(1, "def get_$definition->{NAME}(self, list_buffer, word):\n");
+    emit_menu_actions("list_buffer", $definition->{MENU}, 2);
+    emit(2, "return list_buffer\n\n");
 }
 
 sub emit_top_command_actions
@@ -1704,9 +1705,9 @@ sub emit_top_command_actions
     emit(0, "\n");
     emit(1, "def $function(self, words, fullResults):\n");
     emit_optional_term_fixup(@terms);
-    emit(2, "actions = Value()\n");
-    emit_actions("actions.augment", $command->{ACTIONS}, 2);
-    emit(2, "actions.perform()\n");
+    emit(2, "top_buffer = ''\n");
+    emit_actions("top_buffer", $command->{ACTIONS}, 2);
+    emit_flush("top_buffer", 2);
     emit(2, "self.firstWord += $nterms\n");
 
     # If repeating a command with no <variable> terms (e.g. "Scratch That
@@ -1716,6 +1717,15 @@ sub emit_top_command_actions
         emit(2, "if len(words) > $nterms: self.$function(words[$nterms:], fullResults)\n");
     }
     emit(0, "\n");
+}
+
+sub emit_flush
+{
+    my ($buffer, $indent) = @_;
+
+    emit($indent,   "if $buffer != '':\n");
+    emit($indent+1,     "natlink.playString($buffer);\n");
+    emit($indent+1,     "$buffer = '';\n");
 }
 
 sub has_variable_term
@@ -1746,18 +1756,18 @@ sub emit_optional_term_fixup
 
 sub emit_actions
 {
-    my ($collector, $actions, $indent) = @_;
+    my ($buffer, $actions, $indent) = @_;
     for my $action (@{$actions}) {
         my $type = $action->{TYPE};
         if ($type eq "reference") {
-            emit_reference($collector, $action, $indent);
+            emit_reference($buffer, $action, $indent);
         } elsif ($type eq "formalref") {
 	    die "Compiler Error: not all formal references transformed away.\n";
         } elsif ($type eq "word") {
             my $safe_text = make_safe_python_string($action->{TEXT});
-            emit($indent, "$collector('$safe_text')\n");
+            emit($indent, "$buffer += '$safe_text'\n");
         } elsif ($type eq "call") {
-            emit_call($collector, $action, $indent);
+            emit_call($buffer, $action, $indent);
         } else {
             die "Unknown action type: '$type'\n";
         }
@@ -1780,7 +1790,7 @@ sub get_variable_terms
 
 sub emit_reference
 {
-    my ($collector, $action, $indent) = @_;
+    my ($buffer, $action, $indent) = @_;
     my $reference_number = $action->{TEXT} - 1;
     my $variable = $Variable_terms[$reference_number];
     my $term_number = $variable->{NUMBER};
@@ -1792,20 +1802,20 @@ sub emit_reference
     }
     emit($indent, "word = fullResults[$term_number + self.firstWord][0]\n");
     if ($variable->{TYPE} eq "menu") {
-        emit_menu_actions($collector, $variable, $indent);
+        emit_menu_actions($buffer, $variable, $indent);
     } elsif ($variable->{TYPE} eq "range" or $variable->{TYPE} eq "dictation") {
-        emit($indent, "$collector(word)\n");
+        emit($indent, "$buffer += word\n");
     } elsif ($variable->{TYPE} eq "variable") {
         my $function = "self.get_$variable->{TEXT}";
-        emit($indent, "$collector($function(word))\n");
+        emit($indent, "$buffer = $function($buffer, word)\n");
     }
 }
 
 sub emit_menu_actions
 {
-    my ($collector, $menu, $indent) = @_;
+    my ($buffer, $menu, $indent) = @_;
     if (not menu_has_actions($menu)) {
-        emit($indent, "$collector(word)\n");
+        emit($indent, "$buffer += word\n");
     } else {
         my @commands = flatten_menu($menu);
         my $if = "if";
@@ -1815,12 +1825,12 @@ sub emit_menu_actions
             emit($indent, "$if word == '$text':\n");
             if ($command->{ACTIONS}) {
 		if (@{$command->{ACTIONS}}) {
-		    emit_actions($collector, $command->{ACTIONS}, $indent+1);
+		    emit_actions($buffer, $command->{ACTIONS}, $indent+1);
 		} else {
 		    emit($indent+1, "pass  # no actions\n");
 		}
             } else {
-                emit($indent+1, "$collector('$text')\n");
+                emit($indent+1, "$buffer += '$text'\n");
             }
             $if = "elif";
         }
@@ -1829,12 +1839,13 @@ sub emit_menu_actions
 
 sub emit_call
 {
-    my ($collector, $call, $indent) = @_;
+    my ($buffer, $call, $indent) = @_;
     my $callType = $call->{CALLTYPE};
     begin_nested_call();
     if    ($callType eq "dragon") {&emit_dragon_call}
-    elsif ($callType eq "user"  ) {&emit_user_call}
-    elsif ($callType eq "vocola") {
+    elsif ($callType eq "user"  ) {
+	die "No user function call should be present here!";
+    } elsif ($callType eq "vocola") {
         my $functionName = $call->{TEXT};
         if    ($functionName eq "Eval")         {
 	    die "Compiler error: Eval not transformed away\n";
@@ -1845,89 +1856,72 @@ sub emit_call
     } else {die "Unknown function call type: '$callType'\n"}
     end_nested_call();
 }
-
-sub emit_dragon_call
-{
-    my ($collector, $call, $indent) = @_;
-    my $functionName = $call->{TEXT};
-    my $argumentTypes = $call->{ARGTYPES};
-    my $value = get_nested_value_name("call");
-    emit($indent, "$value = DragonCall('$functionName', '$argumentTypes')\n");
-    for my $argument (@{ $call->{ARGUMENTS} }) {
-        emit_argument("$value.addArgument", $argument, $indent);
-    }
-    emit($indent, "$value.finalize()\n");
-    emit($indent, "$collector($value)\n");
-}
-
-sub emit_user_call
-{
-    my ($collector, $call, $indent) = @_;
-    my $functionName = $call->{TEXT};
-    my $value = get_nested_value_name("usercall");
-    emit($indent, "$value = UserCall('self.do_$functionName')\n");
-    for my $argument (@{ $call->{ARGUMENTS} }) {
-        emit_argument("$value.addArgument", $argument, $indent);
-    }
-    emit($indent, "$collector(eval($value.getCall()))\n");
-}
-
-  # ensures: calls $collector exactly once with a Value
-sub emit_argument
-{
-    # Note that an argument is a list of actions
-    my ($collector, $argument, $indent) = @_;
-    my $value = get_nested_value_name("argument");
-    emit($indent, "$value = Value()\n");
-    emit_actions("$value.augment", $argument, $indent);
-    emit($indent, "$collector($value)\n");
-}
-
 sub begin_nested_call{ $NestedCallLevel += 1}
 sub   end_nested_call{ $NestedCallLevel -= 1}
-sub get_nested_value_name
+
+sub get_nested_buffer_name
 {
     my $root = shift;
     return ($NestedCallLevel == 1) ? $root : "$root$NestedCallLevel";
 }
 
-sub emit_call_eval_template
-{
-    my ($collector, $call, $indent) = @_;
-
-    my $i=0;
-    my $eval_template_call = "eval_template(";
-    for my $argument (@{ $call->{ARGUMENTS} }) {
-	if ($i ne 0) { $eval_template_call .= ", "; }
-	$i += 1;
-	my $value = get_nested_value_name("eval_template") . "_arg$i";
-	emit($indent, "$value = Value()\n");
-	emit_actions("$value.augment", $argument, $indent);
-	$eval_template_call .= "str($value)";
-    }
-    $eval_template_call .= ")";
-    emit($indent, "$collector($eval_template_call)\n");
-}
-
 sub emit_call_repeat
 {
-    my ($collector, $call, $indent) = @_;
+    my ($buffer, $call, $indent) = @_;
     my @arguments = @{ $call->{ARGUMENTS} };
-    emit($indent, "limit = Value()\n");
-    emit_actions("limit.augment", $arguments[0], $indent);
-    emit($indent, "for i in range(int(str(limit))):\n");
-    emit_actions($collector, $arguments[1], $indent+1);
+
+    my $argument_buffer = get_nested_buffer_name("limit");
+    emit($indent, "$argument_buffer = ''\n");
+    emit_actions("$argument_buffer", $arguments[0], $indent);
+    emit($indent, "for i in range(int($argument_buffer)):\n");
+    emit_actions($buffer, $arguments[1], $indent+1);
+}
+
+sub emit_arguments
+{
+    my ($call, $name, $indent) = @_;
+    my $arguments = "";
+
+    my $i=0;
+    for my $argument (@{ $call->{ARGUMENTS} }) {
+	if ($i ne 0) { $arguments .= ", "; }
+	$i += 1;
+	my $argument_buffer = get_nested_buffer_name($name) . "_arg$i";
+	emit($indent, "$argument_buffer = ''\n");
+	emit_actions($argument_buffer, $argument, $indent);
+	$arguments .= $argument_buffer;
+    }
+
+    return $arguments;
+}
+
+sub emit_dragon_call
+{
+    my ($buffer, $call, $indent) = @_;
+    my $functionName  = $call->{TEXT};
+    my $argumentTypes = $call->{ARGTYPES};
+
+    emit_flush($buffer, $indent);
+    my $arguments = emit_arguments($call, "dragon", $indent);
+    emit($indent, 
+	 "call_Dragon('$functionName', '$argumentTypes', [$arguments])\n");
+}
+
+sub emit_call_eval_template
+{
+    my ($buffer, $call, $indent) = @_;
+
+    my $arguments = emit_arguments($call, "eval_template", $indent);
+    emit($indent, "$buffer += eval_template($arguments)\n");
 }
 
 sub emit_call_Unimacro
 {
-    my ($collector, $call, $indent) = @_;
-    my $value = get_nested_value_name("call");
-    emit($indent, "$value = UnimacroCall()\n");
-    for my $argument (@{ $call->{ARGUMENTS} }) {
-        emit_argument("$value.addArgument", $argument, $indent);
-    }
-    emit($indent, "$collector($value)\n");
+    my ($buffer, $call, $indent) = @_;
+
+    emit_flush($buffer, $indent);
+    my $arguments = emit_arguments($call, "unimacro", $indent);
+    emit($indent, "call_Unimacro($arguments)\n");
 }
 
 

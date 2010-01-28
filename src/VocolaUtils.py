@@ -311,3 +311,51 @@ def eval_template(template, *arguments):
     
     expression = re.sub(r'%.', handle_descriptor, template)
     return eval('str(' + expression + ')', variables)
+
+
+def call_Unimacro(argumentString):
+    if unimacro_available:
+        #print '[' + argumentString + ']'
+        actions.doAction(self.argumentString)
+    else:
+        m = "Vocola: Unimacro call failed because Unimacro is " \
+            + "unavailable"
+        raise NotImplementedError(m)
+
+
+def call_Dragon(function_name, argument_types, arguments):
+    def quoteAsVisualBasicString(argument):
+        q = argument
+        q = string.replace(q, '"', '""')
+        q = string.replace(q, "\n", '" + chr$(10) + "')
+        q = string.replace(q, "\r", '" + chr$(13) + "')
+        return '"' + q + '"'
+
+    script = ""
+    for argument in arguments:
+        argument_type = argument_types[0]
+        argument_types = argument_types[1:]
+
+        if argument_type == 'i':
+            argument = str(int(argument))
+        elif argument_type == 's':
+            argument = quoteAsVisualBasicString(str(argument))
+        else:
+            # there is a vcl2py.pl bug if this happens:
+            raise ValueError("Unknown data type specifier '"
+                             + argument_type +
+                             "' supplied for a Dragon procedure argument")
+
+        if script != '':
+            script += ','
+        script += ' ' + argument
+
+    script = function_name + script
+    #print '[' + script + ']'
+    try:
+        natlink.execScript(script)
+    except natlink.SyntaxError, details:
+        message = "Dragon reported a syntax error when Vocola attempted" \
+                + " to execute the Dragon procedure '" + script \
+                + "'; details: " + str(details)
+        raise DragonError(message)
