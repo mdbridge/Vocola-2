@@ -97,6 +97,10 @@ def call_Dragon(function_name, argument_types, arguments):
                 + " to execute the Dragon procedure '" + script \
                 + "'; details: " + str(details)
         raise VocolaRuntimeError(message)
+    except Exception, details:
+        m = "Dragon reported an error while executing the Dragon procedure '" \
+            + script + "'; details: " + str(details)
+        raise VocolaRuntimeError(m)
 
 
 
@@ -115,7 +119,12 @@ except ImportError:
 def call_Unimacro(argumentString):
     if unimacro_available:
         #print '[' + argumentString + ']'
-        actions.doAction(self.argumentString)
+        try:
+            actions.doAction(self.argumentString)
+        except Exception, details:
+            m = "Unimacro reported an error while executing the Unimarco " \
+                + " action '" + script + "'; details: " + str(details)
+            raise VocolaRuntimeError(m)
     else:
         m = "Unimacro call failed because Unimacro is unavailable"
         raise VocolaRuntimeError(m)
