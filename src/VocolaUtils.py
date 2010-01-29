@@ -1,7 +1,9 @@
-# VocolaUtils.py - Code used by Vocola's generated Python code
-#
-# This file is copyright (c) 2002-2010 by Rick Mohr.  It may be redistributed 
-# in any way as long as this copyright notice remains.
+###
+### VocolaUtils.py - Code used by Vocola's generated Python code
+###
+### This file is copyright (c) 2002-2010 by Rick Mohr.  It may be redistributed 
+### in any way as long as this copyright notice remains.
+###
 
 import natlink
 from   types import *
@@ -9,29 +11,10 @@ import string
 import re
 
 
-# attempt to import Unimacro, suppressing errors, and noting success status:
-unimacro_available = False
-try:
-    import actions
-    unimacro_available = True
-except ImportError:
-    pass
-
-
-class VocolaRuntimeError(Exception):
-    pass
-
-class ConversionError(Exception):
-    pass
-
-class DragonError(Exception):
-    pass
-
-
-
+#
 # Massage recognition results to make a single entry for each
 # <dgndictation> result.
-
+#
 def combineDictationWords(fullResults):
     i = 0
     inDictation = 0
@@ -44,7 +27,8 @@ def combineDictationWords(fullResults):
             if backslashPosition > 0:
                 word = word[:backslashPosition]
             if inDictation:
-                fullResults[i-1] = [fullResults[i-1][0] + " " + word, "dgndictation"]
+                fullResults[i-1] = [fullResults[i-1][0] + " " + word,
+                                    "dgndictation"]
                 del fullResults[i]
             else:
                 fullResults[i] = [word, "dgndictation"]
@@ -56,7 +40,91 @@ def combineDictationWords(fullResults):
     return fullResults
 
 
-# EvalTemplate built-in function:
+
+##
+## Runtime error handling:
+## 
+
+class VocolaRuntimeError(Exception):
+    pass
+
+def to_long(string):
+    try:
+        return long(string)
+    except ValueError:
+        raise VocolaRuntimeError("unable to convert '"
+                                 + string.replace("'", "''")
+                                 + "' into an integer")
+
+
+##
+## Dragon built-ins: 
+##
+ 
+def call_Dragon(function_name, argument_types, arguments):
+    def quoteAsVisualBasicString(argument):
+        q = argument
+        q = string.replace(q, '"', '""')
+        q = string.replace(q, "\n", '" + chr$(10) + "')
+        q = string.replace(q, "\r", '" + chr$(13) + "')
+        return '"' + q + '"'
+
+    script = ""
+    for argument in arguments:
+        argument_type = argument_types[0]
+        argument_types = argument_types[1:]
+
+        if argument_type == 'i':
+            argument = str(to_long(argument))
+        elif argument_type == 's':
+            argument = quoteAsVisualBasicString(str(argument))
+        else:
+            # there is a vcl2py.pl bug if this happens:
+            raise VocolaRuntimeError("Compiler error: unknown data type " +
+                                     " specifier '" + argument_type +
+                                   "' supplied for a Dragon procedure argument")
+
+        if script != '':
+            script += ','
+        script += ' ' + argument
+
+    script = function_name + script
+    #print '[' + script + ']'
+    try:
+        natlink.execScript(script)
+    except natlink.SyntaxError, details:
+        message = "Dragon reported a syntax error when Vocola attempted" \
+                + " to execute the Dragon procedure '" + script \
+                + "'; details: " + str(details)
+        raise VocolaRuntimeError(message)
+
+
+
+##
+## Unimacro built-in:
+##
+
+# attempt to import Unimacro, suppressing errors, and noting success status:
+unimacro_available = False
+try:
+    import actions
+    unimacro_available = True
+except ImportError:
+    pass
+
+def call_Unimacro(argumentString):
+    if unimacro_available:
+        #print '[' + argumentString + ']'
+        actions.doAction(self.argumentString)
+    else:
+        m = "Unimacro call failed because Unimacro is unavailable"
+        raise VocolaRuntimeError(m)
+
+
+
+##
+## EvalTemplate built-in function:
+##
 
 def eval_template(template, *arguments):
     variables = {}
@@ -64,7 +132,8 @@ def eval_template(template, *arguments):
     waiting = list(arguments)
     def get_argument():
         if len(waiting) == 0:
-            raise VocolaRuntimeError("insufficient number of arguments passed to EvalTemplate")
+            raise VocolaRuntimeError(
+                "insufficient number of arguments passed to EvalTemplate")
         return waiting.pop(0)
             
     def get_variable(value):
@@ -87,12 +156,7 @@ def eval_template(template, *arguments):
         elif descriptor == "%s":
             return get_variable(str(get_argument()))
         elif descriptor == "%i":
-            a = get_argument()
-            try:
-                return get_variable(long(a))
-            except ValueError:
-                raise ConversionError("unable to convert value " + a \
-                                      + " into an integer")
+            return get_variable(to_long(get_argument()))
         elif descriptor == "%a":
             a = get_argument()
             if isCanonicalNumber(a):
@@ -104,51 +168,3 @@ def eval_template(template, *arguments):
     
     expression = re.sub(r'%.', handle_descriptor, template)
     return eval('str(' + expression + ')', variables)
-
-
-def call_Unimacro(argumentString):
-    if unimacro_available:
-        #print '[' + argumentString + ']'
-        actions.doAction(self.argumentString)
-    else:
-        m = "Vocola: Unimacro call failed because Unimacro is " \
-            + "unavailable"
-        raise NotImplementedError(m)
-
-
-def call_Dragon(function_name, argument_types, arguments):
-    def quoteAsVisualBasicString(argument):
-        q = argument
-        q = string.replace(q, '"', '""')
-        q = string.replace(q, "\n", '" + chr$(10) + "')
-        q = string.replace(q, "\r", '" + chr$(13) + "')
-        return '"' + q + '"'
-
-    script = ""
-    for argument in arguments:
-        argument_type = argument_types[0]
-        argument_types = argument_types[1:]
-
-        if argument_type == 'i':
-            argument = str(int(argument))
-        elif argument_type == 's':
-            argument = quoteAsVisualBasicString(str(argument))
-        else:
-            # there is a vcl2py.pl bug if this happens:
-            raise ValueError("Unknown data type specifier '"
-                             + argument_type +
-                             "' supplied for a Dragon procedure argument")
-
-        if script != '':
-            script += ','
-        script += ' ' + argument
-
-    script = function_name + script
-    #print '[' + script + ']'
-    try:
-        natlink.execScript(script)
-    except natlink.SyntaxError, details:
-        message = "Dragon reported a syntax error when Vocola attempted" \
-                + " to execute the Dragon procedure '" + script \
-                + "'; details: " + str(details)
-        raise DragonError(message)
