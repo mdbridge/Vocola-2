@@ -91,7 +91,10 @@ def call_Dragon(function_name, argument_types, arguments):
     script = function_name + script
     #print '[' + script + ']'
     try:
-        natlink.execScript(script)
+        if function_name == "SendDragonKeys":
+            natlink.playString(arguments[0])
+        else:
+            natlink.execScript(script)
     except natlink.SyntaxError, details:
         message = "Dragon reported a syntax error when Vocola attempted" \
                 + " to execute the Dragon procedure '" + script \
