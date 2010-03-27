@@ -45,6 +45,7 @@ test eval (menu = 1 + 2 + 3) = Eval($1);
 ## These should give a correct error message rather than a nonsense string:
 ## 
 
+  # no longer an error in 2.7 onwards:
 call user with Dragon = User(a, b, Wait(0)); 
 
 call dragon with Dragon = MsgBoxConfirm(Wait(0), 64, "title"); 
@@ -96,6 +97,7 @@ call unbalanced eval = Eval("' + "" + words[0] + '");
 ## Test printing of Vocola values:
 ## 
 
+  # This no longer works usefully in 2.7 onwards:
 print value (empty = | key = "x{stop}y" 
 	     | quoted = '"red"' ButtonClick(0,0)
              | Dragon = ButtonClick(1,1) 
