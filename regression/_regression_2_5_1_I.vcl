@@ -17,9 +17,6 @@ regression user quotes  = user(< ' " """ \ \n '  " ' ''' \"
 ## 
 ## Test passing quotes, newlines, and carriage returns to Dragon functions:
 ## 
-##   Note: passing newlines and carriage returns should fail with a good
-##   error message.  (Unavoidable at this time due to a NatLink bug.)
-## 
 
 regression pass ( quotes = " ''' " ' """ \" \n\' 
                 | newline = Eval('"\n"') 
