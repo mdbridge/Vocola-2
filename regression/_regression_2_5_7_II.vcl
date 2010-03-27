@@ -22,7 +22,7 @@ convert <value> to string  = MsgBoxConfirm($1,0,$1);
 ## Test Dragon cases requiring quoted numbers:
 ## 
 
-test HeardWord = HeardWord(move, down, 10, lines);
+test HeardWord = HeardWord(left, 5);
 
 
 

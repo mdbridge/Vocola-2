@@ -93,7 +93,7 @@ nested eval = Eval(Eval(2) + Eval(3) - Eval(Eval(1)));
 ## Test runtime errors:
 ## 
 
-test Dragon bad conversion = Wait(foo);
+test Dragon bad conversion = Wait("foo'bar");
 test bad Dragon = Wait(-1);
 
 try Unimacro unavailable = Unimacro(x);
