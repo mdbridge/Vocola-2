@@ -439,7 +439,7 @@ sub parse_file    # returns a list of statements
     my $in_file = shift;
     push(@Included_files, $in_file);
     push(@Include_stack, $in_file);
-    $in_file = "$In_folder/$in_file";
+    $in_file = "$In_folder\\$in_file";
     $Line_number = -1;
     my $text = read_file($in_file);   # strip comments, deal unbalanced quotes
 
@@ -1701,14 +1701,24 @@ sub emit_top_command_actions
     my $function = "gotResults_$command->{NAME}";
     @Variable_terms = get_variable_terms($command); # used in emit_reference
 
+    my $command_specification = "";
+    open(CMD, ">", \$command_specification);
+    print_terms (*CMD, @terms);
+    close CMD;
+
     emit(1, "\# ");
     print_terms (*OUT, @terms);
     emit(0, "\n");
     emit(1, "def $function(self, words, fullResults):\n");
     emit_optional_term_fixup(@terms);
-    emit(2, "top_buffer = ''\n");
-    emit_actions("top_buffer", "False", $command->{ACTIONS}, 2);
-    emit_flush("top_buffer", "False", 2);
+    emit(2, "try:\n");
+    emit(3, "top_buffer = ''\n");
+    emit_actions("top_buffer", "False", $command->{ACTIONS}, 3);
+    emit_flush("top_buffer", "False", 3);
+    emit(2, "except Exception, e:\n");
+    emit(3, "handle_error('" 
+	    . make_safe_python_string($command_specification) 
+            . "', e)\n");
     emit(2, "self.firstWord += $nterms\n");
 
     # If repeating a command with no <variable> terms (e.g. "Scratch That
