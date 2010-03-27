@@ -9,6 +9,7 @@ import natlink
 from   types import *
 import string
 import re
+import sys
 
 
 #
@@ -60,11 +61,12 @@ def to_long(string):
 import traceback
 
 def handle_error(command, exception):
-    print
-    print ("An error occurred while executing the Vocola command %s:" %
-           command)
-    print type(exception).__name__ + ": " + str(exception)
-    traceback.print_exc()
+    print 
+    print >> sys.stderr, "While executing the following Vocola command:"
+    print >> sys.stderr, "    " + command
+    print >> sys.stderr, "the following error occurred:"
+    print >> sys.stderr, "    " + type(exception).__name__ + ": " + str(exception)
+    #traceback.print_exc()
     #raise exception
 
 

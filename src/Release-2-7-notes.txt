@@ -1,5 +1,8 @@
 New in 2.7:
 
+! Runtime errors are now caught and displayed in a more user-friendly
+  manner.  (No incomprehensible Python stack traces anymore.)
+
 ! New built-in EvalTemplate, which provides a more powerful version of Eval.
 
 * Eval is now implemented via transformation to EvalTemplate.
