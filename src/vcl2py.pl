@@ -1880,7 +1880,7 @@ sub emit_call_repeat
     my $argument_buffer = get_nested_buffer_name("limit");
     emit($indent, "$argument_buffer = ''\n");
     emit_actions("$argument_buffer", "True", $arguments[0], $indent);
-    emit($indent, "for i in range(int($argument_buffer)):\n");
+    emit($indent, "for i in range(to_long($argument_buffer)):\n");
     emit_actions($buffer, $functional, $arguments[1], $indent+1);
 }
 
