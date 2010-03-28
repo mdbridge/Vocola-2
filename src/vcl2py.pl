@@ -330,6 +330,7 @@ sub convert_filename
 #       NAME    - unique number
 #       TERMS   - list of "term" structures
 #       ACTIONS - list of "action" structures
+#       LINE    - last line number of command if it is a top-level command
 #    definition:
 #       NAME    - name of variable being defined
 #       MENU    - "menu" structure defining alternatives
@@ -703,8 +704,10 @@ sub parse_command    # command = terms ['=' action*]
 {
     my $terms = &parse_terms;
     return 0 unless $terms;
+
     my $command = {};
     $command->{TYPE} = "command";
+    $command->{LINE} = $Line_number;
     $command->{TERMS} = $terms;
 
     # Count variable terms for range checking in &parse_reference
@@ -1716,7 +1719,7 @@ sub emit_top_command_actions
     emit_actions("top_buffer", "False", $command->{ACTIONS}, 3);
     emit_flush("top_buffer", "False", 3);
     emit(2, "except Exception, e:\n");
-    emit(3, "handle_error('" 
+    emit(3, "handle_error('foo.vcl', " . $command->{LINE} . ", '" 
 	    . make_safe_python_string($command_specification) 
             . "', e)\n");
     emit(2, "self.firstWord += $nterms\n");

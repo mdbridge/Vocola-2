@@ -60,10 +60,11 @@ def to_long(string):
 
 import traceback
 
-def handle_error(command, exception):
+def handle_error(filename, line, command, exception):
     print 
     print >> sys.stderr, "While executing the following Vocola command:"
     print >> sys.stderr, "    " + command
+    print >> sys.stderr, "defined at line " + str(line) + " of " + filename
     print >> sys.stderr, "the following error occurred:"
     print >> sys.stderr, "    " + type(exception).__name__ + ": " + str(exception)
     #traceback.print_exc()
