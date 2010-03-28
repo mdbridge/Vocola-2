@@ -94,7 +94,7 @@ def call_Dragon(function_name, argument_types, arguments):
             argument = quoteAsVisualBasicString(str(argument))
         else:
             # there is a vcl2py.pl bug if this happens:
-            raise VocolaRuntimeError("Compiler error: unknown data type " +
+            raise VocolaRuntimeError("Vocola compiler error: unknown data type " +
                                      " specifier '" + argument_type +
                                    "' supplied for a Dragon procedure argument")
 
@@ -109,15 +109,12 @@ def call_Dragon(function_name, argument_types, arguments):
             natlink.playString(arguments[0])
         else:
             natlink.execScript(script)
-    except natlink.SyntaxError, details:
-        message = "Dragon reported a syntax error when Vocola attempted" \
-                + " to execute the Dragon procedure '" + script \
-                + "'; details: " + str(details)
-        raise VocolaRuntimeError(message)
-    except Exception, details:
-        m = "Dragon reported an error while executing the Dragon procedure '" \
-            + script + "'; details: " + str(details)
-        raise VocolaRuntimeError(m)
+    except Exception, e:
+        m = "when Vocola called Dragon to execute:\n" \
+            + '        ' + script + '\n' \
+            + '    Dragon reported the following error:\n' \
+            + '        ' + type(e).__name__ + ": " + str(e)
+        raise VocolaRuntimeError, m
 
 
 
@@ -138,10 +135,12 @@ def call_Unimacro(argumentString):
         #print '[' + argumentString + ']'
         try:
             actions.doAction(self.argumentString)
-        except Exception, details:
-            m = "Unimacro reported an error while executing the Unimarco " \
-                + " action '" + script + "'; details: " + str(details)
-            raise VocolaRuntimeError(m)
+        except Exception, e:
+            m = "when Vocola called Unimacro to execute:\n" \
+                + '        ' + script + '\n' \
+                + '    Unimacro reported the following error:\n' \
+                + '        ' + type(e).__name__ + ": " + str(e)
+        raise VocolaRuntimeError, m
     else:
         m = "Unimacro call failed because Unimacro is unavailable"
         raise VocolaRuntimeError(m)
@@ -159,7 +158,7 @@ def eval_template(template, *arguments):
     def get_argument():
         if len(waiting) == 0:
             raise VocolaRuntimeError(
-                "insufficient number of arguments passed to EvalTemplate")
+                "insufficient number of arguments passed to Eval[Template]")
         return waiting.pop(0)
             
     def get_variable(value):
@@ -193,4 +192,14 @@ def eval_template(template, *arguments):
             return descriptor
     
     expression = re.sub(r'%.', handle_descriptor, template)
-    return eval('str(' + expression + ')', variables)
+    try:
+        return eval('str(' + expression + ')', variables.copy())
+    except Exception, e:
+        m = "when Eval[Template] called Python to evaluate:\n" \
+            + '        str(' + expression + ')\n' \
+            + '    under the following bindings:\n'
+        for v in variables:
+            m += '        ' + str(v) + ' -> ' + repr(variables[v]) + '\n'
+        m += '    Python reported the following error:\n' \
+            + '        ' + type(e).__name__ + ": " + str(e)
+        raise VocolaRuntimeError, m
