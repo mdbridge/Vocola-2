@@ -1718,18 +1718,19 @@ sub emit_top_command_actions
     emit(3, "top_buffer = ''\n");
     emit_actions("top_buffer", "False", $command->{ACTIONS}, 3);
     emit_flush("top_buffer", "False", 3);
-    emit(2, "except Exception, e:\n");
-    emit(3, "handle_error('foo.vcl', " . $command->{LINE} . ", '" 
-	    . make_safe_python_string($command_specification) 
-            . "', e)\n");
-    emit(2, "self.firstWord += $nterms\n");
+    emit(3, "self.firstWord += $nterms\n");
 
     # If repeating a command with no <variable> terms (e.g. "Scratch That
     # Scratch That"), our gotResults function will be called only once, with
     # all recognized words. Recurse!
     unless (has_variable_term(@terms)) {
-        emit(2, "if len(words) > $nterms: self.$function(words[$nterms:], fullResults)\n");
+        emit(3, "if len(words) > $nterms: self.$function(words[$nterms:], fullResults)\n");
     }
+
+    emit(2, "except Exception, e:\n");
+    emit(3, "handle_error('foo.vcl', " . $command->{LINE} . ", '" 
+	    . make_safe_python_string($command_specification) 
+            . "', e)\n");
     emit(0, "\n");
 }
 

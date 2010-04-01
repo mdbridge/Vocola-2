@@ -87,15 +87,3 @@ nested calls = MsgBoxConfirm(x Eval(2+2) EvalTemplate(%i*2,3) Repeat(2,z) q,
                              0, 0);
 
 nested eval = Eval(Eval(2) + Eval(3) - Eval(Eval(1)));
-
-
-## 
-## Test runtime errors:
-## 
-
-test Dragon bad conversion = Wait("foo'bar");
-test bad Dragon = Wait(-1);
-
-try Unimacro unavailable = Unimacro(x);
-
-test Eval bad conversion = EvalTemplate(%i, bar);
