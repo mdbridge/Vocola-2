@@ -25,3 +25,20 @@ $set MaximumCommands 2;
   #try "test Dragon bad conversion continue":
 continue = "Didn't stop!";
 
+
+
+## 
+## Test reported error location:
+## 
+
+what line is this = Eval(0/0);
+
+what
+about
+this
+line 
+=
+Eval(0/0)
+;  # this line number is reported
+
+include ".\.\regression_2_7_IV_ugly'name.vch";

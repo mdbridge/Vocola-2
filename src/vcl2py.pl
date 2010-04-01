@@ -10,6 +10,8 @@
 # This file is copyright (c) 2002-2010 by Rick Mohr. It may be redistributed 
 # in any way as long as this copyright notice remains.
 #
+# 03/31/2010  ml  Runtime errors now caught and passed to handle_error along 
+#                 with filename and line number of error location
 # 01/27/2010  ml  Actions now implemented via direct translation to
 #                 Python, with no delay of Dragon calls, etc.
 # 01/01/2010  ml  User functions are now implemented via unrolling
@@ -331,6 +333,7 @@ sub convert_filename
 #       TERMS   - list of "term" structures
 #       ACTIONS - list of "action" structures
 #       LINE    - last line number of command if it is a top-level command
+#       FILE    - filename of file containing command
 #    definition:
 #       NAME    - name of variable being defined
 #       MENU    - "menu" structure defining alternatives
@@ -708,6 +711,9 @@ sub parse_command    # command = terms ['=' action*]
     my $command = {};
     $command->{TYPE} = "command";
     $command->{LINE} = $Line_number;
+    my $last = $#Include_stack;
+    my $file = $Include_stack[$last];
+    $command->{FILE} = $file;
     $command->{TERMS} = $terms;
 
     # Count variable terms for range checking in &parse_reference
@@ -1728,7 +1734,10 @@ sub emit_top_command_actions
     }
 
     emit(2, "except Exception, e:\n");
-    emit(3, "handle_error('foo.vcl', " . $command->{LINE} . ", '" 
+    my $file = $command->{FILE};
+    $file =~ s/\\/\\\\/g;
+    emit(3, "handle_error('" . make_safe_python_string($file)
+            . "', " . $command->{LINE} . ", '" 
 	    . make_safe_python_string($command_specification) 
             . "', e)\n");
     emit(0, "\n");

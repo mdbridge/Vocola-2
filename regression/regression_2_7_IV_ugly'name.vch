@@ -1,0 +1,5 @@
+### 
+### Regression tests for Vocola 2.7, part IV include file
+### 
+
+and this line = Eval(0/0);
