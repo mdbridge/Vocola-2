@@ -6,6 +6,8 @@
 ## 
 ## Voice commands for testing <_anything> handling:
 ## 
+## Note: it is important to test these using multiple words for <_anything>!
+## 
 
 
 handle prefix <_anything> = $1;
@@ -24,3 +26,12 @@ optional [word] <_anything> = $1;
 
 [front] <_anything> train = $1;
 train <_anything> [back] = $1;
+
+
+## 
+## Added as part of 2.7:
+## 
+
+bad case <_anything> <_anything> = $1/$2;
+
+repeated use <_anything> = $1/$1;

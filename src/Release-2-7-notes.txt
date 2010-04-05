@@ -10,3 +10,6 @@ New in 2.7:
 ! User functions are now implemented by unrolling; this allows passing
   instructions like SendDragonKeys(-), not just string-valued
   expressions.
+
+* Fixed a bug where combining <_anything> and an optional word caused
+  only the first word of the <_anything> to be returned.

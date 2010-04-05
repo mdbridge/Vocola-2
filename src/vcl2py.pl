@@ -1773,13 +1773,19 @@ sub has_variable_term
 sub emit_optional_term_fixup
 {
     for my $term (@_) {
+	my $index = $term->{NUMBER};
         if ($term->{OPTIONAL}) {
-            my $index = $term->{NUMBER};
             my $text = $term->{TEXT};
             emit(2, "opt = $index + self.firstWord\n");
             emit(2, "if opt >= len(fullResults) or fullResults[opt][0] != '$text':\n");
             emit(3, "fullResults.insert(opt, 'dummy')\n");
         }
+	elsif ($term->{TYPE} eq "dictation") {
+	    emit(2, "fullResults = combineDictationWords(fullResults)\n");
+            emit(2, "opt = $index + self.firstWord\n");
+            emit(2, "if opt >= len(fullResults) or fullResults[opt][1] != 'dgndictation':\n");
+            emit(3, "fullResults.insert(opt, ['', 'dgndictation'])\n");
+	}
     }   
 }
 
@@ -1823,12 +1829,6 @@ sub emit_reference
     my $reference_number = $action->{TEXT} - 1;
     my $variable = $Variable_terms[$reference_number];
     my $term_number = $variable->{NUMBER};
-    if ($variable->{TYPE} eq "dictation") {
-        emit($indent, "fullResults = combineDictationWords(fullResults)\n");
-        emit($indent, "i = $term_number + self.firstWord\n");
-        emit($indent, "if (len(fullResults) <= i) or (fullResults[i][1] != 'dgndictation'):\n");
-        emit($indent + 1, "fullResults.insert(i, ['','dummy'])\n");
-    }
     emit($indent, "word = fullResults[$term_number + self.firstWord][0]\n");
     if ($variable->{TYPE} eq "menu") {
         emit_menu_actions($buffer, $functional, $variable, $indent);
