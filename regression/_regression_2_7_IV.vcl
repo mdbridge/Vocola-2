@@ -42,3 +42,23 @@ Eval(0/0)
 ;  # this line number is reported
 
 include ".\.\regression_2_7_IV_ugly'name.vch";
+
+
+
+## 
+## Test reported command specification:
+## 
+
+<x> := ( 1 );
+
+yell <x> 1..9 ( 2 | 3) = Wait(foo);
+
+"don't" yell           = Wait(foo);
+  # "yell open quote":
+yell '"'               = Wait(bar);
+
+  # this doesn't appear to be recognizable, but can check compiler output:
+yell "\"               = Wait(foo);
+
+
+yell (1 = Wait(foo) | 2 = Wait(bar)) = $1;

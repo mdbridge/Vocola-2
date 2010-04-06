@@ -675,7 +675,7 @@ sub parse_top_command    # top_command = terms '=' action* ';'
         my $statement = &parse_command;
         &ensure_empty;
         $File_empty = 0;
-        if ($Debug>=1) {print_command (*LOG, $statement); print LOG "\n"}
+        if ($Debug>=1) {print_command (*LOG, $statement, 1); print LOG "\n"}
         return $statement;
     }
 }
@@ -780,7 +780,7 @@ sub parse_term    #  term = simple_term | range | menu
         $term = &parse_menu_body;
         if (not /\G\s*\)/gc) {die "End of alternative set before ')'\n"}
         if ($Debug>=2) {print LOG "Found menu:  "; 
-                        print_menu (*LOG, $term); print LOG "\n"}
+                        print_menu (*LOG, $term, 1); print LOG "\n"}
     } elsif (/\G\s*(\d*)\.\.(\d*)/gc) {
         $term = {};
         $term->{TYPE} = "range";
@@ -1137,7 +1137,7 @@ sub check_forward_references
 }
 
 # ---------------------------------------------------------------------------
-# Printing of data structures (for debugging)
+# Printing of data structures (for debugging and generating error messages)
 
 sub print_statements
 {
@@ -1152,7 +1152,7 @@ sub print_statements
             print_function_definition ($out, $statement);
         } elsif ($type eq "command") {
             print $out "C$statement->{NAME}:  ";
-            print_command ($out, $statement);
+            print_command ($out, $statement, 1);
             print $out ";\n";
         }
     }
@@ -1174,7 +1174,7 @@ sub print_definition
 {
     my ($out, $statement) = @_;
     print $out "<$statement->{NAME}> := ";
-    print_menu ($out, $statement->{MENU});
+    print_menu ($out, $statement->{MENU}, 1);
     print $out ";\n";
 }
 
@@ -1190,9 +1190,9 @@ sub print_function_definition
 
 sub print_command
 {
-    my ($out, $command) = @_;
-    print_terms ($out, @{ $command->{TERMS} });
-    if ($command->{ACTIONS}) {
+    my ($out, $command, $show_actions) = @_;
+    print_terms ($out, $show_actions, @{ $command->{TERMS} });
+    if ($command->{ACTIONS} && $show_actions) {
         print $out " = ";
         print_actions ($out, @{ $command->{ACTIONS} });
     }
@@ -1201,22 +1201,23 @@ sub print_command
 sub print_terms
 {
     my $out = shift;
-    print_term($out, shift);
+    my $show_actions = shift;
+    print_term($out, shift, $show_actions);
     for my $term (@_) {
         print $out " ";
-        print_term($out, $term);
+        print_term($out, $term, $show_actions);
     }
 }
 
 sub print_term
 {
-    my ($out, $term) = @_;
+    my ($out, $term, $show_actions) = @_;
     #print $out "$term->{NUMBER}:";
     if ($term->{OPTIONAL}) {print $out "["}
     if    ($term->{TYPE} eq "word")      {print $out "$term->{TEXT}"}
     elsif ($term->{TYPE} eq "variable")  {print $out "<$term->{TEXT}>"}
     elsif ($term->{TYPE} eq "dictation") {print $out "<_anything>"}
-    elsif ($term->{TYPE} eq "menu")      {print_menu ($out, $term)}
+    elsif ($term->{TYPE} eq "menu")      {print_menu ($out, $term, $show_actions)}
     elsif ($term->{TYPE} eq "range") {
         print $out "$term->{FROM}..$term->{TO}";
     }
@@ -1227,11 +1228,12 @@ sub print_menu
 {
     my $out = shift;
     my @commands = @{ shift->{COMMANDS} };
+    my $show_actions = shift;
     print $out "(";
-    print_command($out, shift @commands);
+    print_command($out, shift @commands, $show_actions);
     for my $command (@commands) {
         print $out " | ";
-        print_command($out, $command);
+        print_command($out, $command, $show_actions);
     }
     print $out ")";
 }
@@ -1712,11 +1714,11 @@ sub emit_top_command_actions
 
     my $command_specification = "";
     open(CMD, ">", \$command_specification);
-    print_terms (*CMD, @terms);
+    print_terms (*CMD, 0, @terms);
     close CMD;
 
     emit(1, "\# ");
-    print_terms (*OUT, @terms);
+    print_terms (*OUT, 0, @terms);
     emit(0, "\n");
     emit(1, "def $function(self, words, fullResults):\n");
     emit_optional_term_fixup(@terms);
