@@ -199,7 +199,9 @@ def eval_template(template, *arguments):
         m = "when Eval[Template] called Python to evaluate:\n" \
             + '        str(' + expression + ')\n' \
             + '    under the following bindings:\n'
-        for v in variables:
+        names = variables.keys()
+        names.sort()
+        for v in names:
             m += '        ' + str(v) + ' -> ' + repr(variables[v]) + '\n'
         m += '    Python reported the following error:\n' \
             + '        ' + type(e).__name__ + ": " + str(e)
