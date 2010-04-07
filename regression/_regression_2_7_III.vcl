@@ -73,7 +73,7 @@ inline (menu = Beep()) not ok = Wait($1);
 arguments not okay one   = EvalTemplate(Beep());
 arguments not okay two   = Unimacro(Beep());
 arguments not okay three = Repeat(Beep(), x);
-repeat is special        = Repeat(2, Beep());
+repeat is special        = Repeat(9, Beep());
 
 the (Unimacro = Unimacro(foo) | Dragon = Beep() | Eval = Eval(2+2)
     | Repeat = Repeat(2,1)) call is functional = SendKeys($1);

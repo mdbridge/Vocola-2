@@ -1751,7 +1751,7 @@ sub emit_flush
 
     if ($functional ne "False") {
 	emit($indent,   "if $functional:\n");
-	emit($indent+1,     "raise VocolaRuntimeError('attempt to call Unimacro or a Dragon call in a functional context!')\n");
+	emit($indent+1,     "raise VocolaRuntimeError('attempt to call Unimacro or make a Dragon call in a functional context!')\n");
     }
 
     emit($indent,   "if $buffer != '':\n");
