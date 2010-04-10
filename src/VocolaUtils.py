@@ -135,13 +135,13 @@ def call_Unimacro(argumentString):
     if unimacro_available:
         #print '[' + argumentString + ']'
         try:
-            actions.doAction(self.argumentString)
+            actions.doAction(argumentString)
         except Exception, e:
             m = "when Vocola called Unimacro to execute:\n" \
-                + '        ' + script + '\n' \
+                + '        Unimacro(' + argumentString + ')\n' \
                 + '    Unimacro reported the following error:\n' \
                 + '        ' + type(e).__name__ + ": " + str(e)
-        raise VocolaRuntimeError, m
+            raise VocolaRuntimeError, m
     else:
         m = "Unimacro call failed because Unimacro is unavailable"
         raise VocolaRuntimeError(m)

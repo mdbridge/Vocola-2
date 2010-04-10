@@ -14,6 +14,8 @@ run Unimacro = Unimacro(foobar);
 ## 
 ## OK: string, number, eval, empty, quote
 ## 
+## (more recent versions of Unimacro give an error when presented with ")
+## 
 
 <argument> := (string        = "Fred"                                    | 
                Dragon        = ButtonClick(1)                            | 

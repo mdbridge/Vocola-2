@@ -17,6 +17,7 @@ test Dragon bad conversion = Wait("foo'bar");
 test bad Dragon = Wait(-1);
 
 try Unimacro unavailable = Unimacro(x);
+try bad Unimacro         = Unimacro('"');
 
 
 
