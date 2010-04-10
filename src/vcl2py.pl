@@ -1749,14 +1749,7 @@ sub emit_flush
 {
     my ($buffer, $functional, $indent) = @_;
 
-    if ($functional ne "False") {
-	emit($indent,   "if $functional:\n");
-	emit($indent+1,     "raise VocolaRuntimeError('attempt to call Unimacro or make a Dragon call in a functional context!')\n");
-    }
-
-    emit($indent,   "if $buffer != '':\n");
-    emit($indent+1,     "natlink.playString($buffer);\n");
-    emit($indent+1,     "$buffer = '';\n");
+    emit($indent, "$buffer = do_flush($functional, $buffer);\n");
 }
 
 sub has_variable_term

@@ -57,6 +57,13 @@ def to_long(string):
                                  + string.replace("'", "''")
                                  + "' into an integer")
 
+def do_flush(functional_context, buffer):
+    if functional_context:
+        raise VocolaRuntimeError('attempt to call Unimacro or make a Dragon call in a functional context!')
+    if buffer != '':
+        natlink.playString(buffer)
+    return ''
+
 
 import traceback
 
