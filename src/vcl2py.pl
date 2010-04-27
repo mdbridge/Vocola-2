@@ -1721,6 +1721,8 @@ sub emit_top_command_actions
     print_terms (*OUT, 0, @terms);
     emit(0, "\n");
     emit(1, "def $function(self, words, fullResults):\n");
+    emit(2, "if self.firstWord<0:\n");
+    emit(3, "return\n");
     emit_optional_term_fixup(@terms);
     emit(2, "try:\n");
     emit(3, "top_buffer = ''\n");
@@ -1742,6 +1744,7 @@ sub emit_top_command_actions
             . "', " . $command->{LINE} . ", '" 
 	    . make_safe_python_string($command_specification) 
             . "', e)\n");
+    emit(3, "self.firstWord = -1\n");
     emit(0, "\n");
 }
 

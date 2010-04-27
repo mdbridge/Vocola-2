@@ -21,11 +21,13 @@ try bad Unimacro         = Unimacro('"');
 
 
 
-$set MaximumCommands 2;
+$set MaximumCommands 3;
 
   #try "test Dragon bad conversion continue":
 continue = "Didn't stop!";
 
+  # try "this ok this not ok this ok":
+this (ok=1|not ok) = Repeat($1, x);
 
 
 ## 
