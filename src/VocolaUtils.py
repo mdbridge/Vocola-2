@@ -61,7 +61,7 @@ def do_flush(functional_context, buffer):
     if functional_context:
         raise VocolaRuntimeError('attempt to call Unimacro or make a Dragon call in a functional context!')
     if buffer != '':
-        call_SendDragonKeys(buffer)
+        natlink.playString(convert_keys(buffer))
     return ''
 
 
@@ -83,8 +83,15 @@ def handle_error(filename, line, command, exception):
 ## Dragon built-ins: 
 ##
  
-def call_SendDragonKeys(keys):
-    natlink.playString(keys)
+def convert_keys(keys):
+    # roughly, {<keyname>_<count>}'s -> {<keyname> <count>}:
+    #   (is somewhat generous about what counts as a key name)
+    keys = re.sub(r"""(?i)(?x) 
+                      \{ ( (?: (?:right|left)? (?:ctrl|alt|shift) \+ )*
+                           (?:[^}]|[-a-z0-9/*+.]+) )
+                      [ _]
+                      (\d+) \}""", r'{\1 \2}', keys)
+    return keys
 
 def call_Dragon(function_name, argument_types, arguments):
     def quoteAsVisualBasicString(argument):
@@ -102,6 +109,9 @@ def call_Dragon(function_name, argument_types, arguments):
         if argument_type == 'i':
             argument = str(to_long(argument))
         elif argument_type == 's':
+            if function_name == "SendDragonKeys" or function_name == "SendKeys" \
+                    or function_name == "SendSystemKeys":
+                argument = convert_keys(argument)
             argument = quoteAsVisualBasicString(str(argument))
         else:
             # there is a vcl2py.pl bug if this happens:
@@ -116,8 +126,8 @@ def call_Dragon(function_name, argument_types, arguments):
     script = function_name + script
     #print '[' + script + ']'
     try:
-        if function_name == "SendDragonKeys" or function_name == "SendKeys":
-            call_SendDragonKeys(arguments[0])
+        if function_name == "SendDragonKeys":
+            natlink.playString(arguments[0])
         else:
             natlink.execScript(script)
     except Exception, e:

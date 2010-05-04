@@ -851,7 +851,7 @@ sub parse_actions    # action = word | call | reference
             push (@actions, $action);
         } else {
             # convert e.g. "{Tab_2}" to "{Tab 2}"
-            $action->{TEXT} =~ s/\{(.*?)_(.*?)\}/\{$1 $2\}/g;
+            #$action->{TEXT} =~ s/\{(.*?)_(.*?)\}/\{$1 $2\}/g;
 
             # expand in-string references (e.g. "{Up $1}") and unquote 
             # $'s (e.g., \$ -> $)
