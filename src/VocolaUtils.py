@@ -127,7 +127,7 @@ def call_Dragon(function_name, argument_types, arguments):
     #print '[' + script + ']'
     try:
         if function_name == "SendDragonKeys":
-            natlink.playString(arguments[0])
+            natlink.playString(convert_keys(arguments[0]))
         else:
             natlink.execScript(script)
     except Exception, e:
