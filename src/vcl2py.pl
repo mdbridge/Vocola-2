@@ -10,6 +10,7 @@
 # This file is copyright (c) 2002-2010 by Rick Mohr. It may be redistributed 
 # in any way as long as this copyright notice remains.
 #
+# 05/08/2010  ml  Underscores now converted to spaces by VocolaUtils
 # 03/31/2010  ml  Runtime errors now caught and passed to handle_error along 
 #                 with filename and line number of error location
 # 01/27/2010  ml  Actions now implemented via direct translation to
@@ -850,9 +851,6 @@ sub parse_actions    # action = word | call | reference
         if ($action->{TYPE} ne "word" || $action->{TEXT} eq "") {
             push (@actions, $action);
         } else {
-            # convert e.g. "{Tab_2}" to "{Tab 2}"
-            #$action->{TEXT} =~ s/\{(.*?)_(.*?)\}/\{$1 $2\}/g;
-
             # expand in-string references (e.g. "{Up $1}") and unquote 
             # $'s (e.g., \$ -> $)
             while ($action->{TEXT} =~ /\G(.*?)(?<!\\)\$(\d+|[a-zA-Z_]\w*)/gc) {
