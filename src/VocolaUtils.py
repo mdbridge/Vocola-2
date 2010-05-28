@@ -84,11 +84,14 @@ def handle_error(filename, line, command, exception):
 ##
  
 def convert_keys(keys):
-    # roughly, {<keyname>_<count>}'s -> {<keyname> <count>}:
+    # Roughly, {<keyname>_<count>}'s -> {<keyname> <count>}:
     #   (is somewhat generous about what counts as a key name)
-    keys = re.sub(r"""(?i)(?x) 
-                      \{ ( (?: (?:right|left)? (?:ctrl|alt|shift) \+ )*
-                           (?:[^}]|[-a-z0-9/*+.]+) )
+    #
+    # Because we can't be sure of the current code page, treat all non-ASCII
+    # characters as potential accented letters for now.  
+    keys = re.sub(r"""(?x) 
+                      \{ ( (?: [a-zA-Z\x80-\xff]+ \+ )*
+                           (?:[^}]|[-a-zA-Z0-9/*+.\x80-\xff]+) )
                       [ _]
                       (\d+) \}""", r'{\1 \2}', keys)
     return keys

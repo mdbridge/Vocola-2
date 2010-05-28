@@ -1,3 +1,4 @@
+# -*- coding: iso-latin-1 -*-
 ### 
 ### Regression tests for Vocola 2.7, part V
 ### 
@@ -35,6 +36,11 @@ separated keystrokes = { a _ 3 };
 (totally='{') (evil='}') (here='_') = $1x$3 3$2;
 
 
+# The following are valid keystrokes for foreign versions of DNS:
+accented names  = {Entrée_3} {PavéNum-_3};
+other spellings = {LinksAlt+LinksStrg+S-Abf_9};
+
+
 
 ## 
 ## Test that flushing breaks up keystrokes:
@@ -47,7 +53,7 @@ pause in middle = {a Wait(0) _2};
 ## Some testing of invalid keystrokes:
 ## 
 
-bad names = {red%_2} {blue+__3};
+bad names = {red%_2} {bl.ue+__3};
 
 no count = {a_} {tab_};
 
