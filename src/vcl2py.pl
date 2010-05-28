@@ -10,6 +10,7 @@
 # This file is copyright (c) 2002-2010 by Rick Mohr. It may be redistributed 
 # in any way as long as this copyright notice remains.
 #
+# 05/28/2010  ml  Print_* functions -> unparse_* to avoid compiler bug
 # 05/08/2010  ml  Underscores now converted to spaces by VocolaUtils
 # 03/31/2010  ml  Runtime errors now caught and passed to handle_error along 
 #                 with filename and line number of error location
@@ -212,9 +213,9 @@ sub convert_file
         unshift(@statements, $context);
     }
 
-    #print_statements (*LOG, @statements);
+    #print LOG unparse_statements (@statements);
     transform_nodes(@statements);
-    #print_statements (*LOG, @statements);
+    #print LOG unparse_statements (@statements);
 
     # Handle $set directives:
     $maximum_commands = $default_maximum_commands;
@@ -588,7 +589,7 @@ sub parse_context    # context = chars* ('|' chars*)* ':'
             push (@strings, "");
         }
         $statement->{STRINGS} = \@strings;
-        if ($Debug>=1) {print_directive (*LOG, $statement)}
+        if ($Debug>=1) {print LOG unparse_directive ($statement)}
         return $statement;
     }
 }
@@ -619,7 +620,7 @@ sub parse_variable_definition    # definition = variable ':=' menu_body ';'
         &ensure_empty;
         if ($menu->{TYPE} eq "menu") {verify_referenced_menu($menu)};
         $statement->{MENU} = $menu;
-        if ($Debug>=1) {print_definition (*LOG, $statement)}
+        if ($Debug>=1) {print LOG unparse_definition ($statement)}
         return $statement;
     }
 }
@@ -650,7 +651,7 @@ sub parse_function_definition   # function = prototype ':=' action* ';'
             and die "Redefinition of $functionName()\n";
         $Functions{$functionName} = @formals;  # remember number of formals
         $Function_definitions{$functionName} = $statement;
-        if ($Debug>=1) {print_function_definition (*LOG, $statement)}
+        if ($Debug>=1) {print LOG unparse_function_definition ($statement)}
         return $statement;
     }
 }
@@ -676,7 +677,7 @@ sub parse_top_command    # top_command = terms '=' action* ';'
         my $statement = &parse_command;
         &ensure_empty;
         $File_empty = 0;
-        if ($Debug>=1) {print_command (*LOG, $statement, 1); print LOG "\n"}
+        if ($Debug>=1) {print LOG unparse_command ($statement, 1) . "\n"}
         return $statement;
     }
 }
@@ -699,7 +700,7 @@ sub parse_directive    # directive = ('include' word | '$set' word word) ';'
             $statement->{TEXT} = $word->{TEXT};
             &ensure_empty;
         } else {die "Unrecognized statement\n"}
-        if ($Debug>=1) {print_directive (*LOG, $statement)}
+        if ($Debug>=1) {print LOG unparse_directive ($statement)}
         return $statement;
     }
 }
@@ -781,7 +782,7 @@ sub parse_term    #  term = simple_term | range | menu
         $term = &parse_menu_body;
         if (not /\G\s*\)/gc) {die "End of alternative set before ')'\n"}
         if ($Debug>=2) {print LOG "Found menu:  "; 
-                        print_menu (*LOG, $term, 1); print LOG "\n"}
+                        print LOG unparse_menu ($term, 1) . "\n"}
     } elsif (/\G\s*(\d*)\.\.(\d*)/gc) {
         $term = {};
         $term->{TYPE} = "range";
@@ -1135,148 +1136,140 @@ sub check_forward_references
 }
 
 # ---------------------------------------------------------------------------
-# Printing of data structures (for debugging and generating error messages)
+# Unparsing of data structures (for debugging and generating error messages)
 
-sub print_statements
+sub unparse_statements
 {
-    my $out = shift;
+    my $result = "";
     for my $statement (@_) {
         my $type = $statement->{TYPE};
         if ($type eq "context" || $type eq "include" || $type eq "set") {
-            print_directive ($out, $statement);
+            $result .= unparse_directive ($statement);
         } elsif ($type eq "definition") {
-            print_definition ($out, $statement);
+            $result .= unparse_definition ($statement);
         } elsif ($type eq "function") {
-            print_function_definition ($out, $statement);
+            $result .= unparse_function_definition ($statement);
         } elsif ($type eq "command") {
-            print $out "C$statement->{NAME}:  ";
-            print_command ($out, $statement, 1);
-            print $out ";\n";
+            $result .=  "C$statement->{NAME}:  ";
+            $result .= unparse_command ($statement, 1) . ";\n";
         }
     }
-    print $out "\n";
+    return $result . "\n";
 }
 
-sub print_directive
+sub unparse_directive
 {
-    my ($out, $statement) = @_;
+    my $statement = shift;
     my $type = $statement->{TYPE};
     if ($type eq "set") {
-	print $out "\$set '$statement->{KEY}' to '$statement->{TEXT}'\n";
+	return "\$set '$statement->{KEY}' to '$statement->{TEXT}'\n";
     } else {
-	print $out "$statement->{TYPE}:  '$statement->{TEXT}'\n";
+	return "$statement->{TYPE}:  '$statement->{TEXT}'\n";
     }
 }
 
-sub print_definition
+sub unparse_definition
 {
-    my ($out, $statement) = @_;
-    print $out "<$statement->{NAME}> := ";
-    print_menu ($out, $statement->{MENU}, 1);
-    print $out ";\n";
+    my $statement = shift;
+    return "<$statement->{NAME}> := " . unparse_menu ($statement->{MENU}, 1)
+	. ";\n";
 }
 
-sub print_function_definition
+sub unparse_function_definition
 {
-    my ($out, $statement) = @_;
-    print $out "$statement->{NAME}(";
-    print $out join(',', @{ $statement->{FORMALS} });
-    print $out ") := ";
-    print_actions ($out, @{ $statement->{ACTIONS} });
-    print $out ";\n";
+    my $statement = shift;
+    my $result = "$statement->{NAME}(" . join(',', @{ $statement->{FORMALS} });
+    $result .= ") := " . unparse_actions (@{ $statement->{ACTIONS} });
+    return $result . ";\n";
 }
 
-sub print_command
+sub unparse_command
 {
-    my ($out, $command, $show_actions) = @_;
-    print_terms ($out, $show_actions, @{ $command->{TERMS} });
+    my ($command, $show_actions) = @_;
+    my $result = unparse_terms ($show_actions, @{ $command->{TERMS} });
     if ($command->{ACTIONS} && $show_actions) {
-        print $out " = ";
-        print_actions ($out, @{ $command->{ACTIONS} });
+        my $result .= " = " . unparse_actions (@{ $command->{ACTIONS} });
     }
+    return $result;
 }
 
-sub print_terms
+sub unparse_terms
 {
-    my $out = shift;
     my $show_actions = shift;
-    print_term($out, shift, $show_actions);
+    my $result = unparse_term(shift, $show_actions);
     for my $term (@_) {
-        print $out " ";
-        print_term($out, $term, $show_actions);
+        $result .= " " . unparse_term($term, $show_actions);
     }
+    return $result;
 }
 
-sub print_term
+sub unparse_term
 {
-    my ($out, $term, $show_actions) = @_;
-    #print $out "$term->{NUMBER}:";
-    if ($term->{OPTIONAL}) {print $out "["}
-    if    ($term->{TYPE} eq "word")      {print $out "$term->{TEXT}"}
-    elsif ($term->{TYPE} eq "variable")  {print $out "<$term->{TEXT}>"}
-    elsif ($term->{TYPE} eq "dictation") {print $out "<_anything>"}
-    elsif ($term->{TYPE} eq "menu")      {print_menu ($out, $term, $show_actions)}
+    my ($term, $show_actions) = @_;
+    my $result = "";
+    if ($term->{OPTIONAL}) {$result .=  "["}
+    if    ($term->{TYPE} eq "word")      {$result .= "$term->{TEXT}"}
+    elsif ($term->{TYPE} eq "variable")  {$result .= "<$term->{TEXT}>"}
+    elsif ($term->{TYPE} eq "dictation") {$result .= "<_anything>"}
+    elsif ($term->{TYPE} eq "menu")      {$result .= unparse_menu ($term, 
+								   $show_actions)}
     elsif ($term->{TYPE} eq "range") {
-        print $out "$term->{FROM}..$term->{TO}";
+        $result .= "$term->{FROM}..$term->{TO}";
     }
-    if ($term->{OPTIONAL}) {print $out "]"}
+    if ($term->{OPTIONAL}) {$result .=  "]"}
+    return $result;
 }
 
-sub print_menu
+sub unparse_menu
 {
-    my $out = shift;
     my @commands = @{ shift->{COMMANDS} };
     my $show_actions = shift;
-    print $out "(";
-    print_command($out, shift @commands, $show_actions);
+    my $result = "(" . unparse_command(shift @commands, $show_actions);
     for my $command (@commands) {
-        print $out " | ";
-        print_command($out, $command, $show_actions);
+        $result .= " | " . unparse_command($command, $show_actions);
     }
-    print $out ")";
+    return $result . ")";
 }
 
-sub print_actions
+sub unparse_actions
 {
-    my $out = shift;
-    print_action($out, shift);
+    my $result = unparse_action(shift);
     for my $action (@_) {
-        print $out " ";
-        print_action($out, $action);
+        $result .= " " . unparse_action($action);
     }
+    return $result;
 }
 
-sub print_action
+sub unparse_action
 {
-    my ($out, $action) = @_;
-    if    ($action->{TYPE} eq "word")     {print_word($out, $action)}
-    elsif ($action->{TYPE} eq "reference"){print $out "\$$action->{TEXT}"}
-    elsif ($action->{TYPE} eq "formalref"){print $out "\$$action->{TEXT}"}
+    my $action = shift;
+    if    ($action->{TYPE} eq "word")     {return unparse_word($action)}
+    elsif ($action->{TYPE} eq "reference"){return "\$$action->{TEXT}"}
+    elsif ($action->{TYPE} eq "formalref"){return "\$$action->{TEXT}"}
     elsif ($action->{TYPE} eq "call") {
-        print $out "$action->{TEXT}(";
+        my $result = "$action->{TEXT}(";
         if (my @arguments = @{ $action->{ARGUMENTS} }) {
-            print_argument($out, shift @arguments);
+            $result .= unparse_argument(shift @arguments);
             for my $argument (@arguments) {
-                print $out ", ";
-                print_argument($out, $argument);
+                $result .= ", " . unparse_argument($argument);
             }
         }
-        print $out ")";
+        return $result . ")";
     }
 }
 
-sub print_word
+sub unparse_word
 {
-    my ($out, $action) = @_;
+    my $action = shift;
     my $word = $action->{TEXT}; 
     $word =~ s/\'/\'\'/g;
-    print $out "'$word'" ;
+    return "'$word'" ;
 }
 
-sub print_argument
+sub unparse_argument
 {
-    my ($out, $argument) = @_;
-    print_actions($out, @{$argument});
+    my $argument = shift;
+    return unparse_actions(@{$argument});
 }
 
 # ---------------------------------------------------------------------------
@@ -1710,13 +1703,10 @@ sub emit_top_command_actions
     my $function = "gotResults_$command->{NAME}";
     @Variable_terms = get_variable_terms($command); # used in emit_reference
 
-    my $command_specification = "";
-    open(CMD, ">", \$command_specification);
-    print_terms (*CMD, 0, @terms);
-    close CMD;
+    my $command_specification = unparse_terms(0, @terms);
 
     emit(1, "\# ");
-    print_terms (*OUT, 0, @terms);
+    print OUT unparse_terms (0, @terms);
     emit(0, "\n");
     emit(1, "def $function(self, words, fullResults):\n");
     emit(2, "if self.firstWord<0:\n");
