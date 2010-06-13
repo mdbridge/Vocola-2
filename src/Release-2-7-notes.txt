@@ -27,5 +27,7 @@ New in 2.7:
   of a keystroke if the entire keystroke was not contained in a single
   string action (e.g., {left_ F(x)} didn't work before).
 
+* Fixed a bug making ShiftKey not work.
+
 * Fixed a bug where combining <_anything> and an optional word caused
   only the first word of the <_anything> to be returned.

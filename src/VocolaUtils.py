@@ -83,6 +83,8 @@ def handle_error(filename, line, command, exception):
 ## Dragon built-ins: 
 ##
  
+dragon_prefix = ""
+
 def convert_keys(keys):
     # Roughly, {<keyname>_<count>}'s -> {<keyname> <count>}:
     #   (is somewhat generous about what counts as a key name)
@@ -97,6 +99,8 @@ def convert_keys(keys):
     return keys
 
 def call_Dragon(function_name, argument_types, arguments):
+    global dragon_prefix
+
     def quoteAsVisualBasicString(argument):
         q = argument
         q = string.replace(q, '"', '""')
@@ -126,11 +130,14 @@ def call_Dragon(function_name, argument_types, arguments):
             script += ','
         script += ' ' + argument
 
-    script = function_name + script
+    script = dragon_prefix + function_name + script
+    dragon_prefix = ""
     #print '[' + script + ']'
     try:
         if function_name == "SendDragonKeys":
             natlink.playString(convert_keys(arguments[0]))
+        elif function_name == "ShiftKey":
+            dragon_prefix = script + chr(10)
         else:
             natlink.execScript(script)
     except Exception, e:
