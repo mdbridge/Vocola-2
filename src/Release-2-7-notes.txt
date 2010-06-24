@@ -31,3 +31,7 @@ New in 2.7:
 
 * Fixed a bug where combining <_anything> and an optional word caused
   only the first word of the <_anything> to be returned.
+
+* New samples file, _Dragon_help.vcl, showing how to use the HTMLHelp
+  call to display help for Vocola calls using Dragon NaturallySpeaking
+  professional/legal/medical.
