@@ -1013,6 +1013,7 @@ sub shift_delimiter
 
 sub log_error
 {
+    # a variant of this code may be found in check_forward_references
     print LOG "Converting $Input_name\n" unless $Error_count;
     print LOG &format_error_message;
     $Error_count++;
@@ -1129,6 +1130,7 @@ sub check_forward_references
     for my $forward_reference (@Forward_references) {
         my $variable = $forward_reference->{VARIABLE};
         if (not $Definitions{$variable}) {
+	    print LOG "Converting $Input_name\n" unless $Error_count;
             print LOG $forward_reference->{MESSAGE};
             $Error_count++;
         }

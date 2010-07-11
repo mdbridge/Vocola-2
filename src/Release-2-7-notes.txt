@@ -35,3 +35,7 @@ New in 2.7:
 * New samples file, _Dragon_help.vcl, showing how to use the HTMLHelp
   call to display help for Vocola calls using Dragon NaturallySpeaking
   professional/legal/medical.
+
+* Fixed a bug where if the first error in a Vocola file was a undefined
+  variable reference, then the (base) file name containing the error(s)
+  was not displayed.
