@@ -36,6 +36,6 @@ New in 2.7:
   call to display help for Vocola calls using Dragon NaturallySpeaking
   professional/legal/medical.
 
-* Fixed a bug where if the first error in a Vocola file was a undefined
+* Fixed a bug where if the first error in a Vocola file was an undefined
   variable reference, then the (base) file name containing the error(s)
   was not displayed.
