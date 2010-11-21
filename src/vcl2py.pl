@@ -394,6 +394,11 @@ sub convert_filename
                      Unimacro          => [1,1],
                      );
 
+%Extension_functions = (
+                     "Variable.Get"    => [1,2],
+                     "Variable.Set"    => [2,2],
+                     );
+
 # Built in Dragon functions with (minimum number of arguments,
 # template of types of all possible arguments); template has one
 # letter per argument with s denoting string and i denoting integer:
@@ -921,7 +926,16 @@ sub parse_call    # call = callName '(' arguments ')'
         if (not /\G\s*\)/gc) {die "Missing ')'\n"}
         my $nActuals = @{ $action->{ARGUMENTS} };
 	my $lFormals, $uFormals, @callFormals;
-        if (defined($Dragon_functions{$callName})) {
+	if ($callName =~ /\./) {
+	    if (defined($Extension_functions{$callName})) {
+		@callFormals = $Extension_functions{$callName};
+		$lFormals = $callFormals[0][0];
+		$uFormals = $callFormals[0][1];
+		$action->{CALLTYPE} = "extension";
+	    } else {
+		die "Call to unknown extension '$callName'\n";
+	    }
+	} elsif (defined($Dragon_functions{$callName})) {
 	    @callFormals = $Dragon_functions{$callName};
 	    $lFormals =        $callFormals[0][0];
 	    $uFormals = length($callFormals[0][1]);
