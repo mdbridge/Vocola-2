@@ -77,7 +77,7 @@ use File::stat;          # for mtime
 
 sub main
 {
-    $VocolaVersion = "2.7";
+    $VocolaVersion = "2.7.1";
     $Debug = 0;  # 0 = no info, 1 = show statements, 2 = detailed info
     $Error_encountered = 0;
     $| = 1;      # flush output after every print statement
@@ -302,7 +302,7 @@ sub convert_filename
 #
 #      prototype = functionName '(' formals ')'
 #        formals = [name (',' name)*]
-#           call = functionName '(' arguments ')'
+#           call = callName '(' arguments ')'
 #      arguments = [action* (',' action*)*]
 #
 #
@@ -318,6 +318,7 @@ sub convert_filename
 #           name = [a-zA-Z_]\w*
 #   variableName = \w+
 #   functionName = [a-zA-Z_]\w*
+#       callName = [a-zA-Z_][\w.]*
 #
 #
 # The parser works as follows:
@@ -635,10 +636,10 @@ sub check_variable_name
 sub parse_function_definition   # function = prototype ':=' action* ';'
                                 # prototype = functionName '(' formals ')'
 {
-    if (/\G\s*([a-zA-Z_]\w*?)\s*\(\s*(.*?)\s*\)/gc) {
+    if (/\G\s*([a-zA-Z_.][\w.]*?)\s*\(\s*(.*?)\s*\)/gc) {
         my $functionName = $1;
         my $formalsString = $2;
-        if ($Debug>=2) {print LOG "Found function:  $functionName()\n"}
+        if ($Debug>=2) {print LOG "Found user function:  $functionName()\n"}
         my $statement = {};
         $statement->{TYPE} = "function";
         $statement->{NAME} = $functionName;
@@ -647,6 +648,8 @@ sub parse_function_definition   # function = prototype ':=' action* ';'
         @Formals = @formals; # Used below in &parse_formal_reference
         &shift_clause;
         $statement->{ACTIONS} = &parse_actions;
+	if ($functionName =~ /\./)
+	    {die "illegal user function name: $functionName\n"}
         defined ($Functions{$functionName})
             and die "Redefinition of $functionName()\n";
         $Functions{$functionName} = @formals;  # remember number of formals
@@ -906,41 +909,41 @@ sub create_formal_reference_node
     return $action;
 }
 
-sub parse_call    # call = functionName '(' arguments ')'
+sub parse_call    # call = callName '(' arguments ')'
 {
-    if (/\G\s*(\w+?)\s*\(/gc) {
-        my $functionName = $1;
-        if ($Debug>=2) {print LOG "Found call:  $functionName()\n"}
+    if (/\G\s*([\w.]+?)\s*\(/gc) {
+        my $callName = $1;
+        if ($Debug>=2) {print LOG "Found call:  $callName()\n"}
         my $action = {};
         $action->{TYPE} = "call";
-        $action->{TEXT} = $functionName;
+        $action->{TEXT} = $callName;
         $action->{ARGUMENTS} = &parse_arguments;
         if (not /\G\s*\)/gc) {die "Missing ')'\n"}
         my $nActuals = @{ $action->{ARGUMENTS} };
 	my $lFormals, $uFormals, @callFormals;
-        if (defined($Dragon_functions{$functionName})) {
-	    @callFormals = $Dragon_functions{$functionName};
+        if (defined($Dragon_functions{$callName})) {
+	    @callFormals = $Dragon_functions{$callName};
 	    $lFormals =        $callFormals[0][0];
 	    $uFormals = length($callFormals[0][1]);
             $action->{CALLTYPE} = "dragon";
             $action->{ARGTYPES} = $callFormals[0][1];
-        } elsif (defined($Vocola_functions{$functionName})) {
-	    @callFormals = $Vocola_functions{$functionName};
+        } elsif (defined($Vocola_functions{$callName})) {
+	    @callFormals = $Vocola_functions{$callName};
 	    $lFormals = $callFormals[0][0];
 	    $uFormals = $callFormals[0][1];
             $action->{CALLTYPE} = "vocola";
-        } elsif (defined($Functions{$functionName})) {
-	    $lFormals = $uFormals = $Functions{$functionName};
+        } elsif (defined($Functions{$callName})) {
+	    $lFormals = $uFormals = $Functions{$callName};
             $action->{CALLTYPE} = "user";
         } else {
-            die "Call to unknown function '$functionName'\n";
+            die "Call to unknown function '$callName'\n";
         }
 
         if ($lFormals != -1 and $nActuals < $lFormals) {
-            die "Too few arguments passed to '$functionName' (minimum of $lFormals required)\n";
+            die "Too few arguments passed to '$callName' (minimum of $lFormals required)\n";
         } 
         if ($uFormals != -1 and $nActuals > $uFormals) {
-            die "Too many arguments passed to '$functionName' (maximum of $uFormals allowed)\n";
+            die "Too many arguments passed to '$callName' (maximum of $uFormals allowed)\n";
         } 
         return $action;
     }
@@ -1864,13 +1867,13 @@ sub emit_call
     elsif ($callType eq "user"  ) {
 	die "No user function call should be present here!";
     } elsif ($callType eq "vocola") {
-        my $functionName = $call->{TEXT};
-        if    ($functionName eq "Eval")         {
+        my $callName = $call->{TEXT};
+        if    ($callName eq "Eval")         {
 	    die "Compiler error: Eval not transformed away\n";
-	} elsif ($functionName eq "EvalTemplate") {&emit_call_eval_template}
-        elsif ($functionName eq   "Repeat")       {&emit_call_repeat}
-        elsif ($functionName eq   "Unimacro")     {&emit_call_Unimacro}
-        else {die "Unknown Vocola function: '$functionName'\n"}
+	} elsif ($callName eq "EvalTemplate") {&emit_call_eval_template}
+        elsif ($callName eq   "Repeat")       {&emit_call_repeat}
+        elsif ($callName eq   "Unimacro")     {&emit_call_Unimacro}
+        else {die "Unknown Vocola function: '$callName'\n"}
     } else {die "Unknown function call type: '$callType'\n"}
     end_nested_call();
 }
@@ -1916,13 +1919,13 @@ sub emit_arguments
 sub emit_dragon_call
 {
     my ($buffer, $functional, $call, $indent) = @_;
-    my $functionName  = $call->{TEXT};
+    my $callName  = $call->{TEXT};
     my $argumentTypes = $call->{ARGTYPES};
 
     emit_flush($buffer, $functional, $indent);
     my $arguments = emit_arguments($call, "dragon", $indent);
     emit($indent, 
-	 "call_Dragon('$functionName', '$argumentTypes', [$arguments])\n");
+	 "call_Dragon('$callName', '$argumentTypes', [$arguments])\n");
 }
 
 sub emit_call_eval_template
