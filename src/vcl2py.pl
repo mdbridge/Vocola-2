@@ -379,7 +379,7 @@ sub convert_filename
 #       TEXT      - name of formal (i.e. user function argument) referenced
 #    call:
 #       TEXT      - name of function called
-#       CALLTYPE  - dragon/vocola/user
+#       CALLTYPE  - dragon/vocola/user/extension
 #       ARGTYPES  - [dragon only] types of call arguments
 #       ARGUMENTS - list of lists of actions, to be passed in call
 

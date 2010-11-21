@@ -1,5 +1,5 @@
 ### 
-### Regression tests for Vocola 2.7.1
+### Regression tests for Vocola 2.7.1, part I
 ### 
 
 
@@ -19,3 +19,12 @@ unknown function two   = .another();
 unknown function three = trailing.();
 unknown function four  = more.then.1();
 
+
+## 
+## Test extension argument number checking:
+## 
+
+too few arguments   = Variable.Get();
+correct number      = Variable.Get(x);
+correct number also = Variable.Get(x, y);
+too many arguments  = Variable.Get(x,y,z);
