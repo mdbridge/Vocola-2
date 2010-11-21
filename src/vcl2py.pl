@@ -395,8 +395,8 @@ sub convert_filename
                      );
 
 %Extension_functions = (
-                     "Variable.Get"    => [1,2],
-                     "Variable.Set"    => [2,2],
+                     "Variable.Get"    => [1,2,0,"ext_test","ext_test.get"],
+                     "Variable.Set"    => [2,2,1,"ext_test","ext_test.set"],
                      );
 
 # Built in Dragon functions with (minimum number of arguments,
@@ -1877,8 +1877,9 @@ sub emit_call
     my ($buffer, $functional, $call, $indent) = @_;
     my $callType = $call->{CALLTYPE};
     begin_nested_call();
-    if    ($callType eq "dragon") {&emit_dragon_call}
-    elsif ($callType eq "user"  ) {
+    if    ($callType eq "dragon"   ) {&emit_dragon_call}
+    elsif ($callType eq "extension") {&emit_extension_call}
+    elsif ($callType eq "user"     ) {
 	die "No user function call should be present here!";
     } elsif ($callType eq "vocola") {
         my $callName = $call->{TEXT};
@@ -1940,6 +1941,24 @@ sub emit_dragon_call
     my $arguments = emit_arguments($call, "dragon", $indent);
     emit($indent, 
 	 "call_Dragon('$callName', '$argumentTypes', [$arguments])\n");
+}
+
+sub emit_extension_call
+{
+    my ($buffer, $functional, $call, $indent) = @_;
+    my $callName      = $call->{TEXT};
+    my @callFormals   = $Extension_functions{$callName};
+    my $needsFlushing = $callFormals[0][2];
+    my $import_name   = $callFormals[0][3];
+    my $function_name = $callFormals[0][4];
+
+    if ($needsFlushing) { emit_flush($buffer, $functional, $indent); }
+    my $arguments = emit_arguments($call, "extension", $indent);
+    if ($needsFlushing) {
+	emit($indent, "$function_name($arguments)\n");
+    } else {
+	emit($indent, "$buffer += str($function_name($arguments))\n");
+    }
 }
 
 sub emit_call_eval_template
@@ -2128,7 +2147,7 @@ sub emit_file_header
 import natlink
 from natlinkutils import *
 from VocolaUtils import *
-
+import ext_test # <<<>>>
 class ThisGrammar(GrammarBase):
 
     gramSpec = """
