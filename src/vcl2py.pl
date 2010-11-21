@@ -1954,6 +1954,7 @@ sub emit_extension_call
 
     if ($needsFlushing) { emit_flush($buffer, $functional, $indent); }
     my $arguments = emit_arguments($call, "extension", $indent);
+    emit($indent, "import $import_name\n");
     if ($needsFlushing) {
 	emit($indent, "$function_name($arguments)\n");
     } else {
@@ -2147,7 +2148,8 @@ sub emit_file_header
 import natlink
 from natlinkutils import *
 from VocolaUtils import *
-import ext_test # <<<>>>
+
+
 class ThisGrammar(GrammarBase):
 
     gramSpec = """
