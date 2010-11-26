@@ -121,6 +121,7 @@ sub main
 
     $default_maximum_commands = 1;
     read_ini_file($In_folder);
+    read_extensions_file("C:\\NatLink\\NatLink\\Vocola\\extensions.csv");
     print LOG ("default maximum commands per utterance = $default_maximum_commands\n") if ($Debug >= 1);
 
     convert_files($in_file, $out_folder, $suffix);
@@ -145,6 +146,24 @@ sub read_ini_file
         if ($keyword eq "MaximumCommands") {
             $default_maximum_commands = $value;
         }
+    }  
+}
+
+sub read_extensions_file
+{
+    my ($extensions_file) = @_;
+    print LOG "extensions file is '$extensions_file'\n" if ($Debug >= 1);
+    open EXTENSIONS, "<$extensions_file" or return;
+    while (<EXTENSIONS>) {
+        next unless /^([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,\n\r]*)[\n\r]*$/;
+        my $extension_name    = $1;
+        my $minimum_arguments = $2;
+        my $maximum_arguments = $3;
+        my $needs_flushing    = $4;
+        my $module_name       = $5;
+        my $function_name     = $6;
+
+	$Extension_functions{$extension_name} = [$minimum_arguments, $maximum_arguments, $needs_flushing, $module_name, $function_name];
     }  
 }
 
@@ -394,10 +413,11 @@ sub convert_filename
                      Unimacro          => [1,1],
                      );
 
-%Extension_functions = (
-                     "Variable.Get"    => [1,2,0,"ext_test","ext_test.get"],
-                     "Variable.Set"    => [2,2,1,"ext_test","ext_test.set"],
-                     );
+# Vocola extensions with (extension_name, minimum_arguments, maximum_arguments,
+# needs_flushing, module_name, function_name); initialized by 
+# read_extensions_file():
+
+%Extension_functions = ();
 
 # Built in Dragon functions with (minimum number of arguments,
 # template of types of all possible arguments); template has one
