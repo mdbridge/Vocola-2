@@ -1,15 +1,18 @@
 # vcl2py:  Convert Vocola voice command files to NatLink Python "grammar"
 #          classes implementing the voice commands
 #
-# Usage:  perl vcl2py.pl [-suffix <s>] [-f] inputFileOrFolder outputFolder
+# Usage:  perl vcl2py.pl [-extensions <f>] [-suffix <s>] 
+#                        [-f] inputFileOrFolder outputFolder
 # Where:
-#   -suffix <s> -- use suffix <s> to distinguish Vocola generated files
-#                  (default is "_vcl")
-#   -f          -- force processing even if file(s) not out of date
+#   -extensions <f> -- specify filename containing extension interface information
+#   -suffix <s>     -- use suffix <s> to distinguish Vocola generated files
+#                      (default is "_vcl")
+#   -f              -- force processing even if file(s) not out of date
 #
 # This file is copyright (c) 2002-2010 by Rick Mohr. It may be redistributed 
 # in any way as long as this copyright notice remains.
 #
+# 11/28/2010  ml  Extensions can now be called
 # 05/28/2010  ml  Print_* functions -> unparse_* to avoid compiler bug
 # 05/08/2010  ml  Underscores now converted to spaces by VocolaUtils
 # 03/31/2010  ml  Runtime errors now caught and passed to handle_error along 
@@ -82,6 +85,13 @@ sub main
     $Error_encountered = 0;
     $| = 1;      # flush output after every print statement
 
+    $extensions_info = 0;
+    if ($ARGV[0] eq "-extensions") {
+        shift @ARGV;
+        $extensions_info = $ARGV[0];
+        shift @ARGV;
+    }
+
     $suffix = "_vcl";
     if ($ARGV[0] eq "-suffix") {
         shift @ARGV;
@@ -100,7 +110,7 @@ sub main
         $input = $ARGV[0];
         $out_folder = $ARGV[1];
     } else {
-        die "Usage: perl vcl2py.pl [-suffix <s>] [-f] inputFileOrFolder outputFolder\n";
+        die "Usage: perl vcl2py.pl [-extensions <f>] [-suffix <s>] [-f] inputFileOrFolder outputFolder\n";
     }
 
     my $in_file = "";
@@ -121,7 +131,7 @@ sub main
 
     $default_maximum_commands = 1;
     read_ini_file($In_folder);
-    read_extensions_file("C:\\NatLink\\NatLink\\Vocola\\extensions.csv");
+    read_extensions_file($extensions_info) if ($extensions_info);
     print LOG ("default maximum commands per utterance = $default_maximum_commands\n") if ($Debug >= 1);
 
     convert_files($in_file, $out_folder, $suffix);

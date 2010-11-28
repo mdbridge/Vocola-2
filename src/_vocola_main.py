@@ -215,6 +215,7 @@ class ThisGrammar(GrammarBase):
     def runVocolaTranslator(self, inputFileOrFolder, options):
         if usePerl: call = 'perl "' + self.VocolaFolder + r'\Exec\vcl2py.pl" '
         else:       call = '"'      + self.VocolaFolder + r'\Exec\vcl2py.exe" '
+        call += r'-extensions "C:\NatLink\NatLink\Vocola\extensions.csv" '
         call += options
         call += ' "' + inputFileOrFolder + '" "' + NatLinkFolder + '"'
         simpscrp.Exec(call, 1)
