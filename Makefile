@@ -36,15 +36,12 @@ prepare:
 	#
 	# installer version:
 	(cd build; cp -r Vocola installer-Vocola)
-	sed 's/VocolaVersion = "[^"]*/&I/' src/vcl2py.pl > build/installer-Vocola/exec/vcl2py.pl
 	sed 's/[0-9]\.[0-9]/&I/' src/README.html > build/installer-Vocola/README.html
-	cp src/vcl2py-i.exe     build/installer-Vocola/exec/vcl2py.exe
 	# HACK for now:  <<<>>>
 	cp ${NATLINK}/MacroSystem/_vocola_main.py build/installer-Vocola/exec/
 
 request_compilation: prepare
 	cp src/vcl2py.pl                         to_Rick/
-	cp build/installer-Vocola/exec/vcl2py.pl to_Rick/vcl2py-i.pl
 
 clean::
 	chmod -R u+w build
