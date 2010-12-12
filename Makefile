@@ -12,7 +12,7 @@ prepare:
 	mkdir build/Vocola
 	#
 	# top level:
-	(cd build/Vocola; mkdir commands exec samples simpscrp)
+	(cd build/Vocola; mkdir commands exec samples extensions simpscrp)
 	cp src/README.html      build/Vocola/
 	cp src/Release*.txt     build/Vocola/
 	#
@@ -27,6 +27,9 @@ prepare:
 	#
 	# samples:
 	cp samples/*.vc[hl]     build/Vocola/samples/
+	#
+	# extensions:
+	#cp extensions/*.py      build/Vocola/extensions/
 	#
 	# simpscrp
 	cp -r src/simpscrp	build/Vocola/

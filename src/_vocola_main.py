@@ -41,8 +41,10 @@ NatLinkFolder = os.path.split(
 
 NatLinkFolder = re.sub(r'\core$', "", NatLinkFolder)
 
-pydFolder = os.path.abspath(NatLinkFolder + '\\..\\Vocola\\Exec\\' + sys.version[0:3])
+pydFolder = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 'exec', sys.version[0:3]))
 sys.path.append(pydFolder)
+ExtensionsFolder = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 'extensions'))
+sys.path.append(ExtensionsFolder)
 NatLinkFolder = os.path.abspath(NatLinkFolder)
 
 
