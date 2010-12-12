@@ -39,7 +39,7 @@ prepare:
 	#
 	# installer version:
 	(cd build; cp -r Vocola installer-Vocola)
-	sed 's/[0-9]\.[0-9]/&I/' src/README.html > build/installer-Vocola/README.html
+	sed 's/[0-9]\.[0-9]\(\.[0-9]\)*/&I/' src/README.html > build/installer-Vocola/README.html
 	# HACK for now:  <<<>>>
 	cp ${NATLINK}/MacroSystem/_vocola_main.py build/installer-Vocola/exec/
 
