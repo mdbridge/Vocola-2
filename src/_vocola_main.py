@@ -93,16 +93,19 @@ class ThisGrammar(GrammarBase):
                                       
     # Set member variables -- important folders and computer name
     def setNames(self):
-        self.VocolaFolder = NatLinkFolder + r'\..\Vocola'
-        self.commandFolders = [self.VocolaFolder + r'\Commands']
+        self.VocolaFolder = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola'))
+        self.commandFolders = []
+        systemCommandFolder = os.path.join(self.VocolaFolder, 'Commands')
+        if os.path.isdir(systemCommandFolder):
+            self.commandFolders.insert(0, systemCommandFolder)
         if installer:
             r = RegistryDict.RegistryDict(win32con.HKEY_CURRENT_USER,
                                           "Software\NatLink")             
             if r:                                                         
                 userCommandFolder = r["VocolaUserDirectory"]              
                 if os.path.isdir(userCommandFolder):                      
-                    self.commandFolders = ([userCommandFolder]            
-                                           + self.commandFolders)         
+                    self.commandFolders.insert(0, self.commandFolders)         
+
         if os.environ.has_key('COMPUTERNAME'):
             self.machine = string.lower(os.environ['COMPUTERNAME'])
         else: self.machine = 'local'
@@ -217,7 +220,7 @@ class ThisGrammar(GrammarBase):
     def runVocolaTranslator(self, inputFileOrFolder, options):
         if usePerl: call = 'perl "' + self.VocolaFolder + r'\Exec\vcl2py.pl" '
         else:       call = '"'      + self.VocolaFolder + r'\Exec\vcl2py.exe" '
-        call += r'-extensions "C:\NatLink\NatLink\Vocola\extensions.csv" '
+        call += r'-extensions "C:\NatLink\NatLink\Vocola\extensions\extensions.csv" '
         call += options
         call += ' "' + inputFileOrFolder + '" "' + NatLinkFolder + '"'
         simpscrp.Exec(call, 1)
@@ -330,11 +333,10 @@ def vocolaBeginCallback(moduleInfo):
 
     current = getLastVocolaFileModTime()
     if current > lastVocolaFileTime:
+        thisGrammar.compilerError = 0	   
         thisGrammar.loadAllFiles('')
 	if not thisGrammar.compilerError:
             lastVocolaFileTime =  current
-        else:
-            thisGrammar.compilerError = 0	   
 
 #    source_changed = 0
 #    for folder in thisGrammar.commandFolders:
