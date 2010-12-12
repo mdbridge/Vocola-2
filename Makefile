@@ -19,20 +19,21 @@ prepare:
 	# commands:
 	#
 	# exec:
-	cp src/dvc2vcl.{exe,pl} build/Vocola/exec
-	cp src/vcl2py.{exe,pl}  build/Vocola/exec
-	cp src/_vocola_main.py  build/Vocola/exec
-	cp src/VocolaUtils.py   build/Vocola/exec
-	cp -r bin/2*            build/Vocola/exec
+	cp src/dvc2vcl.{exe,pl}   build/Vocola/exec
+	cp src/vcl2py.{exe,pl}    build/Vocola/exec
+	cp src/scan_extensions.py build/Vocola/exec
+	cp src/_vocola_main.py    build/Vocola/exec
+	cp src/VocolaUtils.py     build/Vocola/exec
+	cp -r bin/2*              build/Vocola/exec
 	#
 	# samples:
-	cp samples/*.vc[hl]     build/Vocola/samples/
+	cp samples/*.vc[hl]       build/Vocola/samples/
 	#
 	# extensions:
-	#cp extensions/*.py      build/Vocola/extensions/
+	#cp extensions/*.py        build/Vocola/extensions/
 	#
 	# simpscrp
-	cp -r src/simpscrp	build/Vocola/
+	cp -r src/simpscrp        build/Vocola/
 	#
 	(cd build/Vocola; find . -name '.svn' -print | xargs rm -rf)
 	(cd build; zip -r Vocola Vocola) > /dev/null
