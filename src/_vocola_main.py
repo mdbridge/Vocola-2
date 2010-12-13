@@ -43,6 +43,8 @@ NatLinkFolder = re.sub(r'\core$', "", NatLinkFolder)
 
 pydFolder = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 'exec', sys.version[0:3]))
 sys.path.append(pydFolder)
+ExecFolder = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola','exec'))
+sys.path.append(ExecFolder)
 ExtensionsFolder = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 'extensions'))
 sys.path.append(ExtensionsFolder)
 NatLinkFolder = os.path.abspath(NatLinkFolder)
@@ -57,6 +59,7 @@ class ThisGrammar(GrammarBase):
         <loadAll>           exported = Load All [Voice] Commands;
         <loadCurrent>       exported = Load [Voice] Commands;
         <loadGlobal>        exported = Load Global [Voice] Commands;
+        <loadExtensions>    exported = Load [Voice] Extensions;
         <discardOld>        exported = Discard Old [Voice] Commands;
         <edit>              exported = Edit [Voice] Commands;
         <editMachine>       exported = Edit Machine [Voice] Commands;
@@ -73,6 +76,7 @@ class ThisGrammar(GrammarBase):
         # written due to crash, new machine name, etc.):
         self.purgeOutput()
 
+        self.load_extensions()
         self.loadAllFiles('')
 
         self.load(self.gramSpec)
@@ -154,6 +158,19 @@ class ThisGrammar(GrammarBase):
     def gotResults_NatLinkWindow(self, words, fullResults):
         print "This is the NatLink/Vocola output window"
 
+    # "Load Extensions" -- scan for new/changed extensions:
+    def gotResults_loadExtensions(self, words, fullResults):
+        self.load_extensions(True)
+
+    def load_extensions(self, verbose=False):
+        #if sys.modules.has_key("scan_extensions"):
+        #    del sys.modules["scan_extensions"]
+        import scan_extensions
+        arguments = ["scan_extensions", ExtensionsFolder]
+        if verbose:
+            arguments.insert(1, "-v")
+        scan_extensions.main(arguments)
+
 ### Loading Vocola Commands
 
     # "Load All Commands" -- translate all Vocola files
@@ -218,8 +235,8 @@ class ThisGrammar(GrammarBase):
     # Run Vocola translator, converting command files from "inputFileOrFolder"
     # and writing output to NatLink/MacroSystem
     def runVocolaTranslator(self, inputFileOrFolder, options):
-        if usePerl: call = 'perl "' + self.VocolaFolder + r'\Exec\vcl2py.pl" '
-        else:       call = '"'      + self.VocolaFolder + r'\Exec\vcl2py.exe" '
+        if usePerl: call = 'perl "' + self.VocolaFolder + r'\exec\vcl2py.pl" '
+        else:       call = '"'      + self.VocolaFolder + r'\exec\vcl2py.exe" '
         call += '-extensions "' + ExtensionsFolder + r'\extensions.csv" '
         call += options
         call += ' "' + inputFileOrFolder + '" "' + NatLinkFolder + '"'

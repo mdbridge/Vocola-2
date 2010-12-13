@@ -11,10 +11,8 @@ import sys
 import re
 
 
-def process_extension(extension):
-    global functions, procedures
-
-    log_verbose("  scanning %s.py..." % extension)
+def process_extension(output, verbose, extension):
+    log("    scanning %s.py..." % extension, verbose)
 
     functions = procedures = 0
 
@@ -22,41 +20,41 @@ def process_extension(extension):
     line_number = 0
     with open(extension + ".py", "r") as f:
         for line in f:
-            scan(last_line, line, extension, line_number)
+            funcs, procs = scan(output, last_line, line, extension, line_number)
+            functions   += funcs
+            procedures  += procs
             line_number += 1
             last_line = line
 
-    log_verbose("    found %d function(s), %d procedures(s)" % \
-                    (functions, procedures))
+    log("        found %d function(s), %d procedures(s)" % \
+            (functions, procedures), verbose)
 
 
-def scan(first_line, second_line, extension, line_number):
-    global functions, procedures, output
-
+def scan(output, first_line, second_line, extension, line_number):
     m = re.search(r'^\s*\#\s*Vocola\s+(function|procedure):\s*(.*)', first_line,
                   re.I)
     if m == None:
-        return
+        return 0,0
     kind      = m.group(1)
     arguments = split_arguments(m.group(2))
 
     if len(arguments)<1:
-        log("%s.py:%d: Error: Vocola extension %s name not specified" % \
-            (extension, line_number, kind))
-        return
+        error("%s.py:%d: Error: Vocola extension %s name not specified" % \
+                  (extension, line_number, kind))
+        return 0,0
     name = arguments[0]
     if name.find(".") == -1:
-        log(("%s.py:%d: Error: Vocola extension %s name does not " + \
+        error(("%s.py:%d: Error: Vocola extension %s name does not " + \
                    "contain a '.'") % (extension, line_number, kind))
-        return
+        return 0,0
 
 
     m = re.search(r'^\s*def\s+([^(]+)\(([^)]*)', second_line)
     if m == None:
-        log(("%s.py:%d: Error: Vocola extension specification line " + \
+        error(("%s.py:%d: Error: Vocola extension specification line " + \
                    "not followed by a def name(... line") % \
-                   (extension, line_number))
-        return
+                  (extension, line_number))
+        return 0,0
     function_name      = m.group(1)
     function_arguments = split_arguments(m.group(2))
 
@@ -75,14 +73,14 @@ def scan(first_line, second_line, extension, line_number):
 
     if kind.lower() == "function":
         is_procedure = 0
-        functions  += 1   
     else:
         is_procedure = 1
-        procedures += 1   
 
     definition = "%s,%d,%d,%s,%s,%s.%s\n" % (name, min, max, is_procedure, 
                                              extension, extension, function_name)
     output.write(definition)
+
+    return 1-is_procedure, is_procedure
 
 
 def split_arguments(arguments):
@@ -94,17 +92,14 @@ def split_arguments(arguments):
         return [x.strip() for x in arguments.split(",")]
 
 
-def log(message):
-    global log_file
-    if log_file:
-        log_file.write(message + "\n")
-    else:
-        print message
-
-def log_verbose(message):
-    global verbose
+def log(message, verbose):
     if verbose:
-        log(message)
+        print message
+        sys.stdout.flush()
+
+def error(message):
+    print >> sys.stderr, message
+    sys.stderr.flush()
 
 
 
@@ -112,28 +107,27 @@ def log_verbose(message):
 ## Main routine:
 ## 
 
-program  = sys.argv.pop(0)
+def main(argv):
+    program  = argv.pop(0)
 
-verbose = False
-if len(sys.argv)>0 and sys.argv[0]=="-v":
-    sys.argv.pop(0)
-    verbose = True
+    verbose = False
+    if len(argv)>0 and argv[0]=="-v":
+        argv.pop(0)
+        verbose = True
 
-if len(sys.argv)<1 or len(sys.argv)>2:
-    print "%s: usage: %s [-v] <extensions_folder> [<logfile>]" %(program,program)
-    sys.exit(1)
-extensions_folder = sys.argv[0]
-log_file          = None
-if len(sys.argv)>=2:
-    log_file = open(sys.argv[1], "w")
+    if len(argv)!=1:
+        print "%s: usage: %s [-v] <extensions_folder>" % (program, program)
+        return
+    extensions_folder = argv[0]
 
+    log("\nScanning for Vocola extensions...", verbose)
 
-log_verbose("Scanning for Vocola extensions...")
+    os.chdir(extensions_folder)
+    with open(os.path.normpath(os.path.join(extensions_folder,"extensions.csv")),
+              "w") as output:
+        for file in os.listdir(extensions_folder):
+            if  file.startswith("ext_") and file.endswith(".py"):
+                process_extension(output, verbose, file[0:-3])
 
-os.chdir(extensions_folder)
-output = open(os.path.normpath(os.path.join(extensions_folder,"extensions.csv")),
-              "w")
-for file in os.listdir(extensions_folder):
-    if  file.startswith("ext_") and file.endswith(".py"):
-        process_extension(file[0:-3])
-output.close()
+if __name__ == "__main__":
+    main(sys.argv)
