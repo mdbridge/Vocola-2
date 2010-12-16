@@ -161,6 +161,9 @@ class ThisGrammar(GrammarBase):
     # "Load Extensions" -- scan for new/changed extensions:
     def gotResults_loadExtensions(self, words, fullResults):
         self.load_extensions(True)
+        for module in sys.modules.keys():
+            if module.startswith("ext_"):
+                del sys.modules[module]
 
     def load_extensions(self, verbose=False):
         #if sys.modules.has_key("scan_extensions"):
