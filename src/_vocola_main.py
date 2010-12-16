@@ -162,7 +162,7 @@ class ThisGrammar(GrammarBase):
     def gotResults_loadExtensions(self, words, fullResults):
         self.load_extensions(True)
         for module in sys.modules.keys():
-            if module.startswith("ext_"):
+            if module.startswith("vocola_ext_"):
                 del sys.modules[module]
 
     def load_extensions(self, verbose=False):

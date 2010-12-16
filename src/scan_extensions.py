@@ -1,6 +1,6 @@
 ### 
 ### scan_extensions.py - Code used to build extensions.csv file from
-###                      present ext_*.py files.
+###                      present vocola_ext_*.py files.
 ###
 ### This file is copyright (c) 2010 by Rick Mohr.  It may be redistributed 
 ### in any way as long as this copyright notice remains.
@@ -126,7 +126,7 @@ def main(argv):
     with open(os.path.normpath(os.path.join(extensions_folder,"extensions.csv")),
               "w") as output:
         for file in os.listdir(extensions_folder):
-            if  file.startswith("ext_") and file.endswith(".py"):
+            if  file.startswith("vocola_ext_") and file.endswith(".py"):
                 process_extension(output, verbose, file[0:-3])
 
 if __name__ == "__main__":
