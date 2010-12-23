@@ -73,7 +73,8 @@ def handle_error(filename, line, command, exception):
     print >> sys.stderr, "    " + command
     print >> sys.stderr, "defined at line " + str(line) + " of " + filename + ","
     print >> sys.stderr, "the following error occurred:"
-    print >> sys.stderr, "    " + type(exception).__name__ + ": " + str(exception)
+    print >> sys.stderr, "    " + exception.__class__.__name__ + ": " \
+        + str(exception)
     #traceback.print_exc()
     #raise exception
 
