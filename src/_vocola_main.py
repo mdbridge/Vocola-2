@@ -323,14 +323,22 @@ class ThisGrammar(GrammarBase):
             new.write('# ' + comment + '\n\n')
             new.close()
 
-        try:
-            os.startfile(path)
-        except WindowsError, e: 
-            print
-            print "Unable to open voice command file with associated editor: " + str(e)
-            print "Trying to open it with notepad instead."
-            prog = os.path.join(os.getenv('WINDIR'), 'notepad.exe')
-            os.spawnv(os.P_NOWAIT, prog, [prog, path])
+        #
+        # NatLink/DNS bug causes os.startfile or wpi32api.ShellExecute
+        # to crash DNS if allResults is on in *any* grammer (e.g., Unimacro)
+        #
+        # Accordingly, use AppBringUp instead:
+        #
+
+        #try:
+        #    os.startfile(path)
+        #except WindowsError, e: 
+        #    print
+        #    print "Unable to open voice command file with associated editor: " + str(e)
+        #    print "Trying to open it with notepad instead."
+        #    prog = os.path.join(os.getenv('WINDIR'), 'notepad.exe')
+        #    os.spawnv(os.P_NOWAIT, prog, [prog, path])
+        natlink.execScript("AppBringUp \"" + path + "\", \"" + path + "\"")
 
 
 
