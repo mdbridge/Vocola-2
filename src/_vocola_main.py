@@ -28,6 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import string
 import sys
 import os               # access to file information
 import os.path          # to parse filenames
@@ -105,8 +106,6 @@ class ThisGrammar(GrammarBase):
         self.needToSetCallback = 1
                     
                     
-                
-
     def gotBegin(self,moduleInfo):
         self.currentModule = moduleInfo
         if self.needToSetCallback:
@@ -117,36 +116,38 @@ class ThisGrammar(GrammarBase):
                                       
     # Set member variables -- important folders and computer name
     def setNames(self):
-        self.VocolaFolder = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola'))
-        self.commandFolders = []
-        systemCommandFolder = os.path.join(self.VocolaFolder, 'Commands')
-        if os.path.isdir(systemCommandFolder):
-            self.commandFolders.insert(0, systemCommandFolder)
+        self.VocolaFolder = os.path.normpath(os.path.join(NatLinkFolder, 
+                                                          '..', 'Vocola'))
+        if os.environ.has_key('COMPUTERNAME'):
+            self.machine = string.lower(os.environ['COMPUTERNAME'])
+        else: self.machine = 'local'
+
+        self.commandFolder = None
         if installer:
             r = RegistryDict.RegistryDict(win32con.HKEY_CURRENT_USER,
                                           "Software\NatLink")             
             if r:                                                         
                 userCommandFolder = r["VocolaUserDirectory"]              
                 if os.path.isdir(userCommandFolder):                      
-                    self.commandFolders.insert(0, self.commandFolders)         
+                    self.commandFolder = userCommandFolder
+        if not self.commandFolder:
+            systemCommandFolder = os.path.join(self.VocolaFolder, 'Commands')
+            if os.path.isdir(systemCommandFolder):
+                self.commandFolder = systemCommandFolder
+        if not self.commandFolder:
+            print >> sys.stderr, "Warning: no Vocola command folder found!"
 
-        if os.environ.has_key('COMPUTERNAME'):
-            self.machine = string.lower(os.environ['COMPUTERNAME'])
-        else: self.machine = 'local'
 
     # Get app name by stripping folder and extension from currentModule name
     def getCurrentApplicationName(self):
         return string.lower(os.path.splitext(os.path.split(self.currentModule[0]) [1]) [0])
 
     def getSourceFilename(self, output_filename):
-        m = re.match("^(.*)_vcl(\d*).pyc?$", output_filename)
+        m = re.match("^(.*)_vcl.pyc?$", output_filename)
         if not m: return None                    # Not a Vocola file
-        if m.group(2) == "": return None         # old-style Vocola file
         name = m.group(1)
-        i = int(m.group(2))
-        if i > len(self.commandFolders): return None
-        commandFolder = self.commandFolders[i]
-        
+        if not self.commandFolder: return None
+
         marker = "e_s_c_a_p_e_d__"
         m = re.match("^(.*)" + marker + "(.*)$", name)  # rightmost marker!
         if m:
@@ -157,12 +158,12 @@ class ThisGrammar(GrammarBase):
             name += tail
 
         name = re.sub("_@", "@", name)
-        return commandFolder + "\\" + name + ".vcl"
+        return self.commandFolder + "\\" + name + ".vcl"
 
     def deleteOrphanFiles(self):
         print "checking for orphans..."
         for f in os.listdir(NatLinkFolder):
-            if not re.search("_vcl\d*.pyc?$", f): continue
+            if not re.search("_vcl.pyc?$", f): continue
 
             s = self.getSourceFilename(f)
             if s:
@@ -220,9 +221,9 @@ class ThisGrammar(GrammarBase):
 
     # Load all command files
     def loadAllFiles(self, options):
-        for i in range(len(self.commandFolders)):
-            suffix = "-suffix _vcl" + str(i) + " "
-            self.runVocolaTranslator(self.commandFolders[i], suffix + options)
+        if self.commandFolder:
+            suffix = "-suffix _vcl " 
+            self.runVocolaTranslator(self.commandFolder, suffix + options)
 
     # Load command files for specific application
     def loadSpecificFiles(self, module):
@@ -233,13 +234,13 @@ class ThisGrammar(GrammarBase):
         p = re.compile(pattern)
 
         targets = []
-        for i in range(len(self.commandFolders)):
-            commandFolder = self.commandFolders[i]
-            targets += [[os.path.join(commandFolder,f), i] for f in os.listdir(commandFolder) if p.search(f)]
-        for target, i in targets:
-            suffix = "-suffix _vcl" + str(i) + " "
-            self.loadFile(target, suffix)
-        if len(targets) == 0:
+        if self.commandFolder:
+            targets += [os.path.join(self.commandFolder,f)
+                        for f in os.listdir(self.commandFolder) if p.search(f)]
+        suffix = "-suffix _vcl" 
+        if len(targets) > 0:
+            self.loadFile(targets[0], suffix)
+        else:
             print >> sys.stderr
             if module == "":
                 print >> sys.stderr, "Found no Vocola global command files (for machine '" + self.machine + "')"
@@ -265,17 +266,16 @@ class ThisGrammar(GrammarBase):
         call += ' "' + inputFileOrFolder + '" "' + NatLinkFolder + '"'
         simpscrp.Exec(call, 1)
 
-        for commandFolder in self.commandFolders:
-            logName = commandFolder + r'\vcl2py_log.txt'
-            if os.path.isfile(logName):
-                try:
-                    log = open(logName, 'r')
-                    self.compilerError = 1
-                    print  >> sys.stderr, log.read()
-                    log.close()
-                    os.remove(logName)
-                except IOError:  # no log file means no Vocola errors
-                    pass
+        logName = self.commandFolder + r'\vcl2py_log.txt'
+        if os.path.isfile(logName):
+            try:
+                log = open(logName, 'r')
+                self.compilerError = 1
+                print  >> sys.stderr, log.read()
+                log.close()
+                os.remove(logName)
+            except IOError:  # no log file means no Vocola errors
+                pass
 
 ### Editing Vocola Command Files
 
@@ -305,19 +305,23 @@ class ThisGrammar(GrammarBase):
         comment = 'Global voice commands on ' + self.machine
         self.openCommandFile(file, comment)
 
-    # Open a Vocola command file (using the application associated with ".vcl")
     
     def FindExistingCommandFile(self, file):
-        for commandFolder in self.commandFolders:
-            f = commandFolder + '\\' + file
+        if self.commandFolder:
+            f = self.commandFolder + '\\' + file
             if os.path.isfile(f): return f
 
         return ""
     
+    # Open a Vocola command file (using the application associated with ".vcl")
     def openCommandFile(self, file, comment):
+        if not self.commandFolder:
+            print >> sys.stderr, "Error: Unable to create command file because no Vocola command folder found."
+            return
+
         path = self.FindExistingCommandFile(file)
         if not path:
-            path = self.commandFolders[0] + '\\' + file
+            path = self.commandFolder + '\\' + file
         
             new = open(path, 'w')
             new.write('# ' + comment + '\n\n')
@@ -355,10 +359,10 @@ def vocolaGetModTime(file):
 # 0 if none:
 def getLastVocolaFileModTime():
     last = 0
-    for folder in thisGrammar.commandFolders:
+    if thisGrammar.commandFolder:
         last = max([last] +
-                   [vocolaGetModTime(os.path.join(folder,f))
-                    for f in os.listdir(folder)])
+                   [vocolaGetModTime(os.path.join(thisGrammar.commandFolder,f))
+                    for f in os.listdir(thisGrammar.commandFolder)])
     return last
 
 
@@ -387,9 +391,9 @@ def vocolaBeginCallback(moduleInfo):
             lastVocolaFileTime =  current
 
 #    source_changed = 0
-#    for folder in thisGrammar.commandFolders:
-#        if vocolaGetModTime(folder) > lastCommandFolderTime:
-#            lastCommandFolderTime = vocolaGetModTime(folder)
+#    if thisGrammar.commandFolder:
+#        if vocolaGetModTime(thisGrammar.commandFolder) > lastCommandFolderTime:
+#            lastCommandFolderTime = vocolaGetModTime(thisGrammar.commandFolder)
 #            source_changed = 1
 #    if source_changed:
 #        thisGrammar.deleteOrphanFiles()
