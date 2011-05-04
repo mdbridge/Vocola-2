@@ -1,5 +1,8 @@
 New in 2.7.2:
 
+! New feature "$set numbers [words...];" to deal with corrupted DNS
+  profiles and the DNS 11 bug with <_anything>.
+
 * Fixed range syntax, enforcement that alternative sets may not contain
   a range and something else.
 

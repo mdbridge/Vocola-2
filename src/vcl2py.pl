@@ -101,7 +101,7 @@ use File::stat;          # for mtime
 
 sub main
 {
-    $VocolaVersion = "2.7.1";
+    $VocolaVersion = "2.7.2";
     $Debug = 0;  # 0 = no info, 1 = show statements, 2 = detailed info
     $Error_encountered = 0;
     $| = 1;      # flush output after every print statement
@@ -238,19 +238,33 @@ sub convert_file
 
     $in_stats  = stat("$In_folder/$Input_name");
     $out_stats = stat("$out_file");
-    $in_date  = $in_stats->mtime;
-    $out_date = $out_stats ? $out_stats->mtime : 0;
+    $in_date   = $in_stats->mtime;
+    $out_date  = $out_stats ? $out_stats->mtime : 0;
     return unless $in_date > $out_date || $Force_processing;
 
-    %Definitions = ();
-    %Functions = ();
+    %Definitions          = ();
+    %Functions            = ();
     %Function_definitions = ();
-    @Forward_references = ();
-    @Included_files = ();
-    @Include_stack = ();
-    $Error_count = 0;
-    $File_empty = 1;
-    $Statement_count = 1;
+    %Number_words         = ();
+    %Number_words = ( # <<<>>>
+	0 => "zero",
+	1 => "one",
+	2 => "two",
+	3 => "three",
+	4 => "four",
+	5 => "five",
+	6 => "six",
+	7 => "seven",
+	8 => "eight",
+	9 => "nine",
+	);
+
+    @Forward_references   = ();
+    @Included_files       = ();
+    @Include_stack        = ();
+    $Error_count          = 0;
+    $File_empty           = 1;
+    $Statement_count      = 1;
 
     if ($Debug>=1) {print LOG "\n==============================\n";}
 
@@ -1516,6 +1530,7 @@ sub emit_output
         elsif ($type eq "command")    {emit_command_grammar ($statement)}
     }
     &emit_sequence_and_context_code;
+    &emit_number_words;
     for my $statement (@statements) {
         my $type = $statement->{TYPE};
         if    ($type eq "definition") {emit_definition_actions ($statement)}
@@ -1756,10 +1771,41 @@ sub emit_range_grammar
 {
     my $i  = @_[0]->{FROM};
     my $to = @_[0]->{TO};
-    emit(0, "($i");
-    while (++$i <= $to) {emit(0, " | $i")}
+    emit(0, "(" . emit_number_word($i));
+    while (++$i <= $to) {emit(0, " | " . emit_number_word($i))}
     emit(0, ") ");
 }
+
+sub emit_number_word
+{
+    my $i = shift;
+
+    if (defined($Number_words{$i})) {
+	return "'$Number_words{$i}'";
+    }
+
+    return "$i";
+}
+
+sub emit_number_words
+{
+    emit(1, "def convert_number_word(self, word):\n");
+
+    if (!keys %Number_words) {
+	emit(2, "return word\n\n");
+	return;
+    }
+
+    my $elif = "if  ";
+    foreach my $number ( keys %Number_words ) {
+	emit(2, "$elif word == '$Number_words{$number}':\n");
+	emit(3, "return '$number'\n");
+	$elif = "elif";
+    } 
+
+    emit(2, "else:\n");
+    emit(3, "return word\n\n");
+} 
 
 sub emit_definition_actions
 {
@@ -1888,12 +1934,14 @@ sub emit_reference
 {
     my ($buffer, $functional, $action, $indent) = @_;
     my $reference_number = $action->{TEXT} - 1;
-    my $variable = $Variable_terms[$reference_number];
-    my $term_number = $variable->{NUMBER};
+    my $variable         = $Variable_terms[$reference_number];
+    my $term_number      = $variable->{NUMBER};
     emit($indent, "word = fullResults[$term_number + self.firstWord][0]\n");
     if ($variable->{TYPE} eq "menu") {
         emit_menu_actions($buffer, $functional, $variable, $indent);
-    } elsif ($variable->{TYPE} eq "range" or $variable->{TYPE} eq "dictation") {
+    } elsif ($variable->{TYPE} eq "range") {
+	emit($indent, "$buffer += self.convert_number_word(word)\n");
+    } elsif ($variable->{TYPE} eq "dictation") {
         emit($indent, "$buffer += word\n");
     } elsif ($variable->{TYPE} eq "variable") {
         my $function = "self.get_$variable->{TEXT}";
@@ -1905,7 +1953,11 @@ sub emit_menu_actions
 {
     my ($buffer, $functional, $menu, $indent) = @_;
     if (not menu_has_actions($menu)) {
-        emit($indent, "$buffer += word\n");
+	if (menu_is_range($menu)) {
+	    emit($indent, "$buffer += self.convert_number_word(word)\n");
+	} else {
+	    emit($indent, "$buffer += word\n");
+	}
     } else {
         my @commands = flatten_menu($menu);
         my $if = "if";
@@ -2154,6 +2206,19 @@ sub menu_has_actions
         }
     }
     return;
+}
+
+sub menu_is_range  # verified menu => can contain only 1 range as a 1st term
+{
+    my $menu = shift;
+    my @commands = @{ $menu->{COMMANDS} };
+    for my $command (@commands) {
+        my @terms = @{ $command->{TERMS} };
+        my $type = $terms[0]->{TYPE};
+        if ($type eq "menu" and menu_is_range($terms[0])) { return 1; }
+        if ($type eq "range") { return 1; }
+    }
+    return 0;    
 }
 
 # To emit actions for a menu, build a flat list of (canonicalized) commands:
