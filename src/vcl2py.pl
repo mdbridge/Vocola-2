@@ -842,7 +842,7 @@ sub parse_term    #  term = simple_term | range | menu
         if (not /\G\s*\)/gc) {die "End of alternative set before ')'\n"}
         if ($Debug>=2) {print LOG "Found menu:  "; 
                         print LOG unparse_menu ($term, 1) . "\n"}
-    } elsif (/\G\s*(\d*)\.\.(\d*)/gc) {
+    } elsif (/\G\s*(\d+)\.\.(\d+)/gc) {
         $term = {};
         $term->{TYPE} = "range";
         $term->{FROM} = $1;
