@@ -1,5 +1,8 @@
 New in 2.7.2:
 
+* Fixed range syntax, enforcement that alternative sets may not contain
+  a range and something else.
+
 * Bug fix for NatLink/DNS bug where allResults true on any grammer
   (including non-Vocola ones) causes os.startfile and
   win32api.ShellExecute to crash DNS.

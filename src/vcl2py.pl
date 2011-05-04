@@ -1153,7 +1153,7 @@ sub expand_variables
 
 sub verify_referenced_menu
 {
-    my ($menu, $parent_has_actions) = @_;
+    my ($menu, $parent_has_actions, $parent_has_alternatives) = @_;
     my @commands = @{ $menu->{COMMANDS} };
     for my $command (@commands) {
         my $has_actions = $parent_has_actions;
@@ -1170,15 +1170,20 @@ sub verify_referenced_menu
         }
         my @terms = @{ $command->{TERMS} };
         if (@terms > 1) {die "Alternative is too complex\n"}
+        my $has_alternatives = $parent_has_alternatives;
+	if (not @commands == 1) {
+	    $has_alternatives = 1;
+	}
         my $type = $terms[0]->{TYPE};
-        if    ($type eq "menu"){verify_referenced_menu($terms[0],$has_actions)}
+        if    ($type eq "menu"){verify_referenced_menu($terms[0],$has_actions,
+						       $has_alternatives)}
         elsif ($type eq "variable" or $type eq "definition") {
             die "Alternative cannot be a variable\n";
-        }
-        elsif ($type eq "range") {
-            # allow a single range with no actions
-            return if (not $has_actions and @commands == 1);
-            die "Alternative cannot be a range\n";
+        } elsif ($type eq "range") {
+            # allow a single range with no actions if it is the only
+            # alternative in the (nested) set:
+            return if (not $has_actions and not $has_alternatives);
+            die "Range may not be an alternative to something else or have actions\n";
         }
     }
 }
