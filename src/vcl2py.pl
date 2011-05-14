@@ -121,7 +121,7 @@ sub main
     %Number_words = ();
     if ($ARGV[0] eq "-numbers") {
         shift @ARGV;
-        my @numbers = split(/,/, $ARGV[0]);
+        my @numbers = split(/\s*,\s*/, $ARGV[0]);
 	my $i = 0;
 	for my $number (@numbers) {
 	    $Number_words{$i} = $number;
@@ -292,6 +292,14 @@ sub convert_file
 	    my $key = $statement->{KEY};
 	    if ($key eq "MaximumCommands") {
 		$maximum_commands = $statement->{TEXT};
+	    } elsif ($key eq "numbers") {
+		%Number_words = ();
+		my @numbers = split(/\s*,\s*/, $statement->{TEXT});
+		my $i = 0;
+		for my $number (@numbers) {
+		    $Number_words{$i} = $number;
+		    $i = $i + 1;
+		} 
 	    }
 	}
     }
@@ -1801,7 +1809,7 @@ sub emit_number_words
     }
 
     my $elif = "if  ";
-    foreach my $number ( keys %Number_words ) {
+    foreach my $number ( sort keys %Number_words ) {
 	emit(2, "$elif word == '$Number_words{$number}':\n");
 	emit(3, "return '$number'\n");
 	$elif = "elif";
