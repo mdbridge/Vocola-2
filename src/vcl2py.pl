@@ -1,16 +1,20 @@
 # vcl2py:  Convert Vocola voice command files to NatLink Python "grammar"
 #          classes implementing the voice commands
 #
-# Usage:  perl vcl2py.pl [-extensions <f>] [-suffix <s>] 
+# Usage:  perl vcl2py.pl [-extensions <f>] [-numbers <s0>,<s1>,<s2>,...]
+#                        [-suffix <s>] 
 #                        [-f] inputFileOrFolder outputFolder
 # Where:
 #   -extensions <f> -- specify filename containing extension interface information
+#   -numbers <s0>,<s1>,<s2>,...
+#                   -- use spoken form <s0> instead of "0" in ranges,
+#                                      <s1> instead of "1" in ranges, etc.
 #   -suffix <s>     -- use suffix <s> to distinguish Vocola generated files
 #                      (default is "_vcl")
 #   -f              -- force processing even if file(s) not out of date
 #
 #
-# Copyright (c) 2002-2010 by Rick Mohr.
+# Copyright (c) 2002-2011 by Rick Mohr.
 # 
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -33,6 +37,7 @@
 # SOFTWARE.
 #
 #
+#  5/14/2011  ml  Selected numbers in ranges can now be spelled out
 # 11/28/2010  ml  Extensions can now be called
 # 05/28/2010  ml  Print_* functions -> unparse_* to avoid compiler bug
 # 05/08/2010  ml  Underscores now converted to spaces by VocolaUtils
@@ -113,6 +118,18 @@ sub main
         shift @ARGV;
     }
 
+    %Number_words = ();
+    if ($ARGV[0] eq "-numbers") {
+        shift @ARGV;
+        my @numbers = split(/,/, $ARGV[0]);
+	my $i = 0;
+	for my $number (@numbers) {
+	    $Number_words{$i} = $number;
+	    $i = $i + 1;
+	} 
+        shift @ARGV;
+    }
+
     $suffix = "_vcl";
     if ($ARGV[0] eq "-suffix") {
         shift @ARGV;
@@ -131,7 +148,7 @@ sub main
         $input = $ARGV[0];
         $out_folder = $ARGV[1];
     } else {
-        die "Usage: perl vcl2py.pl [-extensions <f>] [-suffix <s>] [-f] inputFileOrFolder outputFolder\n";
+        die "Usage: perl vcl2py.pl [-extensions <f>] [-numbers <s0>,<s1>,<s2>,...] [-suffix <s>] [-f] inputFileOrFolder outputFolder\n";
     }
 
     my $in_file = "";
@@ -245,19 +262,6 @@ sub convert_file
     %Definitions          = ();
     %Functions            = ();
     %Function_definitions = ();
-    %Number_words         = ();
-    %Number_words = ( # <<<>>>
-	0 => "zero",
-	1 => "one",
-	2 => "two",
-	3 => "three",
-	4 => "four",
-	5 => "five",
-	6 => "six",
-	7 => "seven",
-	8 => "eight",
-	9 => "nine",
-	);
 
     @Forward_references   = ();
     @Included_files       = ();
