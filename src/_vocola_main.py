@@ -39,6 +39,7 @@ import natlink
 from natlinkutils import *
 
 
+language = 'enx'
 try:
     # The following files are only present if Scott's installer is being used:
     import RegistryDict
@@ -262,6 +263,8 @@ class ThisGrammar(GrammarBase):
         if usePerl: call = 'perl "' + self.VocolaFolder + r'\exec\vcl2py.pl" '
         else:       call = '"'      + self.VocolaFolder + r'\exec\vcl2py.exe" '
         call += '-extensions "' + ExtensionsFolder + r'\extensions.csv" '
+        if language == "enx":
+            call += '-numbers zero,one,two,three,four,five,six,seven,eight,nine '
         call += options
         call += ' "' + inputFileOrFolder + '" "' + NatLinkFolder + '"'
         simpscrp.Exec(call, 1)
