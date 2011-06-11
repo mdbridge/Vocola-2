@@ -90,13 +90,13 @@ class ThisGrammar(GrammarBase):
     """
 
     def initialize(self):
-        self.compilerError   = 0  # has a compiler error occurred?
-        self.setNames()
-
         # remove previous Vocola/Python compilation output as it may be out
         # of date (e.g., new compiler, source file deleted, partially
         # written due to crash, new machine name, etc.):
         self.purgeOutput()
+
+        self.compilerError   = 0  # has a compiler error occurred?
+        self.setNames()
 
         self.load_extensions()
         self.loadAllFiles('')
