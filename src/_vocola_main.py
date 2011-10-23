@@ -349,10 +349,6 @@ class ThisGrammar(GrammarBase):
 
 
 
-thisGrammar = ThisGrammar()
-thisGrammar.initialize()
-
-
 # Returns the modification time of a file or 0 if the file does not exist
 def vocolaGetModTime(file):
     try: return os.stat(file)[ST_MTIME]
@@ -411,6 +407,10 @@ def vocolaBeginCallback(moduleInfo):
 
     beginCallback(moduleInfo)
 
+
+
+thisGrammar = ThisGrammar()
+thisGrammar.initialize()
 
 
 def unload():
