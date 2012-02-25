@@ -78,15 +78,15 @@ class ThisGrammar(GrammarBase):
 
     gramSpec = """
         <NatLinkWindow>     exported = [Show] (NatLink|Vocola) Window;
+        <edit>              exported = Edit [Voice] Commands;
+        <editGlobal>        exported = Edit Global [Voice] Commands;
+        <editMachine>       exported = Edit Machine [Voice] Commands;
+        <editGlobalMachine> exported = Edit Global Machine [Voice] Commands;
         <loadAll>           exported = Load All [Voice] Commands;
         <loadCurrent>       exported = Load [Voice] Commands;
         <loadGlobal>        exported = Load Global [Voice] Commands;
         <loadExtensions>    exported = Load [Voice] Extensions;
         <discardOld>        exported = Discard Old [Voice] Commands;
-        <edit>              exported = Edit [Voice] Commands;
-        <editMachine>       exported = Edit Machine [Voice] Commands;
-        <editGlobal>        exported = Edit Global [Voice] Commands;
-        <editGlobalMachine> exported = Edit Global Machine [Voice] Commands;
     """
 
     def initialize(self):
