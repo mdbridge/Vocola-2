@@ -1,6 +1,12 @@
 New in 2.7.3:
 
-* 
+* Minor fixes to unparse routines to work correctly (e.g., show
+  backslashes correctly).
+
+* Minor fixes of variable scoping: adding my, capitalizing global
+  variables.
+
+* Fixed so can run on Linux as well as Windows (mainly pathname separators).
 
 
 New in 2.7.2:
