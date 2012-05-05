@@ -278,13 +278,18 @@ sub convert_file
 
     # Prepend a "global" context statement if necessary
     if ($statements[0]->{TYPE} ne "context") {
-        my $context = parse_context(": ");
+	my $context = {};
+	$context->{TYPE} = "context";
+	my @strings;
+	push (@strings, "");
+        $context->{STRINGS} = \@strings;
         unshift(@statements, $context);
     }
 
     #print LOG unparse_statements (@statements);
     transform_nodes(@statements);
     #print LOG unparse_statements (@statements);
+    #print STDOUT unparse_statements (@statements);
 
     # Handle $set directives:
     $Maximum_commands = $Default_maximum_commands;
@@ -1065,7 +1070,11 @@ sub parse_word
     {
 	my ($quote, $word) = ($1, $2);
 	$word =~ s/$quote$quote/$quote/g if $quote;
-        if ($Debug>=2) {print LOG "Found word:  '$word'\n"}
+        if ($Debug>=2) {
+	    my $text = $word;
+	    $text =~ s/\\\\/\\/g;
+	    print LOG "Found word:  '$text'\n"
+	}
         return create_word_node($word, 0);
     }
 }
@@ -1270,7 +1279,9 @@ sub unparse_directive
 	$result =~ s/\\\\/\\/g;
 	return $result;
     } else {
-	return "$statement->{TYPE}:  '$statement->{TEXT}'\n";
+	my $result = "$statement->{TYPE}:  '$statement->{TEXT}'\n";
+	$result =~ s/\\\\/\\/g;
+	return $result;
     }
 }
 
@@ -1846,6 +1857,7 @@ sub emit_top_command_actions
     @Variable_terms = get_variable_terms($command); # used in emit_reference
 
     my $command_specification = unparse_terms(0, @terms);
+    $command_specification =~ s/\\/\\\\/g;
 
     emit(1, "\# ");
     print OUT unparse_terms (0, @terms);
