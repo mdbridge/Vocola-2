@@ -1,5 +1,7 @@
 New in 2.7.3:
 
+* Fixed bug where garbage at the end of a function definition was not noticed.
+
 * Minor fixes to unparse routines to work correctly (e.g., show
   backslashes correctly).
 

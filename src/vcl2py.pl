@@ -736,6 +736,7 @@ sub parse_function_definition   # function = prototype ':=' action* ';'
         @Formals = @formals; # Used below in &parse_formal_reference
         &shift_clause;
         $statement->{ACTIONS} = &parse_actions;
+        &ensure_empty;
 	if ($functionName =~ /\./)
 	    {die "illegal user function name: $functionName\n"}
         defined ($Functions{$functionName})
