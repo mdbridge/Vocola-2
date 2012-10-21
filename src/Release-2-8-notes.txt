@@ -1,2 +1,13 @@
 New in 2.8:
 
+* The Vocola 2 compiler has been ported from Perl to Python, mostly line
+  by line except for the parser.
+
+! The parser has been replaced with a new one that produces better error
+  messages, describing what was found versus what was expected and
+  visually pointing to the error.
+
+* Some new command line arguments are available for the compiler; see
+  the comments at the start of vcl2py.py for details.
+
+

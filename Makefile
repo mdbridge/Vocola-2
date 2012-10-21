@@ -22,7 +22,8 @@ prepare:
 	cp src/dvc2vcl.exe        build/Vocola/exec
 	cp src/dvc2vcl.pl         build/Vocola/exec
 	cp src/vcl2py.exe         build/Vocola/exec
-	cp src/vcl2py.pl          build/Vocola/exec
+	cp src/vcl2py.pl          build/Vocola/exec   # <<<>>>
+	cp src/vcl2py.py          build/Vocola/exec
 	cp src/scan_extensions.py build/Vocola/exec
 	cp src/_vocola_main.py    build/Vocola/exec
 	cp src/VocolaUtils.py     build/Vocola/exec
@@ -60,14 +61,14 @@ clean::
 
 short_compare_installer: prepare
 	@echo "=========="
-	@-diff --brief -r -b build/installer-Vocola/exec/_vocola_main.py \
+	@-diff --brief -b build/installer-Vocola/exec/_vocola_main.py \
                            ${NATLINK}/MacroSystem/
-	@-diff --brief -r -b build/installer-Vocola/exec/VocolaUtils.py \
+	@-diff --brief -b build/installer-Vocola/exec/VocolaUtils.py \
                            ${NATLINK}/MacroSystem/core/
-	@-diff --brief -r -b build/installer-Vocola ${NATLINK}/Vocola  | grep -v '.svn'
+	@-diff --brief -r -x .svn -b build/installer-Vocola ${NATLINK}/Vocola
 
 compare_installer: prepare
-	diff -r -b build/installer-Vocola ${NATLINK}/Vocola  | more
+	diff -r -x .svn -b build/installer-Vocola ${NATLINK}/Vocola | more
 
 compare: prepare
 	diff -b build/Vocola/exec/_vocola_main.py \
