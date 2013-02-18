@@ -168,9 +168,8 @@ Commands" and "Edit Global Commands" are activated.
         # remove previous Vocola/Python compilation output as it may be out
         # of date (e.g., new compiler, source file deleted, partially
         # written due to crash, new machine name, etc.):
-        self.purgeOutput()
+        purgeOutput()
 
-        self.compilerError   = 0  # has a compiler error occurred?
         self.setNames()
 
         self.load_extensions()
@@ -192,8 +191,6 @@ Commands" and "Edit Global Commands" are activated.
                                       
     # Set member variables -- important folders and computer name
     def setNames(self):
-        self.VocolaFolder = os.path.normpath(os.path.join(NatLinkFolder, 
-                                                          '..', 'Vocola'))
         if os.environ.has_key('COMPUTERNAME'):
             self.machine = string.lower(os.environ['COMPUTERNAME'])
         else: self.machine = 'local'
@@ -287,13 +284,8 @@ Commands" and "Edit Global Commands" are activated.
 
     # "Discard Old [Voice] Commands" -- purge output then translate all files
     def gotResults_discardOld(self, words, fullResults):
-        self.purgeOutput()
+        purgeOutput()
         self.loadAllFiles(['-f'])
-
-    # Unload all commands, including those of files no longer existing
-    def purgeOutput(self):
-        pattern = re.compile("_vcl\d*\.pyc?$")
-        [os.remove(os.path.join(NatLinkFolder,f)) for f in os.listdir(NatLinkFolder) if pattern.search(f)]
 
     # Load all command files
     def loadAllFiles(self, options):
@@ -332,39 +324,6 @@ Commands" and "Edit Global Commands" are activated.
             return 1
         except OSError:
             return 0   # file not found
-
-    # Run Vocola translator, converting command files from "inputFileOrFolder"
-    # and writing output to NatLink/MacroSystem
-    def runVocolaTranslator(self, inputFileOrFolder, options):
-        if usePerl:
-            executable = "perl"
-            arguments  = [self.VocolaFolder + r'\exec\vcl2py.pl']
-        else:
-            executable = self.VocolaFolder + r'\exec\vcl2py.exe'
-            arguments  = []
-        #executable = r'c:\Python26\Python.exe'
-        #arguments  = [self.VocolaFolder + r'\exec\vcl2py.py']
-
-        arguments += ['-extensions', ExtensionsFolder + r'\extensions.csv']
-        if language == "enx":
-            arguments += ['-numbers', 
-                          'zero,one,two,three,four,five,six,seven,eight,nine']
-
-        arguments += options
-
-        arguments += [inputFileOrFolder, NatLinkFolder]
-        hidden_call(executable, arguments)
-
-        logName = self.commandFolder + r'\vcl2py_log.txt'
-        if os.path.isfile(logName):
-            try:
-                log = open(logName, 'r')
-                self.compilerError = 1
-                print  >> sys.stderr, log.read()
-                log.close()
-                os.remove(logName)
-            except IOError:  # no log file means no Vocola errors
-                pass
 
 ### Editing Vocola Command Files
 
@@ -479,6 +438,12 @@ def compile(inputFileOrFolder, options):
             os.remove(logName)
         except IOError:  # no log file means no Vocola errors
             pass
+
+# Unload all commands, including those of files no longer existing
+def purgeOutput():
+    pattern = re.compile("_vcl\d*\.pyc?$")
+    [os.remove(os.path.join(NatLinkFolder,f)) for f 
+     in os.listdir(NatLinkFolder) if pattern.search(f)]
 
 # 
 # Run program with path executable and arguments arguments.  Waits for
