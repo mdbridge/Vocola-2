@@ -173,16 +173,12 @@ Commands" and "Edit Global Commands" are activated.
 
         self.load(self.gramSpec)
         self.activateAll()
-        # Don't set callback just yet or it will be clobbered
-        self.needToSetCallback = 1
                     
                     
     def gotBegin(self,moduleInfo):
         self.currentModule = moduleInfo
-        if self.needToSetCallback:
-            # Replace NatLink's "begin" callback function with ours (see below)
-            natlink.setBeginCallback(vocolaBeginCallback)
-            self.needToSetCallback = 0
+        # delay enabling until now to avoid NatLink clobbering our callback:
+        enable_callback() 
 
                                       
     # Set member variables -- important folders and computer name
@@ -526,25 +522,47 @@ def output_changes():
         return 0
 
 
+# When speech is heard this function will be called before any others.
+#
+# Must return result of output_changes() so we can tell NatLink when
+# files need to be loaded.
+def utterance_start_callback(moduleInfo):
+    compile_changed()
+    return output_changes()
 
+
+###########################################################################
+#                                                                         #
+# Callback handling                                                       #
+#                                                                         #
+###########################################################################
 
 from natlinkmain import beginCallback
 from natlinkmain import findAndLoadFiles
 from natlinkmain import loadModSpecific
 
-# When speech is heard this function will be called before any others.
+callback_enabled = False
+
+def enable_callback():
+    global callback_enabled
+    if not callback_enabled:
+        callback_enabled = True
+        # Replace NatLink's "begin" callback function with ours:
+        natlink.setBeginCallback(vocolaBeginCallback)
+
+def disable_callback():
+    global callback_enabled
+    callback_enabled = False
+    natlink.setBeginCallback(beginCallback)
+
+
 def vocolaBeginCallback(moduleInfo):
-    if not VocolaEnabled:
-        return 0
-
-    compile_changed()
-
-    if getCallbackDepth() < 2:
-        if output_changes() > 1:
+    if getCallbackDepth()<2:
+        changes = utterance_start_callback(moduleInfo)
+        if changes > 1:
             # make sure NatLink sees any new .py files:
             findAndLoadFiles()
             loadModSpecific(moduleInfo)
-
     beginCallback(moduleInfo)
 
 
@@ -572,6 +590,6 @@ else:
 
 def unload():
     global thisGrammar
-    natlink.setBeginCallback(beginCallback)
+    disable_callback()
     if thisGrammar: thisGrammar.unload()
     thisGrammar = None
