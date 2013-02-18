@@ -115,6 +115,81 @@ class ThisGrammar(GrammarBase):
         <discardOld>        exported = Discard Old [Voice] Commands;
     """
 
+    if language == 'nld':
+        gramSpec = """
+<NatLinkWindow>     exported = Toon (NatLink|Vocola) venster;
+<edit>              exported = (Eddit|Bewerk|Sjoo|Toon) [stem|vojs] (Commandoos|Commands);
+<editGlobal>        exported = (Eddit|Bewerk|Sjoo|Toon) (Global|globale) [stem|vojs] (Commandoos|Commands);
+<editMachine>       exported = (Eddit|Bewerk|Sjoo|Toon) Machine [stem|vojs] (Commandoos|Commands);
+<editGlobalMachine> exported = (Eddit|Bewerk|Sjoo|Toon) (Global|globale) Machine [stem|vojs] (Commandoos|Commands);
+<loadAll>           exported = (Laad|Lood) alle [stem|vojs] (Commandoos|Commands);
+<loadCurrent>       exported = (Laad|Lood) [stem|vojs] (Commandoos|Commands);
+<loadGlobal>        exported = (Laad|Lood) globale [stem|vojs] (Commandoos|Commands);
+<loadExtensions>    exported = Laad [stem] extensies;
+<discardOld>        exported = (Discard|Verwijder) (oude|oold) [stem|vojs] (Commandoos|Commands);
+    """
+    elif language == 'fra':
+        gramSpec = """
+<NatLinkWindow>     exported = [Afficher] Fenetre (NatLink|Vocola);
+<edit>              exported = Editer Commandes [Vocales];
+<editGlobal>        exported = Editer Commandes [Vocales] Globales;
+<editMachine>       exported = Editer Commandes [Vocales] Machine;
+<editGlobalMachine> exported = Editer Commandes [Vocales] Globales Machine;
+<loadAll>           exported = Charger Toutes Les Commandes [Vocales];
+<loadCurrent>       exported = Charger Commandes [Vocales];
+<loadGlobal>        exported = Charger Commandes [Vocales] Globales;
+<loadExtensions>    exported = Charger Extensions [Vocales];
+<discardOld>        exported = Effacer Commandes [Vocales] Precedentes;
+    """
+    elif language == 'deu':
+        gramSpec = """
+<NatLinkWindow>     exported = [Zeige] (NatLink|Vocola) Fenster;
+<edit>              exported = Bearbeite [Sprach] Befehle;
+<editGlobal>        exported = Bearbeite globale [Sprach] Befehle;
+<editMachine>       exported = Bearbeite Maschinen [Sprach] Befehle;
+<editGlobalMachine> exported = Bearbeite globale Maschinen [Sprach] Befehle;
+<loadAll>           exported = Lade alle [Sprach] Befehle;
+<loadCurrent>       exported = Lade [Sprach] Befehle;
+<loadGlobal>        exported = Lade globale [Sprach] Befehle;
+<loadExtensions>    exported = Lade [Sprach] Extensions;
+<discardOld>        exported = Verwerfe alte [Sprach] Befehle;
+    """   
+    elif language == 'ita':
+        gramSpec = """
+<NatLinkWindow>     exported = [Mostra] Finestra Di (NatLink|Vocola);
+<edit>              exported = Modifica Comandi [Vocali];
+<editGlobal>        exported = Modifica Comandi [Vocali] Globali;
+<editMachine>       exported = Modifica Comandi [Vocali] [del] Computer;
+<editGlobalMachine> exported = Modifica Comandi [Vocali] Globali [del] Computer;
+<loadAll>           exported = Carica Tutti I Comandi [Vocali];
+<loadCurrent>       exported = Carica I Comandi [Vocali];
+<loadGlobal>        exported = Carica Comandi [Vocali] Gliobali;
+<loadExtensions>    exported = Carica Estensioni [Vocali];
+<discardOld>        exported = Annulla Vecchi Comandi [Vocali];
+    """
+    elif language == 'esp':
+        gramSpec = """
+<NatLinkWindow>     exported = [Mostrar] Ventana de (NatLink|Vocola) ;
+<edit>              exported = (Modificar|Editar) Comandos [de voz];
+<editGlobal>        exported = (Modificar|Editar) Comandos [de voz] Globales ;
+<editMachine>       exported = (Modificar|Editar) Comandos [de voz] de (este ordenador|la Computadora);
+<editGlobalMachine> exported = (Modificar|Editar) Comandos [de voz] Globales de (este ordenador|la Computadora);
+<loadAll>           exported = (Recargar|Cargar) Todos Los Comandos [de voz];
+<loadCurrent>       exported = (Recargar|Cargar) Comandos [de voz];
+<loadGlobal>        exported = (Recargar|Cargar) Comandos [de voz] Globales;
+<loadExtensions>    exported = (Recargar|Cargar) Extensiones [de voz];
+<discardOld>        exported = Descartar Comandos [de voz] Viejos;
+    """
+    elif language != 'enx':
+        print >> sys.stderr,  """\n\n
+Vocola Warning: no language "%s" translations for the built-in Vocola
+commands (e.g., commands to load voice commands) are currently
+available; consider helping translate them -- inquire on
+http://www.speechcomputing.com.  For now the English versions, like "Edit
+Commands" and "Edit Global Commands" are activated.
+""" % language
+
+
     def initialize(self):
         # remove previous Vocola/Python compilation output as it may be out
         # of date (e.g., new compiler, source file deleted, partially
