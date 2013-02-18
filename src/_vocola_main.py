@@ -8,7 +8,7 @@
 #
 # Copyright (c) 2002-2012 by Rick Mohr.
 #
-# Portions Copyright (c) 2012 by Hewlett-Packard Development Company, L.P.
+# Portions Copyright (c) 2012-2013 by Hewlett-Packard Development Company, L.P.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -74,7 +74,31 @@ sys.path.append(ExtensionsFolder)
 NatLinkFolder = os.path.abspath(NatLinkFolder)
 
 
-import simpscrp
+# 
+# Run program with path executable and arguments arguments.  Waits for
+# the program to finish.  Runs the program in a hidden window.
+# 
+def hidden_call(executable, arguments):
+    args = [executable] + arguments
+    try:
+        import simpscrp2
+        args = ['"' + str(x) + '"' for x in args]
+        call = ' '.join(args)
+        simpscrp.Exec(call, 1)
+    except ImportError:
+        try:
+            import subprocess2
+            si             = subprocess.STARTUPINFO()
+            si.dwFlags     = subprocess.STARTF_USESHOWWINDOW
+            si.wShowWindow = subprocess.SW_HIDE
+            print repr(args)
+            return subprocess.call(args, startupinfo=si)
+        except ImportError:
+            pid = os.spawnv(os.P_NOWAIT, executable, args)
+            pid, exit_code = os.waitpid(pid, 0)
+            exit_code = exit_code >> 8
+            return exit_code
+
 
 class ThisGrammar(GrammarBase):
 
@@ -101,7 +125,7 @@ class ThisGrammar(GrammarBase):
         self.setNames()
 
         self.load_extensions()
-        self.loadAllFiles('')
+        self.loadAllFiles([])
 
         self.load(self.gramSpec)
         self.activateAll()
@@ -202,7 +226,7 @@ class ThisGrammar(GrammarBase):
 
     # "Load All Commands" -- translate all Vocola files
     def gotResults_loadAll(self, words, fullResults):
-        self.loadAllFiles('-f')
+        self.loadAllFiles(['-f'])
 
     # "Load Commands" -- translate Vocola files for current application
     def gotResults_loadCurrent(self, words, fullResults):
@@ -215,7 +239,7 @@ class ThisGrammar(GrammarBase):
     # "Discard Old [Voice] Commands" -- purge output then translate all files
     def gotResults_discardOld(self, words, fullResults):
         self.purgeOutput()
-        self.loadAllFiles('-f')
+        self.loadAllFiles(['-f'])
 
     # Unload all commands, including those of files no longer existing
     def purgeOutput(self):
@@ -225,8 +249,8 @@ class ThisGrammar(GrammarBase):
     # Load all command files
     def loadAllFiles(self, options):
         if self.commandFolder:
-            suffix = "-suffix _vcl " 
-            self.runVocolaTranslator(self.commandFolder, suffix + options)
+            options = ["-suffix", "_vcl" ] + options
+            self.runVocolaTranslator(self.commandFolder, options)
 
     # Load command files for specific application
     def loadSpecificFiles(self, module):
@@ -240,9 +264,10 @@ class ThisGrammar(GrammarBase):
         if self.commandFolder:
             targets += [os.path.join(self.commandFolder,f)
                         for f in os.listdir(self.commandFolder) if p.search(f)]
-        suffix = "-suffix _vcl" 
+        options = ["-suffix", "_vcl" ]
         if len(targets) > 0:
-            self.loadFile(targets[0], suffix)
+            for target in targets:
+                self.loadFile(target, options)
         else:
             print >> sys.stderr
             if module == "":
@@ -254,7 +279,7 @@ class ThisGrammar(GrammarBase):
     def loadFile(self, file, options):
         try:
             os.stat(file)
-            self.runVocolaTranslator(file, options + ' -f')
+            self.runVocolaTranslator(file, options + ['-f'])
             return 1
         except OSError:
             return 0   # file not found
@@ -262,14 +287,24 @@ class ThisGrammar(GrammarBase):
     # Run Vocola translator, converting command files from "inputFileOrFolder"
     # and writing output to NatLink/MacroSystem
     def runVocolaTranslator(self, inputFileOrFolder, options):
-        if usePerl: call = 'perl "' + self.VocolaFolder + r'\exec\vcl2py.pl" '
-        else:       call = '"'      + self.VocolaFolder + r'\exec\vcl2py.exe" '
-        call += '-extensions "' + ExtensionsFolder + r'\extensions.csv" '
+        if usePerl:
+            executable = "perl"
+            arguments  = [self.VocolaFolder + r'\exec\vcl2py.pl']
+        else:
+            executable = self.VocolaFolder + r'\exec\vcl2py.exe'
+            arguments  = []
+        #executable = r'c:\Python26\Python.exe'
+        #arguments  = [self.VocolaFolder + r'\exec\vcl2py.py']
+
+        arguments += ['-extensions', ExtensionsFolder + r'\extensions.csv']
         if language == "enx":
-            call += '-numbers zero,one,two,three,four,five,six,seven,eight,nine '
-        call += options
-        call += ' "' + inputFileOrFolder + '" "' + NatLinkFolder + '"'
-        simpscrp.Exec(call, 1)
+            arguments += ['-numbers', 
+                          'zero,one,two,three,four,five,six,seven,eight,nine']
+
+        arguments += options.strip().split(" ")
+
+        arguments += [inputFileOrFolder, NatLinkFolder]
+        hidden_call(executable, arguments)
 
         logName = self.commandFolder + r'\vcl2py_log.txt'
         if os.path.isfile(logName):
@@ -387,7 +422,7 @@ def vocolaBeginCallback(moduleInfo):
     current = getLastVocolaFileModTime()
     if current > lastVocolaFileTime:
         thisGrammar.compilerError = 0	   
-        thisGrammar.loadAllFiles('')
+        thisGrammar.loadAllFiles([])
 	if not thisGrammar.compilerError:
             lastVocolaFileTime =  current
 
