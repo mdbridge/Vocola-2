@@ -74,32 +74,6 @@ sys.path.append(ExtensionsFolder)
 NatLinkFolder = os.path.abspath(NatLinkFolder)
 
 
-# 
-# Run program with path executable and arguments arguments.  Waits for
-# the program to finish.  Runs the program in a hidden window.
-# 
-def hidden_call(executable, arguments):
-    args = [executable] + arguments
-    try:
-        import simpscrp2
-        args = ['"' + str(x) + '"' for x in args]
-        call = ' '.join(args)
-        simpscrp.Exec(call, 1)
-    except ImportError:
-        try:
-            import subprocess2
-            si             = subprocess.STARTUPINFO()
-            si.dwFlags     = subprocess.STARTF_USESHOWWINDOW
-            si.wShowWindow = subprocess.SW_HIDE
-            print repr(args)
-            return subprocess.call(args, startupinfo=si)
-        except ImportError:
-            pid = os.spawnv(os.P_NOWAIT, executable, args)
-            pid, exit_code = os.waitpid(pid, 0)
-            exit_code = exit_code >> 8
-            return exit_code
-
-
 class ThisGrammar(GrammarBase):
 
     gramSpec = """
@@ -325,7 +299,7 @@ Commands" and "Edit Global Commands" are activated.
     def loadAllFiles(self, options):
         if self.commandFolder:
             options = ["-suffix", "_vcl" ] + options
-            self.runVocolaTranslator(self.commandFolder, options)
+            compile(self.commandFolder, options)
 
     # Load command files for specific application
     def loadSpecificFiles(self, module):
@@ -354,7 +328,7 @@ Commands" and "Edit Global Commands" are activated.
     def loadFile(self, file, options):
         try:
             os.stat(file)
-            self.runVocolaTranslator(file, options + ['-f'])
+            compile(file, options + ['-f'])
             return 1
         except OSError:
             return 0   # file not found
@@ -376,7 +350,7 @@ Commands" and "Edit Global Commands" are activated.
             arguments += ['-numbers', 
                           'zero,one,two,three,four,five,six,seven,eight,nine']
 
-        arguments += options.strip().split(" ")
+        arguments += options
 
         arguments += [inputFileOrFolder, NatLinkFolder]
         hidden_call(executable, arguments)
@@ -460,6 +434,79 @@ Commands" and "Edit Global Commands" are activated.
         natlink.execScript("AppBringUp \"" + path + "\", \"" + path + "\"")
 
 
+###########################################################################
+#                                                                         #
+# Compiling Vocola files                                                  #
+#                                                                         #
+###########################################################################
+
+may_have_compiled = False  # has the compiler been called?
+compile_error     = False  # has a compiler error occurred?
+
+# Run Vocola compiler, converting command files from "inputFileOrFolder"
+# and writing output to NatLink/MacroSystem
+def compile(inputFileOrFolder, options):
+    global may_have_compiled, compiler_error
+
+    may_have_compiled = True
+
+    VocolaFolder = os.path.normpath(os.path.join(NatLinkFolder, 
+                                                 '..', 'Vocola'))
+    if usePerl:
+        executable = "perl"
+        arguments  = [VocolaFolder + r'\exec\vcl2py.pl']
+    else:
+        executable = VocolaFolder + r'\exec\vcl2py.exe'
+        arguments  = []
+
+    arguments += ['-extensions', ExtensionsFolder + r'\extensions.csv']
+    if language == "enx":
+        arguments += ['-numbers', 
+                      'zero,one,two,three,four,five,six,seven,eight,nine']
+
+    arguments += options
+
+    arguments += [inputFileOrFolder, NatLinkFolder]
+    hidden_call(executable, arguments)
+
+    logName = thisGrammar.commandFolder + r'\vcl2py_log.txt'
+    if os.path.isfile(logName):
+        try:
+            log = open(logName, 'r')
+            compiler_error = True
+            print  >> sys.stderr, log.read()
+            log.close()
+            os.remove(logName)
+        except IOError:  # no log file means no Vocola errors
+            pass
+
+# 
+# Run program with path executable and arguments arguments.  Waits for
+# the program to finish.  Runs the program in a hidden window.
+# 
+def hidden_call(executable, arguments):
+    args = [executable] + arguments
+    try:
+        import simpscrp2
+        args = ['"' + str(x) + '"' for x in args]
+        call = ' '.join(args)
+        simpscrp.Exec(call, 1)
+    except ImportError:
+        try:
+            import subprocess
+            si             = subprocess.STARTUPINFO()
+            si.dwFlags     = subprocess.STARTF_USESHOWWINDOW
+            si.wShowWindow = subprocess.SW_HIDE
+            return subprocess.call(args, startupinfo=si)
+        except ImportError:
+            pid = os.spawnv(os.P_NOWAIT, executable, args)
+            pid, exit_code = os.waitpid(pid, 0)
+            exit_code = exit_code >> 8
+            return exit_code
+
+
+
+
 
 # Returns the modification time of a file or 0 if the file does not exist
 def vocolaGetModTime(file):
@@ -493,12 +540,13 @@ lastVocolaFileTime    = 0
 
 def vocolaBeginCallback(moduleInfo):
     global lastNatLinkModTime, lastCommandFolderTime, lastVocolaFileTime
+    global may_have_compiled, compiler_error
 
     current = getLastVocolaFileModTime()
     if current > lastVocolaFileTime:
-        thisGrammar.compilerError = 0	   
+        compiler_error = False
         thisGrammar.loadAllFiles([])
-	if not thisGrammar.compilerError:
+        if not compiler_error:
             lastVocolaFileTime =  current
 
 #    source_changed = 0
