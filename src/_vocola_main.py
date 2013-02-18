@@ -210,7 +210,9 @@ Commands" and "Edit Global Commands" are activated.
 
 
     def initialize(self):
-        self.setNames()
+        if os.environ.has_key('COMPUTERNAME'):
+            self.machine = string.lower(os.environ['COMPUTERNAME'])
+        else: self.machine = 'local'
 
         self.load_extensions()
         self.loadAllFiles(False)
@@ -225,47 +227,9 @@ Commands" and "Edit Global Commands" are activated.
         enable_callback() 
 
                                       
-    # Set member variables -- important folders and computer name
-    def setNames(self):
-        if os.environ.has_key('COMPUTERNAME'):
-            self.machine = string.lower(os.environ['COMPUTERNAME'])
-        else: self.machine = 'local'
-
-
     # Get app name by stripping folder and extension from currentModule name
     def getCurrentApplicationName(self):
         return string.lower(os.path.splitext(os.path.split(self.currentModule[0]) [1]) [0])
-
-    def getSourceFilename(self, output_filename):
-        m = re.match("^(.*)_vcl.pyc?$", output_filename)
-        if not m: return None                    # Not a Vocola file
-        name = m.group(1)
-        if not commandFolder: return None
-
-        marker = "e_s_c_a_p_e_d__"
-        m = re.match("^(.*)" + marker + "(.*)$", name)  # rightmost marker!
-        if m:
-            name = m.group(1)
-            tail = m.group(2)
-            tail = re.sub("__a_t__", "@", tail)
-            tail = re.sub("___", "_", tail)
-            name += tail
-
-        name = re.sub("_@", "@", name)
-        return commandFolder + "\\" + name + ".vcl"
-
-    def deleteOrphanFiles(self):
-        print "checking for orphans..."
-        for f in os.listdir(NatLinkFolder):
-            if not re.search("_vcl.pyc?$", f): continue
-
-            s = self.getSourceFilename(f)
-            if s:
-                if vocolaGetModTime(s)>0: continue
-
-            f = os.path.join(NatLinkFolder, f)
-            print "Deleting: " + f
-            os.remove(f)
 
 ### Miscellaneous commands
 
@@ -509,7 +473,7 @@ def compile_changed():
     #        lastCommandFolderTime = vocolaGetModTime(commandFolder)
     #        source_changed = True
     #if source_changed:
-    #    thisGrammar.deleteOrphanFiles()
+    #    deleteOrphanFiles()
 
 # Returns the newest modified time of any Vocola command folder file or
 # 0 if none:
@@ -525,6 +489,38 @@ def getLastVocolaFileModTime():
 def vocolaGetModTime(file):
     try: return os.stat(file)[ST_MTIME]
     except OSError: return 0        # file not found
+
+
+def deleteOrphanFiles():
+    print "checking for orphans..."
+    for f in os.listdir(NatLinkFolder):
+        if not re.search("_vcl.pyc?$", f): continue
+
+        s = getSourceFilename(f)
+        if s:
+            if vocolaGetModTime(s)>0: continue
+
+        f = os.path.join(NatLinkFolder, f)
+        print "Deleting: " + f
+        os.remove(f)
+
+def getSourceFilename(output_filename):
+    m = re.match("^(.*)_vcl.pyc?$", output_filename)
+    if not m: return None                    # Not a Vocola file
+    name = m.group(1)
+    if not commandFolder: return None
+
+    marker = "e_s_c_a_p_e_d__"
+    m = re.match("^(.*)" + marker + "(.*)$", name)  # rightmost marker!
+    if m:
+        name = m.group(1)
+        tail = m.group(2)
+        tail = re.sub("__a_t__", "@", tail)
+        tail = re.sub("___", "_", tail)
+        name += tail
+
+    name = re.sub("_@", "@", name)
+    return commandFolder + "\\" + name + ".vcl"
 
 
 lastNatLinkModTime = 0
