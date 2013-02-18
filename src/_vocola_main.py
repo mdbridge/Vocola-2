@@ -41,7 +41,8 @@ import natlink
 from natlinkutils import *
 
 
-language = 'enx'
+VocolaEnabled = True
+language      = 'enx'
 try:
     # The following files are only present if Scott's installer is being used:
     import RegistryDict
@@ -165,11 +166,6 @@ Commands" and "Edit Global Commands" are activated.
 
 
     def initialize(self):
-        # remove previous Vocola/Python compilation output as it may be out
-        # of date (e.g., new compiler, source file deleted, partially
-        # written due to crash, new machine name, etc.):
-        purgeOutput()
-
         self.setNames()
 
         self.load_extensions()
@@ -538,6 +534,9 @@ from natlinkmain import loadModSpecific
 
 # When speech is heard this function will be called before any others.
 def vocolaBeginCallback(moduleInfo):
+    if not VocolaEnabled:
+        return 0
+
     compile_changed()
 
     if getCallbackDepth() < 2:
@@ -550,8 +549,25 @@ def vocolaBeginCallback(moduleInfo):
 
 
 
-thisGrammar = ThisGrammar()
-thisGrammar.initialize()
+###########################################################################
+#                                                                         #
+# Startup/shutdown                                                        #
+#                                                                         #
+###########################################################################
+
+thisGrammar = None
+
+# remove previous Vocola/Python compilation output as it may be out of
+# date (e.g., new compiler, source file deleted, partially written due
+# to crash, new machine name, etc.):
+purgeOutput()
+
+if not VocolaEnabled:
+    print "Vocola not active"
+else:
+    print "Vocola version 2.8 starting..."
+    thisGrammar = ThisGrammar()
+    thisGrammar.initialize()
 
 
 def unload():
