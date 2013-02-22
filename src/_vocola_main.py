@@ -54,8 +54,15 @@ from   natlinkutils import *
 usePerl = 0
 
 
-VocolaEnabled = True
-language      = 'enx'
+try:
+    import natlinkstatus
+    # Quintijn's's installer
+    status        = natlinkstatus.NatlinkStatus()
+    VocolaEnabled = not not status.getVocolaUserDirectory()
+    language      = status.getLanguage()
+except ImportError:
+    VocolaEnabled = True
+    language      = 'enx'
 
 
 # get location of MacroSystem folder:
