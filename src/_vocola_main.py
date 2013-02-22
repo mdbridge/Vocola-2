@@ -56,13 +56,14 @@ usePerl = 0
 
 try:
     import natlinkstatus
-    # Quintijn's's installer
-    status        = natlinkstatus.NatlinkStatus()
-    VocolaEnabled = not not status.getVocolaUserDirectory()
-    language      = status.getLanguage()
+    Quintijn_installer = True
+    status             = natlinkstatus.NatlinkStatus()
+    VocolaEnabled      = not not status.getVocolaUserDirectory()
+    language           = status.getLanguage()
 except ImportError:
-    VocolaEnabled = True
-    language      = 'enx'
+    Quintijn_installer = False
+    VocolaEnabled      = True
+    language           = 'enx'
 
 
 # get location of MacroSystem folder:
@@ -227,7 +228,6 @@ Commands" and "Edit Global Commands" are activated.
         self.load(self.gramSpec)
         self.activateAll()
                     
-                    
     def gotBegin(self,moduleInfo):
         self.currentModule = moduleInfo
         # delay enabling until now to avoid NatLink clobbering our callback:
@@ -237,6 +237,7 @@ Commands" and "Edit Global Commands" are activated.
     # Get app name by stripping folder and extension from currentModule name
     def getCurrentApplicationName(self):
         return string.lower(os.path.splitext(os.path.split(self.currentModule[0]) [1]) [0])
+
 
 ### Miscellaneous commands
 
@@ -259,6 +260,7 @@ Commands" and "Edit Global Commands" are activated.
         if verbose:
             arguments.insert(1, "-v")
         scan_extensions.main(arguments)
+
 
 ### Loading Vocola Commands
 
@@ -314,6 +316,7 @@ Commands" and "Edit Global Commands" are activated.
             return True
         except OSError:
             return False   # file not found
+
 
 ### Editing Vocola Command Files
 
@@ -570,9 +573,17 @@ def utterance_start_callback(moduleInfo):
 #                                                                         #
 ###########################################################################
 
-from natlinkmain import beginCallback
-from natlinkmain import findAndLoadFiles
-from natlinkmain import loadModSpecific
+# 
+# With Quintijn's installer as of February 4, 2008:
+# 
+#   _vocola_main is loaded before any other NatLink modules
+#   vocolaBeginCallback is called directly by natlinkmain before any
+#     other grammer's gotBegin method
+#   natlinkmain now guarantees we are not called with CallbackDepth>1
+#   we return the result of output_changes() directly rather than
+#     massaging NatLink to deal with new .py files
+#
+
 
 callback_enabled = False
 
@@ -580,24 +591,33 @@ def enable_callback():
     global callback_enabled
     if not callback_enabled:
         callback_enabled = True
-        # Replace NatLink's "begin" callback function with ours:
-        natlink.setBeginCallback(vocolaBeginCallback)
+        if not Quintijn_installer:
+            # Replace NatLink's "begin" callback function with ours:
+            natlink.setBeginCallback(vocolaBeginCallback)
 
 def disable_callback():
     global callback_enabled
     callback_enabled = False
-    natlink.setBeginCallback(beginCallback)
+    if not Quintijn_installer:
+        natlink.setBeginCallback(beginCallback)
 
 
 def vocolaBeginCallback(moduleInfo):
-    if getCallbackDepth()<2:
+    if not callback_enabled:
+        return 0
+
+    changes = 0
+    if Quintijn_installer or getCallbackDepth()<2:
         changes = utterance_start_callback(moduleInfo)
+
+    if Quintijn_installer:
+        return changes
+    else:
         if changes > 1:
             # make sure NatLink sees any new .py files:
-            findAndLoadFiles()
-            loadModSpecific(moduleInfo)
-    beginCallback(moduleInfo)
-
+            natlinkmain.findAndLoadFiles()
+            natlinkmain.loadModSpecific(moduleInfo)
+        natlinkmain.beginCallback(moduleInfo)
 
 
 
