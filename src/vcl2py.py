@@ -1,5 +1,5 @@
 # vcl2py:  Convert Vocola voice command files to NatLink Python "grammar"
-#          classes implementing the voice commands
+#          classes implementing those voice commands
 #
 # Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
 # Where <option> can be:
@@ -23,7 +23,7 @@
 #
 # Copyright (c) 2000-2003, 2005, 2007, 2009-2012 by Rick Mohr.
 # 
-# Portions Copyright (c) 2012 by Hewlett-Packard Development Company, L.P.
+# Portions Copyright (c) 2012-13 by Hewlett-Packard Development Company, L.P.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -243,7 +243,7 @@ def safe_int(text, default=0):
 def read_ini_file(ini_file):
     global Debug, Default_maximum_commands, LOG
 
-    if (Debug >= 1): print >>LOG, "INI file is '" + ini_file + "'"
+    if Debug >= 1: print >>LOG, "INI file is '" + ini_file + "'"
     try:
         input = open(ini_file)
         for line in input:
@@ -258,7 +258,7 @@ def read_ini_file(ini_file):
 
 def read_extensions_file(extensions_filename):
     global Debug, Extension_functions, LOG
-    if (Debug >= 1): print >>LOG, "extensions file is '" + extensions_filename + "'"
+    if Debug >= 1: print >>LOG, "extensions file is '" + extensions_filename + "'"
     try:
         input = open(extensions_filename)
         for line in input:
@@ -873,15 +873,6 @@ def close_text():
 # There additional limitations on the complexity of menus; <<<>>>
 
 
-#
-#
-# The parser works as follows:
-#     1) Strip comments
-#     2) Find statement segments by slicing at major delimiters (: ; :=)
-#     3) Parse each segment using recursive descent
-#
-
-
 #   The parse tree is built from three kinds of nodes (statement,
 # term, and action), using the following fields:
 #
@@ -905,7 +896,8 @@ def close_text():
 #                 the list ("") denotes the noop context restriction (:)
 #       RULENAMES - list of rule names defined for this context
 #    include:
-#       TEXT    - filename being included
+#       TEXT    - filename being included before environment var. expansion
+#       ACTIONS - list of "action" structures (word or formalref only)
 #    set:
 #       KEY     - key being set
 #       TEXT    - value to set the key to
@@ -928,11 +920,15 @@ def close_text():
 # action:
 #    TYPE - word/reference/formalref/call
 #    word:
-#       TEXT      - keystrokes to send
+#       TEXT       - keystrokes to send
+#       POSITION   - position of the start of the word
+#       QUOTE_CHAR - empty if bareword else ' or "
 #    reference:
 #       TEXT      - reference number (a string) of reference referenced
 #    formalref:
-#       TEXT      - name of formal (i.e. user function argument) referenced
+#       TEXT      - name of formal (i.e. user function argument) referenced;
+#                   has a "_" in the front of user supplied name  <<<>>>
+#       POSITION  - position of the start of the reference
 #    call:
 #       TEXT      - name of function called
 #       CALLTYPE  - dragon/vocola/user/extension
@@ -1039,8 +1035,8 @@ def parse_statements():    # statements = (context | top_command | definition)*
 
     statements = []
     while not peek(TOKEN_EOF):
-        Variable_terms = []  # used in error-checking
-        Formals        = []
+        Variable_terms    = []  # used in error-checking
+        Formals           = []  # None => any ref ok (environment variables)
         starting_position = get_current_position()
         try:
             statement = parse_statement()
@@ -1066,7 +1062,7 @@ def parse_statements():    # statements = (context | top_command | definition)*
             statements.append(statement)
         else: 
             # Handle include file
-            include_file = expand_variables(statement["TEXT"], starting_position) # <<<>>>
+            include_file = expand_variables(statement["ACTIONS"])
             if not already_included(include_file):
                 # Save context, get statements from include file, restore 
                 Last_include_position = starting_position
@@ -1246,36 +1242,38 @@ def parse_top_command():    # top_command = terms '=' action* ';'
     return statement
 
 def parse_directive():    # directive = ('include' word | '$set' word word) ';'
-    global Debug, LOG
+    global Debug, LOG, Formals, Variable_terms
 
     starting_position = get_current_position()
-    directive = eat(TOKEN_BARE_WORD)
+    directive         = eat(TOKEN_BARE_WORD)
 
-    words = []
-    while len(words) < 2 and not peek(TOKEN_SEMICOLON):
+    word_nodes = []
+    while len(word_nodes) < 2 and not peek(TOKEN_SEMICOLON):
         peek(TOKEN_WORD)
-        word_node = parse_word()
-        words.append(word_node["TEXT"])
+        word_nodes.append(parse_word())
     before_semicolon = get_last_position();
     eat(TOKEN_SEMICOLON)
 
     statement = {}
     if directive == "include":
-        if len(words) != 1:
+        if len(word_nodes) != 1:
             position = before_semicolon
-            if len(words) == 0:
+            if len(word_nodes) == 0:
                 position = get_last_position()
             error("Include directive requires one word: include filename;", 
                   position)
-        statement["TYPE"] = "include"
-        statement["TEXT"] = words[0]
+        statement["TYPE"]    = "include"
+        statement["TEXT"]    = word_nodes[0]["TEXT"]
+        Variable_terms = []    # no # references are valid
+        Formals        = None  # turn off formal reference checking
+        statement["ACTIONS"] = split_out_references(word_nodes[0])
     elif directive == "$set":
-        if len(words) != 2:
+        if len(word_nodes) != 2:
             error("$set directive requires 2 words: $set parameter value;",
                   get_last_position())
         statement["TYPE"] = "set"
-        statement["KEY"]  = words[0]
-        statement["TEXT"] = words[1]
+        statement["KEY"]  = word_nodes[0]["TEXT"]
+        statement["TEXT"] = word_nodes[1]["TEXT"]
     else:
         error("Unknown directive '" + directive + "'", starting_position)
 
@@ -1442,34 +1440,41 @@ def parse_actions(separators):    # action = word | call
                 word_node = parse_word1(word, get_last_position())
         else:
             word_node = parse_word()
-            word      = word_node["TEXT"]
+        actions += split_out_references(word_node)
+    return actions
 
-        if word == "":
-            actions.append(word_node)
-            continue
+# expand in-string references (e.g. "{Up $1}") and unquote 
+# $'s (e.g., \$ -> $).
+# returns a non-empty list of actions
+def split_out_references(word_node):
+    word              = word_node["TEXT"]
+    starting_position = word_node["POSITION"]
+    quote_char        = word_node["QUOTE_CHAR"]
 
-        # expand in-string references (e.g. "{Up $1}") and unquote 
-        # $'s (e.g., \$ -> $)
-        word_position = get_last_position()
-        # reference = '$' (number | name)
-        for match in re.finditer(r'(.*?)(\Z|(?<!\\)\$(?:(\d+)|([a-zA-Z_]\w*)))',
-                                 word):
-            normal = match.group(1)
-            if normal != "":
-                actions.append(create_word_node(normal, True))
-            if match.group(2) !=  None:
-                before = word[:match.start(2)]
-                if kind & TOKEN_DOUBLE_WORD:
-                    before = '"' + before.replace('"', '""')
-                if kind & TOKEN_SINGLE_WORD:
-                    before = "'" + before.replace("'", "''")
-                reference_position = adjust_position(word_position, len(before))
-                if match.group(3) != None:
-                    actions.append(create_reference_node(match.group(3),
-                                                         reference_position))
-                elif match.group(4)!= None:
-                    actions.append(create_formal_reference_node(match.group(4),
-                                                               reference_position))
+    if word == "": 
+        return [word_node]
+
+    raw     = quote_char  # raw word text seen so far
+    actions = []
+
+    # reference = '$' (number | name)
+    for match in re.finditer(r'(.*?)(\Z|(?<!\\)\$(?:(\d+)|([a-zA-Z_]\w*)))',
+                             word):
+        normal = match.group(1)
+        if normal != "":
+            unescaped = normal.replace(r'\$','$')  # convert \$ to $
+            position  = adjust_position(starting_position, len(raw))
+            actions.append(create_word_node(unescaped, quote_char, position))
+            raw += normal.replace(quote_char, quote_char+quote_char)
+        if match.group(2) !=  None:
+            position  = adjust_position(starting_position, len(raw))
+            if match.group(3) != None:
+                actions.append(create_reference_node(match.group(3),
+                                                     position))
+            elif match.group(4)!= None:
+                actions.append(create_formal_reference_node(match.group(4),
+                                                     position))
+            raw += match.group(2)
 
     return actions
 
@@ -1488,12 +1493,13 @@ def create_reference_node(n, position):
 def create_formal_reference_node(name, position):
     global Debug, Formals, LOG
     formal = "_" + name
-    if formal not in Formals:
+    if Formals!=None and formal not in Formals:
         error("Reference to unknown formal '$" + name + "'", position)
     if Debug>=2: print >>LOG, "Found formal reference:  $" + name
     action = {}
-    action["TYPE"] = "formalref"
-    action["TEXT"] = formal
+    action["TYPE"]     = "formalref"
+    action["TEXT"]     = formal
+    action["POSITION"] = position
     return action
 
 def parse_call(callName):    # call = callName '(' arguments ')'
@@ -1561,28 +1567,31 @@ def parse_arguments():    # arguments = [action* (',' action*)*]
 def parse_word():    
     global Debug, LOG
     if peek(TOKEN_DOUBLE_WORD):
+        quote_char ='"'
         word = eat(TOKEN_DOUBLE_WORD)[1:-1].replace('""', '"')
     elif peek(TOKEN_SINGLE_WORD):
+        quote_char = "'"
         word = eat(TOKEN_SINGLE_WORD)[1:-1].replace("''", "'")
     else:
+        quote_char = ""
         word = eat(TOKEN_BARE_WORD)
     if Debug>=2: print >>LOG, "Found word:  '" + word + "'"
-    node = create_word_node(word, False)
-    node["POSITION"] = get_last_position()
+    node = create_word_node(word, quote_char, get_last_position())
     return node
 
 def parse_word1(bare_word, position):    
     global Debug, LOG
     if Debug>=2: print >>LOG, "Found word:  '" + bare_word + "'"
-    node = create_word_node(bare_word, False)
+    node = create_word_node(bare_word, "", position)
     node["POSITION"] = position
     return node
 
-def create_word_node(text, substitute):
-    if substitute: text = text.replace(r'\$','$')  # convert \$ to $
+def create_word_node(text, quote_char, position):
     term = {}
-    term["TYPE"] = "word"
-    term["TEXT"] = text
+    term["TYPE"]       = "word"
+    term["TEXT"]       = text
+    term["POSITION"]   = position
+    term["QUOTE_CHAR"] = quote_char
     return term
 
 
@@ -1637,25 +1646,24 @@ def already_included(filename):
     # Return TRUE if filename was already included in the current file
     return filename in Included_files
 
-def expand_variables(text, position):
+def expand_variables(actions):
     result = ""
-    while text != "":
-        match = re.search(r'(?<!\\)\$(\d+|[a-zA-Z_]\w*)', text)
-        if match:
-            result += text[0: match.start(0)].replace(r'\$', '$')
-            variable = match.group(1)
+    for action in actions:
+        type = action["TYPE"]
+        if type == "word":
+            result += action["TEXT"]
+        elif type == "formalref":
+            variable = action["TEXT"][1:]
             value = os.environ.get(variable)
             if not value:
-                log_error("Reference to unknown environment variable " + variable,
-                          position, "") 
+                # Should be a warning not an error.
+                log_error("Reference to unknown environment variable '" 
+                          + variable + "'", action["POSITION"])
             else:
                 result += value
-            text = text[match.end(0):]
         else:
-            result += text.replace(r'\$', '$')
-            break
+            implementation_error("unsupported action type in include actions")
     return result
-    # Should be a warning not an error.
 
 # ---------------------------------------------------------------------------
 # Parse-time error checking of references

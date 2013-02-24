@@ -10,6 +10,6 @@ New in 2.8:
 * Some new command line arguments are available for the compiler; see
   the comments at the start of vcl2py.py for details.
 
-* fixed a bug whereby "load [global] commands" although loaded the first
+* fixed a bug whereby "load [global] commands" only loaded the first
   relevant command file.
 
