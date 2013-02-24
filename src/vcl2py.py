@@ -677,7 +677,20 @@ def point_to_position(position):
 
     line   = make_visible(line)
     before = make_visible(before)
-    
+
+    limit = 70
+    post  = 15
+    if len(line) > limit:
+        fringe = "..."
+        if len(before)+1 > limit-post:
+            while len(before)+len(fringe)+1 > limit-post:
+                line   = line[1:]
+                before = before[1:]
+            line   = fringe + line
+            before = fringe + before
+        if len(line) > limit:
+            line = line[:limit-len(fringe)] + "..."
+
     result  = line + "\n"
     #result += before + "^\n"
     result += " "*len(before) + "^\n"
