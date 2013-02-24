@@ -409,6 +409,8 @@ def compile_Vocola(inputFileOrFolder, force):
     else:
         executable = VocolaFolder + r'\exec\vcl2py.exe'
         arguments  = []
+    executable = sys.prefix + r'\python.exe'
+    arguments  = [VocolaFolder + r'\exec\vcl2py.py']
 
     arguments += ['-extensions', ExtensionsFolder + r'\extensions.csv']
     if language == "enx":
