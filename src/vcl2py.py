@@ -672,13 +672,27 @@ def point_to_position(position):
     line   = get_line(position)
     column = get_column_number(position)
 
-    line    = line.replace("\t", " ")
+    line   = line.replace("\t", " ")
+    before = line[0:column]
+
+    line   = make_visible(line)
+    before = make_visible(before)
+    
     result  = line + "\n"
-    #result += line[0:column] + "^\n"
-    result += " "*column + "^\n"
+    #result += before + "^\n"
+    result += " "*len(before) + "^\n"
 
     return result
 
+def make_visible(text):
+    result = ""
+    for char in text:
+        c = ord(char)
+        if c<32:
+            result += "^" + chr(ord('@')+c)
+        else:
+            result += char
+    return result
 
 ## 
 ## Decorating tokens with properties:
@@ -1950,8 +1964,11 @@ def transform_eval(call):
 
 def emit_output(out_file, statements):
     global Should_emit_dictation_support, OUT
-    OUT = open(out_file, "w")
-    #open OUT, ">" + out_file or implementation_error "$@ " + out_file + "\n"
+    try:
+        OUT = open(out_file, "w")
+    except IOError, e:
+        log_error("Unable to open output file '" + out_file + "' for writing: " + str(e))
+        return
     emit_file_header()
     if Should_emit_dictation_support: emit_dictation_grammar()
     for statement in statements: 
