@@ -7,9 +7,14 @@ New in 2.8:
   messages, describing what was found versus what was expected and
   visually pointing to the error.
 
+* Non-backward compatible parsing change: unquoted words may no longer
+  end with ':' if they are not followed by whitespace.
+
 * Some new command line arguments are available for the compiler; see
   the comments at the start of vcl2py.py for details.
 
 * fixed a bug whereby "load [global] commands" only loaded the first
   relevant command file.
+
+* Versions of Python earlier than 2.5 are no longer supported.
 
