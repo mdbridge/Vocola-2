@@ -7,8 +7,11 @@ New in 2.8:
   messages, describing what was found versus what was expected and
   visually pointing to the error.
 
-* Non-backward compatible parsing change: unquoted words may no longer
-  end with ':' if they are not followed by whitespace.
+* Non-backward compatible parsing changes: 
+  * unquoted words may no longer end with ':' if they are not followed
+    by whitespace
+  * whitespace may no longer be omitted between variables (e.g.,
+    <list><list>); the fact that this ever worked was a bug.
 
 * Some new command line arguments are available for the compiler; see
   the comments at the start of vcl2py.py for details.

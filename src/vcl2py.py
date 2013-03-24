@@ -347,9 +347,10 @@ def convert_file(in_file, out_folder, suffix):
     NestedCallLevel               = 0
     
     if Debug>=1: print >>LOG, "\n=============================="
-    
+
     statements = parse_file(Input_name)
-    check_forward_references()
+    if Error_count == 0: 
+        check_forward_references()
     
     # Prepend a "global" context statement if necessary
     if len(statements) == 0 or statements[0]["TYPE"] != "context": 
