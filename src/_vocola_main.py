@@ -447,7 +447,8 @@ def purgeOutput():
 def hidden_call(executable, arguments):
     args = [executable] + arguments
     try:
-        import simpscrp2
+        # Using simpscrp is depreciated; remove '_disabled' below to use:
+        import simpscrp_disabled
         args = ['"' + str(x) + '"' for x in args]
         call = ' '.join(args)
         simpscrp.Exec(call, 1)

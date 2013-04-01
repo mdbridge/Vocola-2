@@ -115,7 +115,7 @@ import sys
 # ---------------------------------------------------------------------------
 # Main control flow
 
-VocolaVersion = "2.8 alpha"
+VocolaVersion = "2.8"
 
 def main():
     global Debug, Default_maximum_commands, Error_encountered, Force_processing, In_folder, Number_words, LOG
