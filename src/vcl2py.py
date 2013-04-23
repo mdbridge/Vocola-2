@@ -1,7 +1,7 @@
 # vcl2py:  Convert Vocola voice command files to NatLink Python "grammar"
 #          classes implementing those voice commands
 #
-# Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
+# Usage: python vcl2py.py [<option>...] <inputFileOrFolder> <outputFolder>
 # Where <option> can be:
 #   -debug <n>             -- specify debugging level 
 #                               (0 = no info, 1 = show statements, 
@@ -862,8 +862,8 @@ def close_text():
 #    <top_command> ::= <terms>      '=' <action>*   ';'
 #      <directive> ::= bare_word [<word> [<word>]]  ';'
 #
-#          <terms> ::= (<term> | '[' <word> ']')+
-#           <term> ::= <word> | variable | range | <menu>
+#          <terms> ::= <term>+
+#           <term> ::= <word> | variable | range | <menu> | '[' <terms> ']'
 #           <word> ::= quoted_word | bare_word
 #
 #         <action> ::= <word> | <call>
@@ -932,19 +932,21 @@ def close_text():
 #       TEXT    - value to set the key to
 # 
 # term:
-#    TYPE   - word/variable/range/menu/dictation
+#    TYPE   - word/variable/range/menu/dictation/optionalterms
 #    NUMBER - sequence number of this term
 #    word:
 #       TEXT     - text defining the word(s)
-#       OPTIONAL - is this word optional
+#       OPTIONAL - are these words optional?
 #    variable:
 #       TEXT     - name of variable being referenced
-#       OPTIONAL - is this variable optional
+#       OPTIONAL - is this variable optional?
 #    range:
 #       FROM     - start number of range
 #       TO       - end number of range
 #    menu:
 #       COMMANDS - list of "command" structures defining the menu
+#    optionalterms:
+#       TERMS   - list of "term" structures
 #       
 # action:
 #    TYPE - word/reference/formalref/call
@@ -1331,22 +1333,23 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
     command["LINE"] = get_line_number(get_current_position()) # line number is *last* line of command # <<<>>>
     return command
 
-def parse_terms(separators):    # <terms> ::= (<term> | '[' <word> ']')+
+def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
     starting_position = get_current_position()
     terms = []
     seen_non_optional = False
     while True:
         if peek(TOKEN_LBRACKET):
             optional = True
+            optional_starting_position = get_current_position()
             eat(TOKEN_LBRACKET)
-            if not peek(TOKEN_WORD): eat(TOKEN_WORD)
-            term = parse_term()
+            optional_terms = parse_terms(TOKEN_RBRACKET)
             eat(TOKEN_RBRACKET)
-            type = term["TYPE"]
-            if type == "range":
-                error("Range terms may not be optional", term["POSITION"])
-            elif type == "variable" or type == "dictation":
-                error("Variable terms may not be optional", term["POSITION"])
+            term             = {}
+            term["TYPE"]     = "optionalterms"
+            term["TERMS"]    = optional_terms
+            term["POSITION"] = optional_starting_position
+            if Debug>=2: 
+                print >>LOG, "Found optional term group:  " + unparse_term(term, True)
         else:
             optional = False
             term = parse_term()
@@ -1396,7 +1399,7 @@ def parse_term():         # <term> ::= <word> | variable | range | <menu>
         term["POSITION"] = starting_position
         eat(TOKEN_RPAREN)
         if Debug>=2: 
-            print >>LOG, "Found menu:  " + unparse_menu (term, True)
+            print >>LOG, "Found menu:  " + unparse_menu(term, True)
         return term
     elif not peek(TOKEN_BARE_WORD):
         return parse_word()
@@ -1812,6 +1815,9 @@ def unparse_terms(show_actions, terms):
     return result
 
 def unparse_term(term, show_actions):
+    if term["TYPE"] == "optionalterms":
+        return "[" + unparse_terms(show_actions, term["TERMS"]) + "]"
+
     result = ""
     if term.get("OPTIONAL"): result +=  "["
     
