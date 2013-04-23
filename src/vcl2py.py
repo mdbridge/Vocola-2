@@ -46,6 +46,7 @@
 # SOFTWARE.
 #
 #
+#  4/23/2013  ml  <<<>>>
 #  5/01/2012  ml  Ported to Python line by line, parser replaced with 
 #                 lexer/traditional parser
 #  5/14/2011  ml  Selected numbers in ranges can now be spelled out
@@ -115,7 +116,7 @@ import sys
 # ---------------------------------------------------------------------------
 # Main control flow
 
-VocolaVersion = "2.8"
+VocolaVersion = "2.8.1"
 
 def main():
     global Debug, Default_maximum_commands, Error_encountered, Force_processing, In_folder, Number_words, LOG

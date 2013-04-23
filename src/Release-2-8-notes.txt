@@ -1,3 +1,8 @@
+New in 2.8.1:
+
+* 
+
+
 New in 2.8:
 
 * The Vocola 2 compiler has been ported from Perl to Python, mostly line
@@ -20,4 +25,3 @@ New in 2.8:
   relevant command file.
 
 * Versions of Python earlier than 2.5 are no longer supported.
-
