@@ -359,10 +359,9 @@ def convert_file(in_file, out_folder, suffix):
         context["TYPE"]    = "context"
         context["STRINGS"] = [""]
         statements.insert(0, context)
-    #print >>LOG, unparse_statements (@statements),
-    transform_nodes(statements)
-    #print >>LOG, unparse_statements (@statements),
-    #print unparse_statements(statements),
+    print >>LOG, unparse_statements(statements),
+    statements = transform_nodes(statements)
+    print >>LOG, unparse_statements(statements),
     
     # Handle $set directives:
     Maximum_commands = Default_maximum_commands
@@ -1871,24 +1870,36 @@ def unparse_argument(argument):
     return unparse_actions(argument)
 
 # ---------------------------------------------------------------------------
-# Transform Eval into EvalTemplate, unroll user functions
+# Transform Eval into EvalTemplate, unroll user functions, <<<>>>
 
   # takes a list of non-action nodes
-def transform_nodes(nodes):
+def transform_nodes(nodes):   # -> nodes
+    result = []
     for node in nodes: 
         transform_node(node)
+        if node["TYPE"] == "command":
+            result += transform_command(node)
+        else:
+            result.append(node)
+    return result
 
 def transform_node(node):
-    if node.has_key("COMMANDS"):   transform_nodes(node["COMMANDS"]) 
-    if node.has_key("TERMS"):      transform_nodes(node["TERMS"]) 
-    if node.has_key("MENU"):       transform_node( node["MENU"]) 
+    if node.has_key("COMMANDS"):   
+        node["COMMANDS"] = transform_nodes(node["COMMANDS"]) 
+    if node.has_key("TERMS"):      
+        node["TERMS"]    = transform_nodes(node["TERMS"]) 
+    if node.has_key("MENU"): transform_node(node["MENU"]) 
     
     if node.has_key("ACTIONS"):    
         substitution = {}
         node["ACTIONS"] = transform_actions(substitution, node["ACTIONS"]) 
 
-# transforms above are destructive, transforms below are functional
-# except transform_eval
+  # this is called after command's subnodes have been transformed:
+def transform_command(command):  # -> commands !
+    return [command]
+
+# transforms above are (partially) destructive, transforms below are
+# functional except transform_eval
 
 def transform_actions(substitution, actions):
     new_actions = []
