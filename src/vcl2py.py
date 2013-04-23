@@ -1913,9 +1913,13 @@ def transform_command(command):  # -> commands !
 
     with_terms = command
     with_terms["TERMS"] = combine_terms(terms[0:i] + terms[i]["TERMS"] + terms[i+1:])
+
     without_terms    = without["TERMS"]
     without["TERMS"] = combine_terms(without_terms[0:i] + without_terms[i+1:])
-
+    before    = len(get_variable_terms(without_terms[0:i]))
+    vanishing = len(get_variable_terms(terms[i]["TERMS"]))
+    after     = len(get_variable_terms(without_terms[i+1:]))
+    without["ACTIONS"] = nop_references(without["ACTIONS"], before, vanishing, after)
     return transform_command(with_terms) + transform_command(without) 
 
 def offset_of_first_optional(terms):
@@ -1926,6 +1930,20 @@ def offset_of_first_optional(terms):
         i += 1
     return -1
 
+def nop_references(actions, before, vanishing, after):
+    nop = create_word_node("", "", -1)
+
+    substitution = {}
+    for j in xrange(1+before,1+before+vanishing):
+        substitution[str(j)] = [nop]
+    for j in xrange(1+before+vanishing, 1+before+vanishing+after):
+        reference         = {}
+        reference["TYPE"] = "reference"
+        reference["TEXT"] = str(j - vanishing)
+        substitution[str(j)] = [reference]
+
+    return transform_actions(substitution, actions)
+
 # transforms above are (partially) destructive, transforms below are
 # functional except transform_eval
 
@@ -1935,14 +1953,14 @@ def transform_actions(substitution, actions):
         new_actions.extend(transform_action(substitution, action))
     return new_actions
 
-def transform_arguments(substitution, arguments):          # lists of actions
+def transform_arguments(substitution, arguments): # -> lists of actions
     new_arguments = []
     for argument in arguments: 
         new_arguments.append(transform_actions(substitution, argument))
     return new_arguments
 
 def transform_action(substitution, action):  # -> actions
-    if action["TYPE"] == "formalref":  
+    if action["TYPE"] == "formalref" or action["TYPE"] == "reference":  
         name = action["TEXT"]
         if substitution.has_key(name):
             return substitution[name]
