@@ -1900,18 +1900,23 @@ def transform_node(node):
 
   # this is called after command's subnodes have been transformed:
 def transform_command(command):  # -> commands !
+    global Statement_count
+
     terms = command["TERMS"]
     i = offset_of_first_optional(terms)
     if i < 0:
         return [command]
 
-    without    = copy.deepcopy(command)
+    without         = copy.deepcopy(command)
+    without["NAME"] = str(Statement_count)
+    Statement_count += 1
+
     with_terms = command
     with_terms["TERMS"] = combine_terms(terms[0:i] + terms[i]["TERMS"] + terms[i+1:])
     without_terms    = without["TERMS"]
     without["TERMS"] = combine_terms(without_terms[0:i] + without_terms[i+1:])
 
-    return transform_command(without) + transform_command(with_terms)
+    return transform_command(with_terms) + transform_command(without) 
 
 def offset_of_first_optional(terms):
     i = 0
