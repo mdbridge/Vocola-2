@@ -110,6 +110,7 @@
 #   Local variables are lowercase    (e.g. in_folder)
 
 import re
+import copy
 import os
 import sys
 
@@ -1820,7 +1821,8 @@ def unparse_term(term, show_actions):
     result = ""
     if term.get("OPTIONAL"): result +=  "["
     
-    if   term["TYPE"] == "word":      result += term["TEXT"]
+#    if   term["TYPE"] == "word":      result += term["TEXT"]
+    if   term["TYPE"] == "word":      result += "'" + term["TEXT"] + "'"
     elif term["TYPE"] == "variable":  result += "<" + term["TEXT"] + ">"
     elif term["TYPE"] == "dictation": result += "<_anything>"
     elif term["TYPE"] == "menu":      
@@ -1870,7 +1872,9 @@ def unparse_argument(argument):
     return unparse_actions(argument)
 
 # ---------------------------------------------------------------------------
-# Transform Eval into EvalTemplate, unroll user functions, <<<>>>
+# Transform Eval into EvalTemplate, unroll user functions, and remove
+# optional term groups by duplicating commands with and without the
+# optional terms.
 
   # takes a list of non-action nodes
 def transform_nodes(nodes):   # -> nodes
@@ -1896,7 +1900,26 @@ def transform_node(node):
 
   # this is called after command's subnodes have been transformed:
 def transform_command(command):  # -> commands !
-    return [command]
+    terms = command["TERMS"]
+    i = offset_of_first_optional(terms)
+    if i < 0:
+        return [command]
+
+    without    = copy.deepcopy(command)
+    with_terms = command
+    with_terms["TERMS"] = combine_terms(terms[0:i] + terms[i]["TERMS"] + terms[i+1:])
+    without_terms    = without["TERMS"]
+    without["TERMS"] = combine_terms(without_terms[0:i] + without_terms[i+1:])
+
+    return transform_command(without) + transform_command(with_terms)
+
+def offset_of_first_optional(terms):
+    i = 0
+    for term in terms:
+        if term["TYPE"] == "optionalterms":
+            return i
+        i += 1
+    return -1
 
 # transforms above are (partially) destructive, transforms below are
 # functional except transform_eval
