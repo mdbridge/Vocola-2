@@ -1324,7 +1324,7 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
     command["TERMS"] = terms
     
     # Count variable terms for range checking in parse_reference
-    Variable_terms = get_variable_terms(command)
+    Variable_terms = get_variable_terms(terms)
     
     if needs_actions or peek(TOKEN_EQUALS):
         eat(TOKEN_EQUALS)
@@ -2266,7 +2266,7 @@ def emit_top_command_actions(command):
     terms = command["TERMS"]
     nterms = len(terms)
     function = "gotResults_" + command["NAME"]
-    Variable_terms = get_variable_terms(command) # used in emit_reference
+    Variable_terms = get_variable_terms(terms) # used in emit_reference
     
     command_specification = unparse_terms(0, terms)
     
@@ -2339,12 +2339,14 @@ def emit_actions(buffer, functional, actions, indent):
         else: 
             implementation_error("Unknown action type: '" + type + "'")
 
-def get_variable_terms(command):
+def get_variable_terms(terms):
     variable_terms = []
-    for term in command["TERMS"]: 
+    for term in terms:
         type = term["TYPE"]
         if type == "menu" or type == "range" or type == "variable" or type == "dictation": 
             variable_terms.append(term)
+        elif type =="optionalterms":
+            variable_terms += get_variable_terms(term["TERMS"])
     return variable_terms
 
 def emit_reference(buffer, functional, action, indent):
