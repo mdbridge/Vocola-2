@@ -292,7 +292,7 @@ Commands" and "Edit Global Commands" are activated.
         pattern = "^" + special.sub(r'\\\1', module)
         pattern += "(_[^@]*)?(@" + special.sub(r'\\\1', self.machine)
         pattern += ")?\.vcl$"
-        p = re.compile(pattern)
+        p = re.compile(pattern, re.IGNORECASE)
 
         targets = []
         if commandFolder:

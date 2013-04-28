@@ -361,9 +361,9 @@ def convert_file(in_file, out_folder, suffix):
         context["TYPE"]    = "context"
         context["STRINGS"] = [""]
         statements.insert(0, context)
-    print >>LOG, unparse_statements(statements),
+    #print >>LOG, unparse_statements(statements),
     statements = transform_nodes(statements)
-    print >>LOG, unparse_statements(statements),
+    #print >>LOG, unparse_statements(statements),
     
     # Handle $set directives:
     Maximum_commands = Default_maximum_commands
