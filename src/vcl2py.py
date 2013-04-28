@@ -46,7 +46,8 @@
 # SOFTWARE.
 #
 #
-#  4/23/2013  ml  <<<>>>
+#  4/23/2013  ml  Any series of one or more terms at least one of which
+#                 is not optional or <_anything> can now be optional.
 #  5/01/2012  ml  Ported to Python line by line, parser replaced with 
 #                 lexer/traditional parser
 #  5/14/2011  ml  Selected numbers in ranges can now be spelled out
@@ -1713,32 +1714,38 @@ def verify_referenced_menu(menu, parent_has_actions=False, parent_has_alternativ
                       menu["POSITION"])
 
         terms = command["TERMS"]
-        for term in terms:
-            type = term["TYPE"]
-            if   type == "word" and term["OPTIONAL"]:
-                error("Alternative cannot contain an optional word",
+        verify_menu_terms(terms, has_actions, has_alternatives, False)
+
+def verify_menu_terms(terms, has_actions, has_alternatives, other_terms):
+    if len(terms) != 1: other_terms = True
+    for term in terms:
+        type = term["TYPE"]
+        if   type == "word" and term["OPTIONAL"]:
+            #error("Alternative cannot contain an optional word",
+            #      term["POSITION"])
+            implementation_error("Alternative cannot contain an optional word")
+        elif type == "optionalterms": 
+            verify_menu_terms(term["TERMS"], has_actions, has_alternatives, 
+                              other_terms)
+        elif type == "variable" or type == "dictation": 
+            error("Alternative cannot contain a variable", term["POSITION"])
+        elif type == "menu": 
+            if other_terms:
+                error("An inline list cannot be combined with anything else to make up an alternative",
                       term["POSITION"])
-            elif type == "variable" or type == "dictation": 
-                error("Alternative cannot contain a variable", term["POSITION"])
-            elif type == "menu": 
-                if len(terms) != 1:
-                    error("An inline list cannot be combined with anything else to make up an alternative",
-                          term["POSITION"])
-                verify_referenced_menu(term, has_actions, has_alternatives)
-            elif type == "range": 
-                # allow a single range with no actions if it is the only
-                # alternative in the (nested) set:
-                if len(terms) != 1:
-                    error("A range cannot be combined with anything else to make up an alternative",
-                          term["POSITION"])
-                if has_actions:
-                    error("A range alternative may not have associated actions",
-                          term["POSITION"])
-                if has_alternatives:
-                    error("A range alternative must be the only alternative in an alternative set",
-                          term["POSITION"])
-        if len(terms) != 1:
-            implementation_error("Alternative too complicated")
+            verify_referenced_menu(term, has_actions, has_alternatives)
+        elif type == "range": 
+            # allow a single range with no actions if it is the only
+            # alternative in the (nested) set:
+            if other_terms:
+                error("A range cannot be combined with anything else to make up an alternative",
+                      term["POSITION"])
+            if has_actions:
+                error("A range alternative may not have associated actions",
+                      term["POSITION"])
+            if has_alternatives:
+                error("A range alternative must be the only alternative in an alternative set",
+                      term["POSITION"])
 
 def add_forward_reference(variable, position):
     global Forward_references, Include_stack_file, Include_stack_line
@@ -1919,7 +1926,9 @@ def transform_command(command):  # -> commands !
     before    = len(get_variable_terms(without_terms[0:i]))
     vanishing = len(get_variable_terms(terms[i]["TERMS"]))
     after     = len(get_variable_terms(without_terms[i+1:]))
-    without["ACTIONS"] = nop_references(without["ACTIONS"], before, vanishing, after)
+    if without.has_key("ACTIONS"):
+        without["ACTIONS"] = nop_references(without["ACTIONS"], before, 
+                                            vanishing, after)
     return transform_command(with_terms) + transform_command(without) 
 
 def offset_of_first_optional(terms):
