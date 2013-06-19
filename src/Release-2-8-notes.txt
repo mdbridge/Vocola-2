@@ -1,6 +1,8 @@
 New in 2.8.1:
 
-* 
+* Bug fix for list entries containing \'s with actions (produced invalid
+  Python code).
+
 
 
 New in 2.8:
