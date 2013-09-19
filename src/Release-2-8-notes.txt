@@ -3,6 +3,7 @@ New in 2.8.1:
 * Bug fix for list entries containing \'s with actions (produced invalid
   Python code).
 
+* Bug fix for adjacent <_anything>'s in command sequences
 
 
 New in 2.8:

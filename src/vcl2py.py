@@ -2353,8 +2353,8 @@ def emit_optional_term_fixup(unnamed):
         elif term["TYPE"] == "dictation": 
             emit(2, "fullResults = combineDictationWords(fullResults)\n")
             emit(2, "opt = " + str(index) + " + self.firstWord\n")
-            emit(2, "if opt >= len(fullResults) or fullResults[opt][1] != 'dgndictation':\n")
-            emit(3, "fullResults.insert(opt, ['', 'dgndictation'])\n")
+            emit(2, "if opt >= len(fullResults) or fullResults[opt][1] != 'converted dgndictation':\n")
+            emit(3, "fullResults.insert(opt, ['', 'converted dgndictation'])\n")
 
 def emit_actions(buffer, functional, actions, indent):
     for action in actions: 
