@@ -46,6 +46,7 @@
 # SOFTWARE.
 #
 #
+# 12/26/2013  ml  Added new built-ins, If and When
 #  4/23/2013  ml  Any series of one or more terms at least one of which
 #                 is not optional or <_anything> can now be optional.
 #  5/01/2012  ml  Ported to Python line by line, parser replaced with 
@@ -972,10 +973,12 @@ def close_text():
 # number of arguments):
 
 Vocola_functions = {
-                     "Eval"              : [1,1],
-                     "EvalTemplate"      : [1,-1],
-                     "Repeat"            : [2,2],
-                     "Unimacro"          : [1,1],
+                     "Eval"         : [1,1],
+                     "EvalTemplate" : [1,-1],
+                     "If"           : [2,3],
+                     "Repeat"       : [2,2],
+                     "Unimacro"     : [1,1],
+                     "When"         : [2,3],
                    }
 
 # Vocola extensions with (extension_name, minimum_arguments, maximum_arguments,
@@ -1244,6 +1247,8 @@ def parse_function_definition():   # function = prototype ':=' action* ';'
 
     if Functions.has_key(functionName):
         error("Redefinition of " + functionName + "()", position)
+    if Vocola_functions.has_key(functionName):
+        error("Attempted redefinition of built-in function: " + functionName, position)
     Functions[functionName] = len(formals)  # remember number of formals
     Function_definitions[functionName] = statement
     if Debug>=1: print >>LOG, unparse_function_definition (statement),
@@ -2433,8 +2438,10 @@ def emit_call(buffer, functional, call, indent):
         if    callName == "Eval":         
             implementation_error("Eval not transformed away")
         elif callName == "EvalTemplate": emit_call_eval_template(buffer, functional, call, indent)
+        elif callName == "If":           emit_call_if(buffer, functional, call, indent)
         elif callName == "Repeat":       emit_call_repeat(buffer, functional, call, indent)
         elif callName == "Unimacro":     emit_call_Unimacro(buffer, functional, call, indent)
+        elif callName == "When":         emit_call_when(buffer, functional, call, indent)
         else: implementation_error("Unknown Vocola function: '" + callName + "'")
     else: implementation_error("Unknown function call type: '" + callType + "'")
     end_nested_call()
@@ -2462,6 +2469,30 @@ def emit_call_repeat(buffer, functional, call, indent):
     emit_actions(argument_buffer, "True", arguments[0], indent)
     emit(indent, "for i in range(to_long(" + argument_buffer + ")):\n")
     emit_actions(buffer, functional, arguments[1], indent+1)
+
+def emit_call_if(buffer, functional, call, indent):
+    arguments = call["ARGUMENTS"]
+    
+    argument_buffer = get_nested_buffer_name("conditional_value")
+    emit(indent, argument_buffer + " = ''\n")
+    emit_actions(argument_buffer, "True", arguments[0], indent)
+    emit(indent, "if " + argument_buffer + ".lower() == \"true\":\n")
+    emit_actions(buffer, functional, arguments[1], indent+1)
+    if len(arguments)>2:
+        emit(indent, "else:\n")
+        emit_actions(buffer, functional, arguments[2], indent+1)
+
+def emit_call_when(buffer, functional, call, indent):
+    arguments = call["ARGUMENTS"]
+    
+    argument_buffer = get_nested_buffer_name("when_value")
+    emit(indent, argument_buffer + " = ''\n")
+    emit_actions(argument_buffer, "True", arguments[0], indent)
+    emit(indent, "if " + argument_buffer + " != \"\":\n")
+    emit_actions(buffer, functional, arguments[1], indent+1)
+    if len(arguments)>2:
+        emit(indent, "else:\n")
+        emit_actions(buffer, functional, arguments[2], indent+1)
 
 def emit_arguments(call, name, indent):
     arguments = ""

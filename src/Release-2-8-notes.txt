@@ -1,5 +1,8 @@
 New in 2.8.1:
 
+! Any series of one or more terms at least one of which is not optional
+  or <_anything> can now be optional.
+
 * Bug fix for list entries containing \'s with actions (produced invalid
   Python code).
 
