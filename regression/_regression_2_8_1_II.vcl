@@ -8,6 +8,8 @@
 
 <values> := (true|big true="True"|upper true="TRUE"|false|empty=""|garbage|0|1);
 
+  # What triggers condition (instruction should produce an error
+  # message, all trues should cause if-part):
 test if with <values> = 
     If($1, if-part, else-part) " " If($1,if-part2) {enter};
 
@@ -16,6 +18,10 @@ test if instructions <values> = If($1,TTSPlayString("If part"),
                                       TTSPlayString("Else part"));
 
 test nested if <values> = If(true, If($1,inner-if, inner-else));
+
+test if fitness (0|1)     = If(Eval("$1==0"),yes,no);
+test if fitness (foo|bar) = If(Eval("$1=='foo'"),yes,no);
+
 
 
 ## 
