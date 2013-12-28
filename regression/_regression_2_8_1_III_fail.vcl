@@ -39,3 +39,41 @@ too few when arguments  = When();
 too many when arguments = When(a,b,c,d);
 
 When(a,b,c) :=  attempt to redefine a built-in;
+
+
+## 
+## Optional grammar elements:
+## 
+
+<list> := (list);
+
+empty [] terms = parsing error;
+
+  # at least one term must be non-optional:
+[everything optional]   = error;
+[separately] [optional] = error;
+[0..1] [<list>]         = error;
+[[doubly]]              = error;
+([all] | there)         = error;
+<foo> := (bar | <_anything> [there] | foo);
+nesting [there [error ([<list>])]] = error;
+
+
+  # test verify_reference_menu still works for non-optional terms:
+(reference in menu 1..9) is            = $1;
+(list in menu list <list>) is          = $1;
+(anything in menu list <_anything>) is = $1;
+(other (menu))                         = $1;
+(other 1..9)                           = $1;
+(1..9 other)                           = $1;
+(1..9=1)                               = $1;
+(1..9 | other)                         = $1;
+
+  # test still works when introduce optional terms:
+(reference in menu [1..9]) is            = $1;
+(list in menu list [<list>]) is          = $1;
+(anything in menu [list <_anything>]) is = $1;
+(other [(menu)])                         = $1;
+(foo [other 1..9])                       = $1;
+([1..9] other)                           = $1;
+([1..9] | other)                         = $1;
