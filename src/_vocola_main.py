@@ -8,7 +8,7 @@
 #
 # Copyright (c) 2002-2012 by Rick Mohr.
 #
-# Portions Copyright (c) 2012-2013 by Hewlett-Packard Development Company, L.P.
+# Portions Copyright (c) 2012-2014 by Hewlett-Packard Development Company, L.P.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -642,7 +642,7 @@ purgeOutput()
 if not VocolaEnabled:
     print "Vocola not active"
 else:
-    print "Vocola version 2.8.1 starting..."
+    print "Vocola version 2.8.2 starting..."
     thisGrammar = ThisGrammar()
     thisGrammar.initialize()
 

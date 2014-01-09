@@ -1,3 +1,9 @@
+New in 2.8.2:
+
+* Change to support non-backward-compatible NatLink interface change:
+  movement of some names from natlinkutils to natlink
+
+
 New in 2.8.1:
 
 ! Any series of one or more terms at least one of which is not optional
