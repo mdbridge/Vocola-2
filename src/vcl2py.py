@@ -122,7 +122,7 @@ import sys
 VocolaVersion = "2.8.2"
 
 def main():
-    global Debug, Default_maximum_commands, Error_encountered, Force_processing, In_folder, Number_words, LOG
+    global Debug, Default_maximum_commands, Error_encountered, Force_processing, In_folder, Default_number_words, LOG
 
     # flush output after every print statement:
     #sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)    # <<<>>>
@@ -132,7 +132,7 @@ def main():
     Default_maximum_commands = 1
     Error_encountered        = False
     Force_processing         = False
-    Number_words             = {}
+    Default_number_words     = {}
 
 
     extensions_file          = ""
@@ -162,12 +162,12 @@ def main():
         elif option == "-log_file":     log_file                 = argument
         elif option == "-max_commands": Default_maximum_commands = safe_int(argument, 1)
         elif option == "-numbers": 
-            Number_words = {}
+            Default_number_words = {}
             numbers = re.split(r'\s*,\s*', argument.strip())
             i = 0
             for number in numbers: 
                 if number != "":
-                    Number_words[i] = number
+                    Default_number_words[i] = number
                 i = i + 1
         elif option == "-suffix":       suffix                   = argument
         else:
@@ -313,7 +313,8 @@ def convert_file(in_file, out_folder, suffix):
     global Debug, Definitions, Error_count, Error_encountered, File_empty
     global Force_processing, Forward_references, Function_definitions, Functions
     global In_folder, Include_stack_file, Include_stack_line, Included_files
-    global Input_name, Last_include_position, Module_name, Number_words
+    global Input_name, Last_include_position, Module_name
+    global Default_number_words, Number_words
     global Should_emit_dictation_support
     global Statement_count, Default_maximum_commands, Maximum_commands
     global NestedCallLevel
@@ -370,6 +371,7 @@ def convert_file(in_file, out_folder, suffix):
     
     # Handle $set directives:
     Maximum_commands = Default_maximum_commands
+    Number_words     = Default_number_words
     for statement in statements: 
         if statement["TYPE"] == "set": 
             key = statement["KEY"]

@@ -7,6 +7,9 @@ New in 2.8.2:
   numbers "" or $set numbers ",one,,three") and handle leading or
   trailing white space correctly.
 
+* Fixed handling of $set numbers so it applies to only the current
+  command file, not all files compiled afterwards.
+
 
 New in 2.8.1:
 
