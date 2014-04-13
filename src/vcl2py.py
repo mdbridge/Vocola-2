@@ -162,10 +162,12 @@ def main():
         elif option == "-log_file":     log_file                 = argument
         elif option == "-max_commands": Default_maximum_commands = safe_int(argument, 1)
         elif option == "-numbers": 
-            numbers = re.split(r'\s*,\s*', argument)
+            Number_words = {}
+            numbers = re.split(r'\s*,\s*', argument.strip())
             i = 0
             for number in numbers: 
-                Number_words[i] = number
+                if number != "":
+                    Number_words[i] = number
                 i = i + 1
         elif option == "-suffix":       suffix                   = argument
         else:
@@ -375,10 +377,11 @@ def convert_file(in_file, out_folder, suffix):
                 Maximum_commands = safe_int(statement["TEXT"], 1)
             elif key == "numbers": 
                 Number_words = {}
-                numbers = re.split(r'\s*,\s*', statement["TEXT"])
+                numbers = re.split(r'\s*,\s*', statement["TEXT"].strip())
                 i = 0
                 for number in numbers: 
-                    Number_words[i] = number
+                    if number != "":
+                        Number_words[i] = number
                     i = i + 1
 
     if Error_count > 0: 

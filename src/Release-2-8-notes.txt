@@ -3,6 +3,10 @@ New in 2.8.2:
 * Change to support non-backward-compatible NatLink interface change:
   movement of some names from natlinkutils to natlink
 
+* Fixed handling of numbers option to allow missing numbers (e.g., $set
+  numbers "" or $set numbers ",one,,three") and handle leading or
+  trailing white space correctly.
+
 
 New in 2.8.1:
 
