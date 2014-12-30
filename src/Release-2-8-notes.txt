@@ -1,5 +1,8 @@
 New in 2.8.2:
 
+* Fixed a bug where one command invoking another in the same grammar
+  (typically via HeardWord) caused errors.
+
 * Change to support non-backward-compatible NatLink interface change:
   movement of some names from natlinkutils to natlink
 

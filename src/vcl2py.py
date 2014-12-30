@@ -2518,8 +2518,10 @@ def emit_dragon_call(buffer, functional, call, indent):
     
     emit_flush(buffer, functional, indent)
     arguments = emit_arguments(call, "dragon", indent)
+    emit(indent, "saved_firstWord = self.firstWord\n")
     emit(indent, 
          "call_Dragon('" + callName + "', '" + argumentTypes + "', [" + arguments + "])\n")
+    emit(indent, "self.firstWord = saved_firstWord\n")
 
 def emit_extension_call(buffer, functional, call, indent):
     global Extension_functions
