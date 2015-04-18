@@ -12,5 +12,6 @@ test recursive 1..100 =
      $1;
 call subroutine = "called";
 
-  # call this, then say "call subroutine" then click "ok" -- should get waiting spoken
+  # call this, then say "call subroutine" then click "ok" -- should
+  # get waiting spoken
 does processing stop 1..20 = MsgBoxConfirm(change,52,warning) TTSPlayString(Waiting $1);
