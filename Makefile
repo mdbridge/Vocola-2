@@ -12,7 +12,7 @@ prepare:
 	mkdir build/Vocola
 	#
 	# top level:
-	(cd build/Vocola; mkdir commands exec samples extensions simpscrp)
+	(cd build/Vocola; mkdir commands exec samples extensions)
 	cp src/README.html      build/Vocola/
 	cp src/Release*.txt     build/Vocola/
 	#
@@ -27,16 +27,12 @@ prepare:
 	cp src/scan_extensions.py build/Vocola/exec
 	cp src/_vocola_main.py    build/Vocola/exec
 	cp src/VocolaUtils.py     build/Vocola/exec
-	cp -r bin/2*              build/Vocola/exec
 	#
 	# samples:
 	cp samples/*.vc[hl]       build/Vocola/samples/
 	#
 	# extensions:
 	#cp extensions/*.py        build/Vocola/extensions/
-	#
-	# simpscrp
-	cp -r src/simpscrp        build/Vocola/
 	#
 	(cd build/Vocola; find . -name '.svn' -print | xargs rm -rf)
 	(cd build; zip -r Vocola Vocola) > /dev/null

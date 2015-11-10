@@ -75,16 +75,11 @@ NatLinkFolder = re.sub(r'\core$', "", NatLinkFolder)
 
 VocolaFolder     = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola'))
 ExecFolder       = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 'exec'))
-# C module "simpscrp" defines Exec(), which runs a program in a minimized
-# window and waits for completion. Since such modules need to be compiled
-# separately for each python version we need this careful import:
-pydFolder        = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 'exec', sys.version[0:3]))
 ExtensionsFolder = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 'extensions'))
 
 NatLinkFolder = os.path.abspath(NatLinkFolder)
 
 if VocolaEnabled:
-    sys.path.append(pydFolder)
     sys.path.append(ExecFolder)
     sys.path.append(ExtensionsFolder)
 
@@ -447,25 +442,18 @@ def purgeOutput():
 def hidden_call(executable, arguments):
     args = [executable] + arguments
     try:
-        # Using simpscrp is depreciated; remove '_disabled' below to use:
-        import simpscrp_disabled
-        args = ['"' + str(x) + '"' for x in args]
-        call = ' '.join(args)
-        simpscrp.Exec(call, 1)
+        import subprocess
+        si             = subprocess.STARTUPINFO()
+        # Location of below constants seems to vary from Python
+        # version to version so hardcode them:
+        si.dwFlags     = 1 # subprocess.STARTF_USESHOWWINDOW
+        si.wShowWindow = 0 # subprocess.SW_HIDE
+        return subprocess.call(args, startupinfo=si)
     except ImportError:
-        try:
-            import subprocess
-            si             = subprocess.STARTUPINFO()
-            # Location of below constants seems to vary from Python
-            # version to version so hardcode them:
-            si.dwFlags     = 1 # subprocess.STARTF_USESHOWWINDOW
-            si.wShowWindow = 0 # subprocess.SW_HIDE
-            return subprocess.call(args, startupinfo=si)
-        except ImportError:
-            pid = os.spawnv(os.P_NOWAIT, executable, args)
-            pid, exit_code = os.waitpid(pid, 0)
-            exit_code = exit_code >> 8
-            return exit_code
+        pid = os.spawnv(os.P_NOWAIT, executable, args)
+        pid, exit_code = os.waitpid(pid, 0)
+        exit_code = exit_code >> 8
+        return exit_code
 
 
 lastVocolaFileTime    = 0
