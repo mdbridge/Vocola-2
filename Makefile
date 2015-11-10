@@ -34,7 +34,6 @@ prepare:
 	# extensions:
 	#cp extensions/*.py        build/Vocola/extensions/
 	#
-	(cd build/Vocola; find . -name '.svn' -print | xargs rm -rf)
 	(cd build; zip -r Vocola Vocola) > /dev/null
 	#
 	# installer version:
