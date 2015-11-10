@@ -21,8 +21,6 @@ prepare:
 	# exec:
 	cp src/dvc2vcl.exe        build/Vocola/exec
 	cp src/dvc2vcl.pl         build/Vocola/exec
-	cp src/vcl2py.exe         build/Vocola/exec
-	cp src/vcl2py.pl          build/Vocola/exec   # <<<>>>
 	cp src/vcl2py.py          build/Vocola/exec
 	cp src/scan_extensions.py build/Vocola/exec
 	cp src/_vocola_main.py    build/Vocola/exec

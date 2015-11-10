@@ -48,12 +48,6 @@ from   natlinkutils import *
 #                                                                         #
 ###########################################################################
 
-# The Vocola translator is a perl program. By default we use the precompiled
-# executable vcl2py.exe, which doesn't require installing perl.
-# To instead use perl and vcl2py.pl, set the following variable to 1:
-usePerl = 0
-
-
 try:
     import natlinkstatus
     Quintijn_installer = True
@@ -398,12 +392,6 @@ def compile_Vocola(inputFileOrFolder, force):
 
     may_have_compiled = True
 
-    if usePerl:
-        executable = "perl"
-        arguments  = [VocolaFolder + r'\exec\vcl2py.pl']
-    else:
-        executable = VocolaFolder + r'\exec\vcl2py.exe'
-        arguments  = []
     executable = sys.prefix + r'\python.exe'
     arguments  = [VocolaFolder + r'\exec\vcl2py.py']
 
