@@ -82,7 +82,11 @@ line count reduction of roughly 6:1) and at this writing use well over
 
 ## Installation
 
-Provide code examples and explanations of how to get the project.
+Instructions for installing the latest released version can be found at
+http://vocola.net/v2/InstallVocola.asp
+
+Instructions for installing from source to be written...
+
 
 ## API Reference
 
@@ -95,12 +99,14 @@ reference docs live.
 
 Describe and show how to run the tests with code examples.
 
+
 ## Contributors
 
 Let people know how they can dive into the project, include important
 links to things like issue trackers, irc, twitter accounts if
 applicable.
 
+
 ## License
 
-A short snippet describing the license (MIT, Apache, etc.)
+MIT (see LICENSE.txt)
