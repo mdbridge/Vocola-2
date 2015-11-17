@@ -29,12 +29,42 @@ Complete documentation can be found at the <a
 href="http://vocola.net/">Vocola website</a>.
 
 
-## Code Example
+## Examples
 
-Show what the library does as concisely as possible, developers should
-be able to figure out **how** your project solves their problem by
-looking at the code example. Make sure the API you are showing off is
-obvious, and that your code is short and concise.
+Here are four voice commands defined in Vocola:
+
+    Copy That = {Ctrl+c};
+    
+    Copy to WordPad = {Ctrl+a}{Ctrl+c} AppBringUp(WordPad);
+    
+    1..40 (Left | Right | Up | Down) = {$2_$1};
+    
+    Sort by (Date=e | Sender=n | Subject=s) = {Alt+v}o $1;
+
+The first is a simple keystroke command—saying "Copy That" sends the
+keystroke Control-C, which copies the current selection to the
+clipboard. The great majority of commands needed for controlling a
+computer by voice are simple keystroke commands like this.
+
+The second command, invoked by saying "Copy to WordPad", copies a window
+of text (Control-A selects all text and Control-C copies it) and brings
+up the WordPad editor (using the built-in function AppBringUp).
+
+The third command allows controlling the cursor, by saying for example
+"3 Left" to move left three characters, or "6 Down" to move down six
+lines. Spoken words match variable terms on the left and are substituted
+into the keystroke sequence on the right. For example, when saying "3
+Left" the spoken "3" matches the numeric range 1..40 and the spoken
+"Left" matches the alternative set (Left | Right | Up | Down). The
+keystroke sequence {Left 3} is constructed and sent, and the cursor
+moves left three characters.
+
+The fourth command allows sorting messages in Mozilla's Thunderbird
+Mailer, by saying "Sort by Date", "Sort by Sender", or "Sort by
+Subject". The matched word "Date", "Sender", or "Subject", causes the
+appropriate keystroke "e", "n", or "s" to be inserted into the keystroke
+sequence, choosing the desired option in Thunderbird's View > Sort menu.
+
 
 ## Motivation
 
