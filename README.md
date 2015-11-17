@@ -85,26 +85,20 @@ line count reduction of roughly 6:1) and at this writing use well over
 Instructions for installing the latest released version can be found at
 http://vocola.net/v2/InstallVocola.asp
 
-Instructions for installing from source to be written...
+Instructions for installing from source to be written soon...
 
-
-## API Reference
-
-Depending on the size of the project, if it is small and simple enough
-the reference docs can be added to the README. For medium size to larger
-projects it is important to at least provide a link to where the API
-reference docs live.
 
 ## Tests
 
-Describe and show how to run the tests with code examples.
+To be written: describe and show how to run the tests with code
+examples.
 
 
 ## Contributors
 
-Let people know how they can dive into the project, include important
-links to things like issue trackers, irc, twitter accounts if
-applicable.
+To be written: let people know how they can dive into the project,
+include important links to things like issue trackers, irc, twitter
+accounts if applicable.
 
 
 ## License
