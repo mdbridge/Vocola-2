@@ -1,7 +1,6 @@
 ## Synopsis
 
-Vocola is a *vo*ice <font
-color=red>co</font>mmand <font color=red>la</font>nguage &mdash; a
+Vocola is a **vo**ice **co**mmand **la**nguage &mdash; a
 language for creating commands to control a computer by voice &mdash;
 created by Rick Mohr.  Complete documentation can be found at the <a
 href="http://vocola.net/">Vocola website</a>.
