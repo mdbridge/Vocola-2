@@ -34,16 +34,13 @@ href="http://vocola.net/">Vocola website</a>.
 Here are four voice commands defined in Vocola:
 
     Copy That = {Ctrl+c};
-    
     Copy to WordPad = {Ctrl+a}{Ctrl+c} AppBringUp(WordPad);
-    
     1..40 (Left | Right | Up | Down) = {$2_$1};
-    
     Sort by (Date=e | Sender=n | Subject=s) = {Alt+v}o $1;
 
 The first is a simple keystroke command—saying "Copy That" sends the
 keystroke Control-C, which copies the current selection to the
-clipboard. The great majority of commands needed for controlling a
+clipboard.  The great majority of commands needed for controlling a
 computer by voice are simple keystroke commands like this.
 
 The second command, invoked by saying "Copy to WordPad", copies a window
@@ -52,25 +49,36 @@ up the WordPad editor (using the built-in function AppBringUp).
 
 The third command allows controlling the cursor, by saying for example
 "3 Left" to move left three characters, or "6 Down" to move down six
-lines. Spoken words match variable terms on the left and are substituted
-into the keystroke sequence on the right. For example, when saying "3
-Left" the spoken "3" matches the numeric range 1..40 and the spoken
-"Left" matches the alternative set (Left | Right | Up | Down). The
-keystroke sequence {Left 3} is constructed and sent, and the cursor
+lines.  Spoken words match variable terms on the left and are
+substituted into the keystroke sequence on the right.  For example, when
+saying "3 Left" the spoken "3" matches the numeric range 1..40 and the
+spoken "Left" matches the alternative set (Left | Right | Up | Down).
+The keystroke sequence {Left 3} is constructed and sent, and the cursor
 moves left three characters.
 
 The fourth command allows sorting messages in Mozilla's Thunderbird
 Mailer, by saying "Sort by Date", "Sort by Sender", or "Sort by
-Subject". The matched word "Date", "Sender", or "Subject", causes the
+Subject".  The matched word "Date", "Sender", or "Subject", causes the
 appropriate keystroke "e", "n", or "s" to be inserted into the keystroke
 sequence, choosing the desired option in Thunderbird's View > Sort menu.
 
 
-## Motivation
+## Why a custom voice command language?
 
-A short description of the motivation behind the creation and
-maintenance of the project. This should explain **why** the project
-exists.
+Other systems for defining voice commands are grafted onto existing
+programming languages.  This means you can program any behavior you
+want, but you're stuck with the syntactic overhead of the base language.
+In contrast, Vocola is designed specifically as a voice command
+language, not as a general-purpose programming language.  This means you
+can write quickly and concisely the great majority of voice commands you
+need, and use another language in the few cases where you need more
+power.
+
+When I (Rick) switched from the Dragon Macro Language to Vocola I was
+able to convert all but two of my 200+ Dragon macros (achieving a source
+line count reduction of roughly 6:1) and at this writing use well over
+1000 Vocola commands.
+
 
 ## Installation
 
