@@ -21,6 +21,8 @@ prepare:
 	cp src/exec/*.exe	     build/Vocola/exec/
 	cp src/exec/*.pl	     build/Vocola/exec/
 	cp src/exec/*.py	     build/Vocola/exec/
+	mkdir build/Vocola/exec/vcl2py
+	cp src/exec/vcl2py/*.py	     build/Vocola/exec/vcl2py/
 	#
 	# extensions:
 	cp src/extensions/README.txt build/Vocola/extensions/
