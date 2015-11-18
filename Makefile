@@ -7,30 +7,29 @@ NATLINK = /home/mdl/voice/NatLink/trunk
 ## 
 
 prepare:
-	chmod -R u+w build
-	rm -rf build/*
-	mkdir build/Vocola
+	rm -rf build
+	mkdir -p build/Vocola
 	#
 	# top level:
 	(cd build/Vocola; mkdir commands exec samples extensions)
-	cp src/README.html      build/Vocola/
-	cp src/Release*.txt     build/Vocola/
+	cp src/README.html	     build/Vocola/
+	cp src/Release*.txt	     build/Vocola/
 	#
 	# commands:
 	#
 	# exec:
-	cp src/dvc2vcl.exe        build/Vocola/exec
-	cp src/dvc2vcl.pl         build/Vocola/exec
-	cp src/vcl2py.py          build/Vocola/exec
-	cp src/scan_extensions.py build/Vocola/exec
-	cp src/_vocola_main.py    build/Vocola/exec
-	cp src/VocolaUtils.py     build/Vocola/exec
+	cp src/exec/*.exe	     build/Vocola/exec/
+	cp src/exec/*.pl	     build/Vocola/exec/
+	cp src/exec/*.py	     build/Vocola/exec/
+	cp src/_vocola_main.py	     build/Vocola/exec
+	cp src/VocolaUtils.py	     build/Vocola/exec
 	#
 	# samples:
-	cp samples/*.vc[hl]       build/Vocola/samples/
+	cp src/samples/*.vc[hl]      build/Vocola/samples/
 	#
 	# extensions:
-	#cp extensions/*.py        build/Vocola/extensions/
+	cp src/extensions/README.txt build/Vocola/extensions/
+	#cp src/extensions/*.py      build/Vocola/extensions/
 	#
 	(cd build; zip -r Vocola Vocola) > /dev/null
 	#
@@ -41,8 +40,7 @@ prepare:
 	cp ${NATLINK}/MacroSystem/_vocola_main.py build/installer-Vocola/exec/
 
 clean::
-	chmod -R u+w build
-	rm -rf build/*
+	rm -rf build
 
 
 ## 
