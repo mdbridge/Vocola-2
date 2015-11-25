@@ -119,6 +119,7 @@ from vcl2py.ast  import *
 from vcl2py.emit import output
 from vcl2py.transform import transform
 from vcl2py.lex import *
+from vcl2py.log import *
 
 
 # ---------------------------------------------------------------------------
@@ -127,7 +128,7 @@ from vcl2py.lex import *
 VocolaVersion = "2.8.4"
 
 def main():
-    global Debug, Default_maximum_commands, Error_encountered, Force_processing, In_folder, Default_number_words, LOG
+    global Debug, Default_maximum_commands, Error_encountered, Force_processing, In_folder, Default_number_words
 
     # flush output after every print statement:
     #sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)    # <<<>>>
@@ -202,10 +203,10 @@ def main():
     if ini_file == "": ini_file = In_folder + os.sep + "Vocola.INI"
 
     if log_to_stdout:
-        LOG = sys.stdout
+        set_log(sys.stdout)
     else:
         try:
-            LOG = open(log_file, "w")
+            set_log(open(log_file, "w"))
         except IOError, e:
             fatal_error("Unable to open log file '" + log_file + "' for writing: " + str(e))
 
@@ -218,7 +219,7 @@ def main():
     initialize_token_properties()
     convert_files(in_file, out_folder, suffix)
     
-    LOG.close()
+    close_log()
     if not Error_encountered: 
         if not log_to_stdout: os.remove(log_file)
         sys.exit(0)
@@ -240,13 +241,6 @@ Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
 '''
     print >>sys.stderr, "Vocola 2 version: " + VocolaVersion
     sys.exit(99)
-
-def print_log(message, no_newline=False):
-    global LOG
-    if no_newline:
-        print >>LOG, message,
-    else:
-        print >>LOG, message
 
 def fatal_error(message):
     print >>sys.stderr, "vcl2py.py: Error: " + message
@@ -410,7 +404,7 @@ def convert_file(in_file, out_folder, suffix):
             OUT = open(out_file, "w")
             OUT.close()
         except IOError, e:
-            print >> LOG, "Couldn't open output file '" + out_file + "' for writing"
+            print_log("Couldn't open output file '" + out_file + "' for writing")
         print_log("Converting " + Input_name)
         print_log("  Warning: no commands in file.")
         return
