@@ -213,7 +213,7 @@ def main():
     if not ignore_INI_file:   read_ini_file(ini_file)
     if extensions_file != "": read_extensions_file(extensions_file)
     if Debug >= 1: 
-        print >>LOG, ("default maximum commands per utterance = " + str(Default_maximum_commands))
+        print_log("default maximum commands per utterance = " + str(Default_maximum_commands))
 
     initialize_token_properties()
     convert_files(in_file, out_folder, suffix)
@@ -241,6 +241,13 @@ Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
     print >>sys.stderr, "Vocola 2 version: " + VocolaVersion
     sys.exit(99)
 
+def print_log(message, no_newline=False):
+    global LOG
+    if no_newline:
+        print >>LOG, message,
+    else:
+        print >>LOG, message
+
 def fatal_error(message):
     print >>sys.stderr, "vcl2py.py: Error: " + message
     sys.exit(99)
@@ -252,9 +259,9 @@ def safe_int(text, default=0):
         return default
 
 def read_ini_file(ini_file):
-    global Debug, Default_maximum_commands, LOG
+    global Debug, Default_maximum_commands
 
-    if Debug >= 1: print >>LOG, "INI file is '" + ini_file + "'"
+    if Debug >= 1: print_log("INI file is '" + ini_file + "'")
     try:
         input = open(ini_file)
         for line in input:
@@ -268,8 +275,8 @@ def read_ini_file(ini_file):
         return
 
 def read_extensions_file(extensions_filename):
-    global Debug, Extension_functions, LOG
-    if Debug >= 1: print >>LOG, "extensions file is '" + extensions_filename + "'"
+    global Debug, Extension_functions
+    if Debug >= 1: print_log("extensions file is '" + extensions_filename + "'")
     try:
         input = open(extensions_filename)
         for line in input:
@@ -290,7 +297,7 @@ def read_extensions_file(extensions_filename):
         return
 
 def convert_files(in_file, out_folder, suffix):
-    global In_folder, LOG
+    global In_folder
 
     if in_file != "": 
         # Convert one file
@@ -356,7 +363,7 @@ def convert_file(in_file, out_folder, suffix):
     Should_emit_dictation_support = False
     Statement_count               = 1
     
-    if Debug>=1: print >>LOG, "\n=============================="
+    if Debug>=1: print_log("\n==============================")
 
     statements = parse_file(Input_name)
     if Error_count == 0: 
@@ -368,9 +375,9 @@ def convert_file(in_file, out_folder, suffix):
         context["TYPE"]    = "context"
         context["STRINGS"] = [""]
         statements.insert(0, context)
-    #print >>LOG, unparse_statements(statements),
+    #print_log(unparse_statements(statements), True)
     statements = transform(statements, Function_definitions, Statement_count)
-    #print >>LOG, unparse_statements(statements),
+    #print_log(unparse_statements(statements), True)
     
     # Handle $set directives:
     Maximum_commands = Default_maximum_commands
@@ -394,7 +401,7 @@ def convert_file(in_file, out_folder, suffix):
             s = ""
         else:
             s = "s"
-        print >>LOG, "  " + str(Error_count) + " error" + s + " -- file not converted."
+        print_log("  " + str(Error_count) + " error" + s + " -- file not converted.")
         Error_encountered = True
         return
     if File_empty: 
@@ -404,8 +411,8 @@ def convert_file(in_file, out_folder, suffix):
             OUT.close()
         except IOError, e:
             print >> LOG, "Couldn't open output file '" + out_file + "' for writing"
-        print >>LOG, "Converting " + Input_name
-        print >>LOG, "  Warning: no commands in file."
+        print_log("Converting " + Input_name)
+        print_log("  Warning: no commands in file.")
         return
 
     from vcl2py.emit import output
@@ -704,7 +711,7 @@ def parse_statement():
     rewind(start); return parse_function_definition()
 
 def parse_context():    # context = chars* ('|' chars*)* ':'
-    global Debug, LOG
+    global Debug
 
     raw = eat(TOKEN_CONTEXT)[:-1]
     match = re.match(r'(?:[^=#]|#.*\n)*=', raw)
@@ -725,11 +732,11 @@ def parse_context():    # context = chars* ('|' chars*)* ':'
     statement            = {}
     statement["TYPE"]    = "context"
     statement["STRINGS"] = strings
-    if Debug>=1: print >>LOG, unparse_directive (statement),
+    if Debug>=1: print_log(unparse_directive (statement), True)
     return statement
 
 def parse_variable_definition():    # definition = variable ':=' menu_body ';'
-    global Debug, LOG
+    global Debug
     position = get_current_position()
     name = eat(TOKEN_BARE_WORD)
     if not re.match(r'<.*>$', name):
@@ -748,7 +755,7 @@ def parse_variable_definition():    # definition = variable ':=' menu_body ';'
     eat(TOKEN_SEMICOLON)
     verify_referenced_menu(menu)
     statement["MENU"] = menu
-    if Debug>=1: print >>LOG, unparse_definition (statement),
+    if Debug>=1: print_log(unparse_definition (statement), True)
     return statement
 
 def check_variable_name(name, position):
@@ -757,10 +764,10 @@ def check_variable_name(name, position):
 
 def parse_function_definition():   # function = prototype ':=' action* ';'
                                    # prototype = functionName '(' formals ')'
-    global Debug, Formals, Function_definitions, Functions, LOG
+    global Debug, Formals, Function_definitions, Functions
     position = get_current_position()
     functionName = eat(TOKEN_BARE_WORD)
-    if Debug>=2: print >>LOG, "Found user function:  " + functionName + "()"
+    if Debug>=2: print_log("Found user function:  " + functionName + "()")
     if not re.match(r'[a-zA-Z_]\w*$', functionName):
         error("Illegal user function name: " + functionName, position)
 
@@ -784,18 +791,18 @@ def parse_function_definition():   # function = prototype ':=' action* ';'
         error("Attempted redefinition of built-in function: " + functionName, position)
     Functions[functionName] = len(formals)  # remember number of formals
     Function_definitions[functionName] = statement
-    if Debug>=1: print >>LOG, unparse_function_definition (statement),
+    if Debug>=1: print_log(unparse_function_definition (statement), True)
     return statement
 
 def parse_formals():    # formals = [name (',' name)*]
-    global Debug, LOG
+    global Debug
     safe_formals = []
     if not peek(TOKEN_RPAREN):
         while True:
             formal = eat(TOKEN_BARE_WORD)
             if not re.match(r'[a-zA-Z_]\w*$', formal):
                 error("Illegal formal name: '" + formal + "'", get_last_position())
-            if Debug>=2: print >>LOG, "Found formal:  " + formal
+            if Debug>=2: print_log("Found formal:  " + formal)
             safe_formals.append("_" + formal)
             if peek(TOKEN_COMMA): 
                 eat(TOKEN_COMMA)
@@ -804,15 +811,15 @@ def parse_formals():    # formals = [name (',' name)*]
     return safe_formals
 
 def parse_top_command():    # top_command = terms '=' action* ';'
-    global Debug, File_empty, LOG
+    global Debug, File_empty
     statement = parse_command(TOKEN_SEMICOLON, True)
     eat(TOKEN_SEMICOLON)
     File_empty = False
-    if Debug>=1: print >>LOG, unparse_command (statement, True)
+    if Debug>=1: print_log(unparse_command (statement, True))
     return statement
 
 def parse_directive():    # directive = ('include' word | '$set' word word) ';'
-    global Debug, LOG, Formals, Variable_terms
+    global Debug, Formals, Variable_terms
 
     starting_position = get_current_position()
     directive         = eat(TOKEN_BARE_WORD)
@@ -847,7 +854,7 @@ def parse_directive():    # directive = ('include' word | '$set' word word) ';'
     else:
         error("Unknown directive '" + directive + "'", starting_position)
 
-    if Debug>=1: print >>LOG, unparse_directive (statement),
+    if Debug>=1: print_log(unparse_directive (statement), True)
     return statement
 
 def parse_command(separators, needs_actions=False): # command = terms ['=' action*]
@@ -888,7 +895,7 @@ def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
             term["TERMS"]    = optional_terms
             term["POSITION"] = optional_starting_position
             if Debug>=2: 
-                print >>LOG, "Found optional term group:  " + unparse_term(term, True)
+                print_log("Found optional term group:  " + unparse_term(term, True))
         else:
             optional = False
             term = parse_term()
@@ -907,7 +914,7 @@ def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
         return combine_terms(terms)
 
 def parse_term():         # <term> ::= <word> | variable | range | <menu>
-    global Debug, Definitions, LOG
+    global Debug, Definitions
 
     starting_position = get_current_position()
     peek(TOKEN_TERM)
@@ -917,7 +924,7 @@ def parse_term():         # <term> ::= <word> | variable | range | <menu>
         term["POSITION"] = starting_position
         eat(TOKEN_RPAREN)
         if Debug>=2: 
-            print >>LOG, "Found menu:  " + unparse_menu(term, True)
+            print_log("Found menu:  " + unparse_menu(term, True))
         return term
     elif not peek(TOKEN_BARE_WORD):
         return parse_word()
@@ -932,15 +939,15 @@ def parse_term():         # <term> ::= <word> | variable | range | <menu>
         term["FROM"] = int(match.group(2))
         term["TO"]   = int(match.group(3))
         if Debug>=2: 
-            print >>LOG, "Found range:  " + match.group(2) + ".." + match.group(3)
+            print_log("Found range:  " + match.group(2) + ".." + match.group(3))
     else:
         name = match.group(1)
         check_variable_name(name, starting_position)
         if name == "_anything": 
-            if Debug>=2: print >>LOG, "Found <_anything>"
+            if Debug>=2: print_log("Found <_anything>")
             term = create_dictation_node()
         else: 
-            if Debug>=2: print >>LOG, "Found variable:  <" + name + ">"
+            if Debug>=2: print_log("Found variable:  <" + name + ">")
             if not Definitions.has_key(name): 
                 add_forward_reference(name, starting_position)
             term = create_variable_node(name)
@@ -1023,23 +1030,23 @@ def split_out_references(word_node):
     return actions
 
 def create_reference_node(n, position):
-    global Debug, Variable_terms, LOG
+    global Debug, Variable_terms
     if int(n) > len(Variable_terms): 
         error("Reference '$" + n + "' out of range", position)
     term = Variable_terms[int(n) - 1]
     if term["TYPE"] == "menu": verify_referenced_menu(term)
-    if Debug>=2: print >>LOG, "Found reference:  $" + n
+    if Debug>=2: print_log("Found reference:  $" + n)
     action = {}
     action["TYPE"] = "reference"
     action["TEXT"] = n
     return action
 
 def create_formal_reference_node(name, position):
-    global Debug, Formals, LOG
+    global Debug, Formals
     formal = "_" + name
     if Formals!=None and formal not in Formals:
         error("Reference to unknown formal '$" + name + "'", position)
-    if Debug>=2: print >>LOG, "Found formal reference:  $" + name
+    if Debug>=2: print_log("Found formal reference:  $" + name)
     action = {}
     action["TYPE"]     = "formalref"
     action["TEXT"]     = formal
@@ -1047,10 +1054,10 @@ def create_formal_reference_node(name, position):
     return action
 
 def parse_call(callName):    # call = callName '(' arguments ')'
-    global Debug, Dragon_functions, Extension_functions, Functions, Vocola_functions, LOG
+    global Debug, Dragon_functions, Extension_functions, Functions, Vocola_functions
 
     call_position = get_last_position()
-    if Debug>=2: print >>LOG, "Found call:  " + callName + "()"
+    if Debug>=2: print_log("Found call:  " + callName + "()")
     if not re.match(r'[\w.]+$', callName):
         error("Illegal function call name: '" + callName + "'", call_position)
 
@@ -1109,7 +1116,7 @@ def parse_arguments():    # arguments = [action* (',' action*)*]
     return arguments
 
 def parse_word():    
-    global Debug, LOG
+    global Debug
     if peek(TOKEN_DOUBLE_WORD):
         quote_char ='"'
         word = eat(TOKEN_DOUBLE_WORD)[1:-1].replace('""', '"')
@@ -1119,13 +1126,13 @@ def parse_word():
     else:
         quote_char = ""
         word = eat(TOKEN_BARE_WORD)
-    if Debug>=2: print >>LOG, "Found word:  '" + word + "'"
+    if Debug>=2: print_log("Found word:  '" + word + "'")
     node = create_word_node(word, quote_char, get_last_position())
     return node
 
 def parse_word1(bare_word, position):    
-    global Debug, LOG
-    if Debug>=2: print >>LOG, "Found word:  '" + bare_word + "'"
+    global Debug
+    if Debug>=2: print_log("Found word:  '" + bare_word + "'")
     node = create_word_node(bare_word, "", position)
     node["POSITION"] = position
     return node
@@ -1140,9 +1147,9 @@ def error(message, position, advice=""):
     raise RuntimeError, message    # <<<>>>
 
 def log_error(message, position=None, advice=""):
-    global Error_count, Input_name, LOG
-    if Error_count==0: print >>LOG, "Converting " + Input_name
-    print >>LOG, format_error_message(message, position, advice),
+    global Error_count, Input_name
+    if Error_count==0: print_log("Converting " + Input_name)
+    print_log(format_error_message(message, position, advice), True)
     Error_count += 1
 
 def format_error_message(message, position=None, advice=""):
@@ -1260,7 +1267,7 @@ def add_forward_reference(variable, position):
     Forward_references.append(forward_reference)
 
 def check_forward_references():
-    global Definitions, Error_count, Forward_references, Input_name, LOG
+    global Definitions, Error_count, Forward_references, Input_name
     global Include_stack_file, Include_stack_line
     for forward_reference in Forward_references: 
         variable = forward_reference["VARIABLE"]
