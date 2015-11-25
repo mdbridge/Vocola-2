@@ -66,6 +66,15 @@
 # ---------------------------------------------------------------------------
 # Miscellaneous node creation routines:
 
+def create_word_node(text, quote_char, position):
+    term = {}
+    term["TYPE"]       = "word"
+    term["TEXT"]       = text
+    term["POSITION"]   = position
+    term["QUOTE_CHAR"] = quote_char
+    return term
+
+
 def get_variable_terms(terms):
     variable_terms = []
     for term in terms:
@@ -81,6 +90,29 @@ def create_variable_node(name):
     term["TYPE"] = "variable"
     term["TEXT"] = name
     return term
+
+
+def combine_terms(terms):   # Combine adjacent "word" terms; number resulting terms
+    new_terms = []
+    term_count = 0
+    i = 0
+    while i < len(terms):
+        term = terms[i]
+        i += 1
+
+        if is_required_word(term): 
+            while i<len(terms) and is_required_word(terms[i]): 
+                term["TEXT"] += " " + terms[i]["TEXT"]
+                i += 1
+        term["NUMBER"] = term_count
+        term_count += 1
+        new_terms.append(term)
+
+    return new_terms
+
+def is_required_word(term): 
+    return term["TYPE"] == "word" and not term["OPTIONAL"]
+
 
 
 
