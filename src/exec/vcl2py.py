@@ -984,7 +984,7 @@ Dragon_functions = {
 # executed in this routine.
 
 def parse_file(in_file):    # returns a list of statements
-    global In_folder, Include_stack_file, Included_files, Offset
+    global In_folder, Include_stack_file, Included_files
     
     Included_files.append(in_file)
     in_path = in_file
@@ -1015,7 +1015,7 @@ def read_file(in_file):
 
 def parse_statements():    # statements = (context | top_command | definition)*
     global Definitions, Formals, Include_stack_line, Last_include_position
-    global Statement_count, Variable_terms, Offset, Tokens
+    global Statement_count, Variable_terms
 
     statements = []
     while not peek(TOKEN_EOF):
