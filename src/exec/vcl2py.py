@@ -116,7 +116,7 @@ import copy
 import os
 import sys
 
-from vcl2py.unparse import *
+from vcl2py.ast  import *
 from vcl2py.emit import output
 
 
@@ -917,71 +917,6 @@ def close_text():
 #
 # There additional limitations on the complexity of menus; <<<>>>
 
-
-#   The parse tree is built from three kinds of nodes (statement,
-# term, and action), using the following fields:
-#
-# statement: 
-#    TYPE - command/definition/function/context/include/set
-#    command:
-#       NAME    - unique number
-#       TERMS   - list of "term" structures
-#       ACTIONS - list of "action" structures
-#       LINE    - last line number of command if it is a top-level command
-#       FILE    - filename of file containing command
-#    definition:
-#       NAME    - name of variable being defined
-#       MENU    - "menu" structure defining alternatives
-#    function:
-#       NAME    - name of function being defined
-#       FORMALS - list of argument names
-#       ACTIONS - list of "action" structures
-#    context:
-#       STRINGS - list of strings to use in context matching;
-#                 the list ("") denotes the noop context restriction (:)
-#       RULENAMES - list of rule names defined for this context
-#    include:
-#       TEXT    - filename being included before environment var. expansion
-#       ACTIONS - list of "action" structures (word or formalref only)
-#    set:
-#       KEY     - key being set
-#       TEXT    - value to set the key to
-# 
-# term:
-#    TYPE   - word/variable/range/menu/dictation/optionalterms
-#    NUMBER - sequence number of this term
-#    word:
-#       TEXT     - text defining the word(s)
-#       OPTIONAL - are these words optional?
-#    variable:
-#       TEXT     - name of variable being referenced
-#       OPTIONAL - is this variable optional?
-#    range:
-#       FROM     - start number of range
-#       TO       - end number of range
-#    menu:
-#       COMMANDS - list of "command" structures defining the menu
-#    optionalterms:
-#       TERMS   - list of "term" structures
-#       
-# action:
-#    TYPE - word/reference/formalref/call
-#    word:
-#       TEXT       - keystrokes to send
-#       POSITION   - position of the start of the word
-#       QUOTE_CHAR - empty if bareword else ' or "
-#    reference:
-#       TEXT      - reference number (a string) of reference referenced
-#    formalref:
-#       TEXT      - name of formal (i.e. user function argument) referenced;
-#                   has a "_" in the front of user supplied name  <<<>>>
-#       POSITION  - position of the start of the reference
-#    call:
-#       TEXT      - name of function called
-#       CALLTYPE  - dragon/vocola/user/extension
-#       ARGTYPES  - [dragon only] types of call arguments
-#       ARGUMENTS - list of lists of actions, to be passed in call
-
 # ---------------------------------------------------------------------------
 # Built in Vocola functions with (minimum number of arguments, maximum
 # number of arguments):
@@ -1455,12 +1390,6 @@ def create_dictation_node():
     Should_emit_dictation_support = True
     term = {}
     term["TYPE"] = "dictation"
-    return term
-
-def create_variable_node(name):
-    term = {}
-    term["TYPE"] = "variable"
-    term["TEXT"] = name
     return term
 
 def parse_menu_body(separators):    # menuBody = command ('|' command)*
@@ -1960,20 +1889,6 @@ def transform_eval(call):
     
     call["TEXT"]      = "EvalTemplate" 
     call["ARGUMENTS"] = new_arguments
-
-# ---------------------------------------------------------------------------
-
-def get_variable_terms(terms):
-    variable_terms = []
-    for term in terms:
-        type = term["TYPE"]
-        if type == "menu" or type == "range" or type == "variable" or type == "dictation": 
-            variable_terms.append(term)
-        elif type =="optionalterms":
-            variable_terms += get_variable_terms(term["TERMS"])
-    return variable_terms
-
-
 
 # ---------------------------------------------------------------------------
 # Okay, let's run!

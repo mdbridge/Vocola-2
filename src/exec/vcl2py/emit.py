@@ -1,5 +1,5 @@
 import re
-from vcl2py.unparse import *
+from vcl2py.ast import *
 
 def output(out_file, statements,
            _VocolaVersion,
@@ -26,12 +26,6 @@ def output(out_file, statements,
     Extension_functions = _Extension_functions
 
     emit_output(out_file, statements)
-
-def create_variable_node(name):
-    term = {}
-    term["TYPE"] = "variable"
-    term["TEXT"] = name
-    return term
 
 
 
@@ -359,16 +353,6 @@ def emit_actions(buffer, functional, actions, indent):
             emit_call(buffer, functional, action, indent)
         else: 
             implementation_error("Unknown action type: '" + type + "'")
-
-def get_variable_terms(terms):
-    variable_terms = []
-    for term in terms:
-        type = term["TYPE"]
-        if type == "menu" or type == "range" or type == "variable" or type == "dictation": 
-            variable_terms.append(term)
-        elif type =="optionalterms":
-            variable_terms += get_variable_terms(term["TERMS"])
-    return variable_terms
 
 def emit_reference(buffer, functional, action, indent):
     global Variable_terms
