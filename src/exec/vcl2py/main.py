@@ -1,8 +1,14 @@
-import re
+#
+# Main control flow module
+#
+
+VocolaVersion = "2.8.4"
+
+
 import os
+import re
 import sys
 
-from vcl2py.ast  import *
 from vcl2py.emit import output
 from vcl2py.lex import initialize_token_properties
 from vcl2py.log import *
@@ -10,11 +16,34 @@ from vcl2py.parse import parse_input, check_forward_references
 from vcl2py.transform import transform
 
 
+# ---------------------------------------------------------------------------
+# Messages to standard error
+
+def fatal_error(message):
+    print >>sys.stderr, "vcl2py.py: Error: " + message
+    sys.exit(99)
+
+
+def usage(message=""):
+    global VocolaVersion
+
+    if message != "":
+        print >>sys.stderr, "vcl2py.py: Error: " + message
+
+    print >>sys.stderr, '''
+Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
+  where <option> ::= -debug <n> | -extensions <filename> | -f
+                  |-INI_file <filename> | -log_file <filename> | -log_stdout
+                  | -max_commands <n> | -q | -suffix <s>
+
+'''
+    print >>sys.stderr, "Vocola 2 version: " + VocolaVersion
+    sys.exit(99)
+
+
 
 # ---------------------------------------------------------------------------
 # Main control flow
-
-VocolaVersion = "2.8.4"
 
 def main_routine():
     global Debug, Default_maximum_commands, Error_encountered, Force_processing, In_folder, Default_number_words
@@ -102,8 +131,10 @@ def main_routine():
 
 
     if not ignore_INI_file:   read_ini_file(ini_file)
-    Extension_functions = {}
-    if extensions_file != "": read_extensions_file(extensions_file)
+    if extensions_file != "": 
+        Extension_functions = read_extensions_file(extensions_file)
+    else:
+        Extension_functions = {}
     if Debug >= 1: 
         print_log("default maximum commands per utterance = " + str(Default_maximum_commands))
 
@@ -116,26 +147,6 @@ def main_routine():
         sys.exit(0)
     else:
         sys.exit(1)
-
-def usage(message=""):
-    global VocolaVersion
-
-    if message != "":
-        print >>sys.stderr, "vcl2py.py: Error: " + message
-
-    print >>sys.stderr, '''
-Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
-  where <option> ::= -debug <n> | -extensions <filename> | -f
-                  |-INI_file <filename> | -log_file <filename> | -log_stdout
-                  | -max_commands <n> | -q | -suffix <s>
-
-'''
-    print >>sys.stderr, "Vocola 2 version: " + VocolaVersion
-    sys.exit(99)
-
-def fatal_error(message):
-    print >>sys.stderr, "vcl2py.py: Error: " + message
-    sys.exit(99)
 
 def safe_int(text, default=0):
     try:
@@ -160,7 +171,8 @@ def read_ini_file(ini_file):
         return
 
 def read_extensions_file(extensions_filename):
-    global Debug, Extension_functions
+    global Debug
+    extension_functions = {}
     if Debug >= 1: print_log("extensions file is '" + extensions_filename + "'")
     try:
         input = open(extensions_filename)
@@ -176,10 +188,10 @@ def read_extensions_file(extensions_filename):
             module_name       = match.group(5)
             function_name     = match.group(6)
             
-            Extension_functions[extension_name] = [minimum_arguments, maximum_arguments, needs_flushing, module_name, function_name]
-
+            extension_functions[extension_name] = [minimum_arguments, maximum_arguments, needs_flushing, module_name, function_name]
     except IOError, e:
-        return
+        pass
+    return extension_functions
 
 def convert_files(in_file, out_folder, suffix):
     global In_folder
@@ -213,6 +225,7 @@ def convert_file(in_file, out_folder, suffix):
     global Input_name, Module_name
     global Default_number_words, Number_words
     global Default_maximum_commands, Maximum_commands
+    global Extension_functions
 
     out_file = convert_filename(in_file)
 
@@ -236,7 +249,7 @@ def convert_file(in_file, out_folder, suffix):
     if Debug>=1: print_log("\n==============================")
 
     statements, Definitions, Function_definitions, statement_count, error_count, should_emit_dictation_support, file_empty = parse_input(Input_name, In_folder, 
-                                                   Extension_functions, Debug)
+                                                      Extension_functions, Debug)
     if error_count == 0: 
         check_forward_references()
     
