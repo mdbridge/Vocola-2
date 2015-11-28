@@ -21,7 +21,7 @@ def transform(nodes,
   # takes a list of non-action nodes
 def transform_nodes(nodes):   # -> nodes
     result = []
-    for node in nodes: 
+    for node in nodes:
         transform_node(node)
         if node["TYPE"] == "command":
             result += transform_command(node)
@@ -30,15 +30,15 @@ def transform_nodes(nodes):   # -> nodes
     return result
 
 def transform_node(node):
-    if node.has_key("COMMANDS"):   
-        node["COMMANDS"] = transform_nodes(node["COMMANDS"]) 
-    if node.has_key("TERMS"):      
-        node["TERMS"]    = transform_nodes(node["TERMS"]) 
-    if node.has_key("MENU"): transform_node(node["MENU"]) 
-    
-    if node.has_key("ACTIONS"):    
+    if node.has_key("COMMANDS"):
+        node["COMMANDS"] = transform_nodes(node["COMMANDS"])
+    if node.has_key("TERMS"):
+        node["TERMS"]    = transform_nodes(node["TERMS"])
+    if node.has_key("MENU"): transform_node(node["MENU"])
+
+    if node.has_key("ACTIONS"):
         substitution = {}
-        node["ACTIONS"] = transform_actions(substitution, node["ACTIONS"]) 
+        node["ACTIONS"] = transform_actions(substitution, node["ACTIONS"])
 
   # this is called after command's subnodes have been transformed:
 def transform_command(command):  # -> commands !
@@ -62,9 +62,9 @@ def transform_command(command):  # -> commands !
     vanishing = len(get_variable_terms(terms[i]["TERMS"]))
     after     = len(get_variable_terms(without_terms[i+1:]))
     if without.has_key("ACTIONS"):
-        without["ACTIONS"] = nop_references(without["ACTIONS"], before, 
+        without["ACTIONS"] = nop_references(without["ACTIONS"], before,
                                             vanishing, after)
-    return transform_command(with_terms) + transform_command(without) 
+    return transform_command(with_terms) + transform_command(without)
 
 def offset_of_first_optional(terms):
     i = 0
@@ -93,22 +93,22 @@ def nop_references(actions, before, vanishing, after):
 
 def transform_actions(substitution, actions):
     new_actions = []
-    for action in actions: 
+    for action in actions:
         new_actions.extend(transform_action(substitution, action))
     return new_actions
 
 def transform_arguments(substitution, arguments): # -> lists of actions
     new_arguments = []
-    for argument in arguments: 
+    for argument in arguments:
         new_arguments.append(transform_actions(substitution, argument))
     return new_arguments
 
 def transform_action(substitution, action):  # -> actions
-    if action["TYPE"] == "formalref" or action["TYPE"] == "reference":  
+    if action["TYPE"] == "formalref" or action["TYPE"] == "reference":
         name = action["TEXT"]
         if substitution.has_key(name):
             return substitution[name]
-    if action["TYPE"] == "call":  
+    if action["TYPE"] == "call":
         return transform_call(substitution, action)
     return [action]
 
@@ -118,21 +118,21 @@ def transform_call(substitution, call):  # -> actions
     new_call["TYPE"]      = call["TYPE"]
     new_call["TEXT"]      = call["TEXT"]
     new_call["CALLTYPE"]  = call["CALLTYPE"]
-    if call.has_key("ARGTYPES"):  new_call["ARGTYPES"]  = call["ARGTYPES"] 
+    if call.has_key("ARGTYPES"):  new_call["ARGTYPES"]  = call["ARGTYPES"]
     new_call["ARGUMENTS"] = call["ARGUMENTS"]
-    
-    if new_call["CALLTYPE"] == "vocola" and new_call["TEXT"] == "Eval": 
+
+    if new_call["CALLTYPE"] == "vocola" and new_call["TEXT"] == "Eval":
         transform_eval(new_call)
-    new_call["ARGUMENTS"] = transform_arguments(substitution, 
+    new_call["ARGUMENTS"] = transform_arguments(substitution,
                                                 new_call["ARGUMENTS"])
-    
-    if new_call["CALLTYPE"] == "user": 
+
+    if new_call["CALLTYPE"] == "user":
         arguments  = new_call["ARGUMENTS"]
-    
+
         definition = Function_definitions[new_call["TEXT"]]
         formals    = definition["FORMALS"]
         body       = definition["ACTIONS"]
-    
+
         bindings = {}
         i = 0
         for argument in arguments:
@@ -157,15 +157,15 @@ def transform_call(substitution, call):  # -> actions
 
 def transform_eval(call):
     arguments = call["ARGUMENTS"]
-    
+
     template = ""
     new_arguments = []
-    for action in arguments[0]: 
-        if action["TYPE"] == "word": 
+    for action in arguments[0]:
+        if action["TYPE"] == "word":
             text = action["TEXT"]
             text = text.replace("%", "%%")
             template += text
-        else: 
+        else:
             template += "%a"
             new_argument = []
             new_argument.append(action)
@@ -173,10 +173,10 @@ def transform_eval(call):
     template_word = {}
     template_word["TYPE"] = "word"
     template_word["TEXT"] = template
-    
+
     template_argument = []
     template_argument.append(template_word)
     new_arguments = [template_argument] + new_arguments
-    
-    call["TEXT"]      = "EvalTemplate" 
+
+    call["TEXT"]      = "EvalTemplate"
     call["ARGUMENTS"] = new_arguments

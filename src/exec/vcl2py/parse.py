@@ -43,7 +43,7 @@ def parse_input(in_file, in_folder, extension_functions, debug):
 # (note that a "menu" is called an "alternative set" in the documentation)
 #
 #     <statements> ::= <statement>*
-#      <statement> ::= context_statement | <definition> | <function> 
+#      <statement> ::= context_statement | <definition> | <function>
 #                    | <directive> | <top_command>
 #
 #     <definition> ::= variable    ':=' <menu_body> ';'
@@ -104,7 +104,7 @@ Vocola_functions = {
                    }
 
 # Vocola extensions with (extension_name, minimum_arguments, maximum_arguments,
-# needs_flushing, module_name, function_name); initialized by 
+# needs_flushing, module_name, function_name); initialized by
 # read_extensions_file():
 
 #Extension_functions = {}
@@ -158,7 +158,7 @@ Dragon_functions = {
 
 def parse_file(in_file):    # returns a list of statements
     global In_folder, Include_stack_file, Included_files
-    
+
     Included_files.append(in_file)
     in_path = in_file
     if not re.match(re.escape(os.sep), in_path):
@@ -175,7 +175,7 @@ def parse_file(in_file):    # returns a list of statements
 
     return statements
 
-def read_file(in_file):     
+def read_file(in_file):
     global Last_include_position
     try:
         return open(in_file).read()
@@ -205,23 +205,23 @@ def parse_statements():    # statements = (context | top_command | definition)*
                 eat(TOKEN_SEMICOLON)
             continue
 
-        if statement["TYPE"] == "definition": 
+        if statement["TYPE"] == "definition":
             name = statement["NAME"]
             if Definitions.has_key(name):
                 log_error("Redefinition of <"+name+">", starting_position)
             Definitions[name] = statement
-        elif statement["TYPE"] == "command": 
+        elif statement["TYPE"] == "command":
             statement["NAME"] = str(Statement_count)
             Statement_count += 1
 
         #print unparse_statements([statement]),
-        if statement["TYPE"] != "include": 
+        if statement["TYPE"] != "include":
             statements.append(statement)
-        else: 
+        else:
             # Handle include file
             include_file = expand_variables(statement["ACTIONS"])
             if not already_included(include_file):
-                # Save context, get statements from include file, restore 
+                # Save context, get statements from include file, restore
                 Last_include_position = starting_position
                 Include_stack_line.append(get_line_number(starting_position))
                 #print "--> " + include_file
@@ -282,7 +282,7 @@ def parse_statement():
         rewind(start); return parse_top_command()
     if peek(TOKEN_COMMA):
         rewind(start); return parse_function_definition()
-    
+
     eat(TOKEN_RPAREN)
     # b(b) ^ <term>  or  b(b) ^ =  or b(b) ^ :=
     if peek(TOKEN_TERM|TOKEN_EQUALS):
@@ -322,7 +322,7 @@ def parse_variable_definition():    # definition = variable ':=' menu_body ';'
     position = get_current_position()
     name = eat(TOKEN_BARE_WORD)
     if not re.match(r'<.*>$', name):
-        error("Illegal variable '" + name + 
+        error("Illegal variable '" + name +
               "': variables must start with '<' and end with '>'", position)
     name = name[1:-1]
     check_variable_name(name, position)
@@ -356,7 +356,7 @@ def parse_function_definition():   # function = prototype ':=' action* ';'
     eat(TOKEN_LPAREN)
     formals = parse_formals()
     eat(TOKEN_RPAREN)
-    
+
     statement            = {}
     statement["TYPE"]    = "function"
     statement["NAME"]    = functionName
@@ -386,7 +386,7 @@ def parse_formals():    # formals = [name (',' name)*]
                 error("Illegal formal name: '" + formal + "'", get_last_position())
             if Debug>=2: print_log("Found formal:  " + formal)
             safe_formals.append("_" + formal)
-            if peek(TOKEN_COMMA): 
+            if peek(TOKEN_COMMA):
                 eat(TOKEN_COMMA)
             else:
                 break
@@ -419,7 +419,7 @@ def parse_directive():    # directive = ('include' word | '$set' word word) ';'
             position = before_semicolon
             if len(word_nodes) == 0:
                 position = get_last_position()
-            error("Include directive requires one word: include filename;", 
+            error("Include directive requires one word: include filename;",
                   position)
         statement["TYPE"]    = "include"
         statement["TEXT"]    = word_nodes[0]["TEXT"]
@@ -445,15 +445,15 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
         terms = parse_terms(TOKEN_EQUALS)
     else:
         terms = parse_terms(separators | TOKEN_EQUALS)
-    
+
     command          = {}
     command["TYPE"]  = "command"
     command["FILE"]  = Include_stack_file[-1]
     command["TERMS"] = terms
-    
+
     # Count variable terms for range checking in parse_reference
     Variable_terms = get_variable_terms(terms)
-    
+
     if needs_actions or peek(TOKEN_EQUALS):
         eat(TOKEN_EQUALS)
         command["ACTIONS"] = parse_actions(separators)
@@ -476,7 +476,7 @@ def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
             term["TYPE"]     = "optionalterms"
             term["TERMS"]    = optional_terms
             term["POSITION"] = optional_starting_position
-            if Debug>=2: 
+            if Debug>=2:
                 print_log("Found optional term group:  " + unparse_term(term, True))
         else:
             optional = False
@@ -486,13 +486,13 @@ def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
         if (not optional and term["TYPE"] != "dictation"): seen_non_optional = True
         terms.append(term)
 
-        if peek(separators): 
+        if peek(separators):
             break
 
-    if not seen_non_optional: 
-        error("At least one term must not be optional or <_anything>", 
+    if not seen_non_optional:
+        error("At least one term must not be optional or <_anything>",
               starting_position)
-    else: 
+    else:
         return combine_terms(terms)
 
 def parse_term():         # <term> ::= <word> | variable | range | <menu>
@@ -500,12 +500,12 @@ def parse_term():         # <term> ::= <word> | variable | range | <menu>
 
     starting_position = get_current_position()
     peek(TOKEN_TERM)
-    if peek(TOKEN_LPAREN):         
+    if peek(TOKEN_LPAREN):
         eat(TOKEN_LPAREN)
         term = parse_menu_body(TOKEN_RPAREN)
         term["POSITION"] = starting_position
         eat(TOKEN_RPAREN)
-        if Debug>=2: 
+        if Debug>=2:
             print_log("Found menu:  " + unparse_menu(term, True))
         return term
     elif not peek(TOKEN_BARE_WORD):
@@ -520,20 +520,20 @@ def parse_term():         # <term> ::= <word> | variable | range | <menu>
         term["TYPE"] = "range"
         term["FROM"] = int(match.group(2))
         term["TO"]   = int(match.group(3))
-        if Debug>=2: 
+        if Debug>=2:
             print_log("Found range:  " + match.group(2) + ".." + match.group(3))
     else:
         name = match.group(1)
         check_variable_name(name, starting_position)
-        if name == "_anything": 
+        if name == "_anything":
             if Debug>=2: print_log("Found <_anything>")
             term = create_dictation_node()
-        else: 
+        else:
             if Debug>=2: print_log("Found variable:  <" + name + ">")
-            if not Definitions.has_key(name): 
+            if not Definitions.has_key(name):
                 add_forward_reference(name, starting_position)
             term = create_variable_node(name)
-    
+
     term["POSITION"] = starting_position
     return term
 
@@ -546,7 +546,7 @@ def create_dictation_node():
 
 def parse_menu_body(separators):    # menuBody = command ('|' command)*
     commands = []
-    while True: 
+    while True:
         if peek(separators | TOKEN_BAR):
             error("Empty alternative (set)", get_current_position())
         commands.append(parse_command(separators | TOKEN_BAR))
@@ -576,7 +576,7 @@ def parse_actions(separators):    # action = word | call
         actions += split_out_references(word_node)
     return actions
 
-# expand in-string references (e.g. "{Up $1}") and unquote 
+# expand in-string references (e.g. "{Up $1}") and unquote
 # $'s (e.g., \$ -> $).
 # returns a non-empty list of actions
 def split_out_references(word_node):
@@ -584,7 +584,7 @@ def split_out_references(word_node):
     starting_position = word_node["POSITION"]
     quote_char        = word_node["QUOTE_CHAR"]
 
-    if word == "": 
+    if word == "":
         return [word_node]
 
     raw     = quote_char  # raw word text seen so far
@@ -613,7 +613,7 @@ def split_out_references(word_node):
 
 def create_reference_node(n, position):
     global Debug, Variable_terms
-    if int(n) > len(Variable_terms): 
+    if int(n) > len(Variable_terms):
         error("Reference '$" + n + "' out of range", position)
     term = Variable_terms[int(n) - 1]
     if term["TYPE"] == "menu": verify_referenced_menu(term)
@@ -649,15 +649,15 @@ def parse_call(callName):    # call = callName '(' arguments ')'
     eat(TOKEN_LPAREN)
     action["ARGUMENTS"] = parse_arguments()
     eat(TOKEN_RPAREN)
-    
+
     nActuals = len(action["ARGUMENTS"])
     if callName.find(".") != -1:
-        if Extension_functions.has_key(callName): 
+        if Extension_functions.has_key(callName):
             callFormals = Extension_functions[callName]
             lFormals = callFormals[0]
             uFormals = callFormals[1]
             action["CALLTYPE"] = "extension"
-        else: 
+        else:
             error("Call to unknown extension '" + callName + "'", call_position)
     elif Dragon_functions.has_key(callName):
         callFormals = Dragon_functions[callName]
@@ -670,17 +670,17 @@ def parse_call(callName):    # call = callName '(' arguments ')'
         lFormals = callFormals[0]
         uFormals = callFormals[1]
         action["CALLTYPE"] = "vocola"
-    elif Functions.has_key(callName): 
+    elif Functions.has_key(callName):
         lFormals = uFormals = Functions[callName]
         action["CALLTYPE"] = "user"
-    else: 
+    else:
         error("Call to unknown function '" + callName + "'", call_position)
 
-    if lFormals != -1 and nActuals < lFormals: 
-        error("Too few arguments passed to '" + callName + 
+    if lFormals != -1 and nActuals < lFormals:
+        error("Too few arguments passed to '" + callName +
               "' (minimum of " + str(lFormals) + " required)", call_position)
-    if uFormals != -1 and nActuals > uFormals: 
-        error("Too many arguments passed to '" + callName + 
+    if uFormals != -1 and nActuals > uFormals:
+        error("Too many arguments passed to '" + callName +
               "' (maximum of " + str(uFormals) + " allowed)", call_position)
 
     return action
@@ -690,14 +690,14 @@ def parse_arguments():    # arguments = [action* (',' action*)*]
     if not peek(TOKEN_RPAREN):
         while True:
             arguments.append(parse_actions(TOKEN_COMMA|TOKEN_RPAREN))
-            if peek(TOKEN_COMMA): 
+            if peek(TOKEN_COMMA):
                 eat(TOKEN_COMMA)
             else:
                 break
 
     return arguments
 
-def parse_word():    
+def parse_word():
     global Debug
     if peek(TOKEN_DOUBLE_WORD):
         quote_char ='"'
@@ -712,7 +712,7 @@ def parse_word():
     node = create_word_node(word, quote_char, get_last_position())
     return node
 
-def parse_word1(bare_word, position):    
+def parse_word1(bare_word, position):
     global Debug
     if Debug>=2: print_log("Found word:  '" + bare_word + "'")
     node = create_word_node(bare_word, "", position)
@@ -764,7 +764,7 @@ def format_error_message(message, position=None, advice=""):
     if advice != "":
         message += advice + "\n"
 
-    return message   
+    return message
 
 def already_included(filename):
     global Included_files
@@ -782,7 +782,7 @@ def expand_variables(actions):
             value = os.environ.get(variable)
             if not value:
                 # Should be a warning not an error.
-                log_error("Reference to unknown environment variable '" 
+                log_error("Reference to unknown environment variable '"
                           + variable + "'", action["POSITION"])
             else:
                 result += value
@@ -797,11 +797,11 @@ def verify_referenced_menu(menu, parent_has_actions=False, parent_has_alternativ
     commands         = menu["COMMANDS"]
     has_alternatives = parent_has_alternatives or (len(commands) != 1)
 
-    for command in commands: 
+    for command in commands:
         has_actions = parent_has_actions
-        if command.has_key("ACTIONS"): 
+        if command.has_key("ACTIONS"):
             has_actions = True
-            if parent_has_actions: 
+            if parent_has_actions:
                 error("Nested in-line lists with associated actions may not themselves contain actions",
                       menu["POSITION"])
 
@@ -816,17 +816,17 @@ def verify_menu_terms(terms, has_actions, has_alternatives, other_terms):
             #error("Alternative cannot contain an optional word",
             #      term["POSITION"])
             implementation_error("Alternative cannot contain an optional word")
-        elif type == "optionalterms": 
-            verify_menu_terms(term["TERMS"], has_actions, has_alternatives, 
+        elif type == "optionalterms":
+            verify_menu_terms(term["TERMS"], has_actions, has_alternatives,
                               other_terms)
-        elif type == "variable" or type == "dictation": 
+        elif type == "variable" or type == "dictation":
             error("Alternative cannot contain a variable", term["POSITION"])
-        elif type == "menu": 
+        elif type == "menu":
             if other_terms:
                 error("An inline list cannot be combined with anything else to make up an alternative",
                       term["POSITION"])
             verify_referenced_menu(term, has_actions, has_alternatives)
-        elif type == "range": 
+        elif type == "range":
             # allow a single range with no actions if it is the only
             # alternative in the (nested) set:
             if other_terms:
@@ -851,7 +851,7 @@ def add_forward_reference(variable, position):
 def check_forward_references():
     global Definitions, Error_count, Forward_references, Input_name
     global Include_stack_file, Include_stack_line
-    for forward_reference in Forward_references: 
+    for forward_reference in Forward_references:
         variable = forward_reference["VARIABLE"]
         if not Definitions.has_key(variable):
             stack_file = Include_stack_file

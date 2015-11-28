@@ -10,7 +10,7 @@ import re
 #
 #     a quotation using "s or 's where the delimiter may be escaped by
 #       doubling it; e.g., 'can''t' for can't
-#  
+#
 #     an unterminated quotation: as above but with the final delimiter
 #        replaced with a newline
 #
@@ -52,16 +52,16 @@ import re
 #
 
 
-## 
+##
 ## Dividing up the input into tokens:
-## 
+##
 
 Singles      = r'()\[\],|;='
 
   # characters not allowed anywhere in a bare word:
 Excluded     = r'\s\#\'\"' + Singles
 
-# 
+#
 # Every string ending with a newline can be divided into a continuous
 # series of these, with each pseudo token being as greedy as possible.
 #
@@ -132,9 +132,9 @@ def tokenize(text):  # -> [[kind, token text, offset in text of token start]*]
             statement_start = len(tokens)
 
 
-## 
+##
 ## Loading the tokens of a string for processing:
-## 
+##
 
   # (initial) tokenizer state:
 Text          = ""
@@ -160,21 +160,21 @@ def load_tokens(text):
     Scan_newlines = 0
 
 
-## 
+##
 ## Moving through the list of tokens:
-## 
+##
 
 def peek(kind):
     global Tokens, Offset, Peeks
     Peeks |= kind
     return Tokens[Offset][0] & kind
 
-def eat(kind = -1):
+def eat(kind= -1):
     global Tokens, Offset, Peeks
 
     if not (Tokens[Offset][0] & kind):
         Peeks |= kind
-        syntax_error(Peeks, Tokens[Offset][0], Tokens[Offset][1], 
+        syntax_error(Peeks, Tokens[Offset][0], Tokens[Offset][1],
                      get_current_position())
 
     Peeks   = 0
@@ -183,7 +183,7 @@ def eat(kind = -1):
 
 def get_current_position():
     global Text, Offset, Tokens
-    if Offset == -1: 
+    if Offset == -1:
         implementation_error("get_current_position() called before open_text")
     return [Text, Offset, Tokens[Offset][2]]
 
@@ -204,9 +204,9 @@ def rewind(position):
     Peeks  = 0
 
 
-## 
+##
 ## Getting information about positions:
-## 
+##
 
 def get_line_number(position):
     global Text, Scan_limit, Scan_newlines
@@ -274,15 +274,15 @@ def make_visible(text):
     result = ""
     for char in text:
         c = ord(char)
-        if c<32:
+        if c < 32:
             result += "^" + chr(ord('@')+c)
         else:
             result += char
     return result
 
-## 
+##
 ## Decorating tokens with properties:
-## 
+##
 
 TOKEN_BARE_WORD    = 0x1
 TOKEN_DOUBLE_WORD  = 0x2
@@ -363,15 +363,15 @@ def decode_token_kinds(kind):
         return (", ".join(result[:-1])) + ", or " + result[-1]
 
 
-## 
+##
 ## Handling syntax errors:
-## 
+##
 
 def syntax_error(wanted, found, found_text, position):
     if found == TOKEN_ILLEGAL_WORD:
-        log_error("Unterminated quotation: " + found_text[:-1], 
+        log_error("Unterminated quotation: " + found_text[:-1],
                   get_current_position())
-        raise SyntaxError, "Unterminated quotation: " + found_text[:-1]
+        raise SyntaxError("Unterminated quotation: " + found_text[:-1])
 
     advice = ""
     if (wanted&TOKEN_RPAREN):
@@ -379,7 +379,8 @@ def syntax_error(wanted, found, found_text, position):
     if (wanted&TOKEN_ACTION):
         advice += "    Did you forget a ';' at the end of your (last) statement?\n"
         if (wanted&TOKEN_BAR):
-            advice += "    Did you forget a '|' at the end of your (last) alternative?\n"
+            advice += "    Did you forget a '|' at the end of your " +
+                      "(last) alternative?\n"
 
     if wanted & TOKEN_TERM:
         wanted &= ~(TOKEN_LPAREN|TOKEN_LBRACKET|TOKEN_BARE_WORD|
@@ -392,21 +393,22 @@ def syntax_error(wanted, found, found_text, position):
     found &= ~(TOKEN_TERM | TOKEN_ACTION | TOKEN_WORD)
 
     message = "Wanted " + decode_token_kinds(wanted) + \
-        " but found "+ decode_token_kinds(found)
+        " but found " + decode_token_kinds(found)
 
     log_error(message, position, advice)
-    raise SyntaxError, message
+    raise SyntaxError(message)
 
 
-## 
+##
 ## Saving and restoring the token state:
-## 
+##
 
 Token_state_stack = []
 
   # requires: initialize_token_properties(-) has already been called
 def open_text(text):
-    global Token_state_stack, Text, Tokens, Offset, Peeks, Scan_limit, Scan_newlines
+    global Token_state_stack, Text, Tokens, Offset, Peeks, Scan_limit
+    global Scan_newlines
     token_state = [Text, Tokens, Offset, Peeks, Scan_limit, Scan_newlines]
     Token_state_stack.append(token_state)
 

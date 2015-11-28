@@ -193,26 +193,36 @@ def read_extensions_file(extensions_filename):
         pass
     return extension_functions
 
+
+def expand_in_file(in_file, in_folder):
+    if in_file != "": 
+        # just one file
+        return [in_file]
+
+    # each .vcl file in folder:
+    result = []
+    machine = os.environ.get("COMPUTERNAME", "").lower()  
+    try:
+        for filename in os.listdir(in_folder):
+            match = re.match(r'^(.+)\.vcl$', filename)
+            if match:
+                in_file = match.group(1)
+                # skip machine-specific files for different machines
+                match = re.search(r'@(.+)', in_file)
+                if not (match and match.group(1).lower() != machine):
+                    result += [in_file]
+        return result
+    except IOError, e:
+        fatal_error("Couldn't open/list folder '" + in_folder + "': " + str(e))
+
+
 def convert_files(in_file, out_folder, suffix):
     global In_folder
 
-    if in_file != "": 
-        # Convert one file
+    files = expand_in_file(in_file, In_folder)
+    for in_file in files:
         convert_file(in_file, out_folder, suffix)
-    else: 
-        # Convert each .vcl file in folder 
-        machine = os.environ.get("COMPUTERNAME", "").lower()  
-        try:
-            for filename in os.listdir(In_folder):
-                match = re.match(r'^(.+)\.vcl$', filename)
-                if match:
-                    in_file = match.group(1)
-                    # skip machine-specific files for different machines
-                    match = re.search(r'@(.+)', in_file)
-                    if (match and match.group(1).lower() != machine): continue
-                    convert_file(in_file, out_folder, suffix)
-        except IOError, e:
-            fatal_error("Couldn't open/list folder '" + In_folder + "': " + str(e))
+    return
 
 # Convert one Vocola command file to a .py file
 
