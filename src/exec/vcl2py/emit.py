@@ -690,7 +690,7 @@ class ThisGrammar(GrammarBase):
 
 def emit_file_middle():
     print >>OUT, '''    """
-
+    
     def initialize(self):
         self.load(self.gramSpec)
         self.currentModule = ("","",0)

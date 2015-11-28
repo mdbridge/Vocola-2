@@ -379,7 +379,7 @@ def syntax_error(wanted, found, found_text, position):
     if (wanted&TOKEN_ACTION):
         advice += "    Did you forget a ';' at the end of your (last) statement?\n"
         if (wanted&TOKEN_BAR):
-            advice += "    Did you forget a '|' at the end of your " +
+            advice += "    Did you forget a '|' at the end of your " + \
                       "(last) alternative?\n"
 
     if wanted & TOKEN_TERM:
