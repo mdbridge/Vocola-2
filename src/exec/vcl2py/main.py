@@ -46,7 +46,7 @@ Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
 # Main control flow
 
 def main_routine():
-    global Debug, Default_maximum_commands, Error_encountered, Force_processing, In_folder, Default_number_words
+    global Debug, Error_encountered, Force_processing, In_folder
     global Extension_functions
 
     # flush output after every print statement:
@@ -133,18 +133,19 @@ def main_routine():
                         "' for writing: " + str(e))
 
 
-    if not ignore_INI_file:   read_ini_file(ini_file)
+    params = {}
+    params["number_words"]     = Default_number_words
+    params["maximum_commands"] = Default_maximum_commands
+
+    if not ignore_INI_file:
+        params = read_ini_file(ini_file, params)
     if extensions_file != "":
         Extension_functions = read_extensions_file(extensions_file)
     else:
         Extension_functions = {}
     if Debug >= 1:
         print_log("default maximum commands per utterance = " +
-                  str(Default_maximum_commands))
-
-    params = {}
-    params["number_words"]     = Default_number_words
-    params["maximum_commands"] = Default_maximum_commands
+                  str(params["maximum_commands"]))
 
     initialize_token_properties()
     files = expand_in_file(in_file, In_folder)
@@ -164,8 +165,8 @@ def safe_int(text, default=0):
     except ValueError:
         return default
 
-def read_ini_file(ini_file):
-    global Debug, Default_maximum_commands
+def read_ini_file(ini_file, params):
+    global Debug
 
     if Debug >= 1: print_log("INI file is '" + ini_file + "'")
     try:
@@ -176,9 +177,10 @@ def read_ini_file(ini_file):
             keyword = match.group(1)
             value   = match.group(2)
             if keyword == "MaximumCommands":
-                Default_maximum_commands = safe_int(value, 1)
+                params["maximum_commands"] = safe_int(value, 1)
     except IOError, e:
-        return
+        pass
+    return params
 
 def read_extensions_file(extensions_filename):
     global Debug
