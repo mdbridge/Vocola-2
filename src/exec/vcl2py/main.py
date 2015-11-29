@@ -314,14 +314,17 @@ def convert_file(in_file, out_folder, suffix):
         print_log("  Warning: no commands in file.")
         return
 
+    params = {}
+    params["number_words"] = Number_words
+    params["maximum_commands"] = Maximum_commands
+
     from vcl2py.emit import output
     #emit_output(out_file, statements)
     output(out_file, statements,
            VocolaVersion,
            should_emit_dictation_support,
-           Module_name,
-           Number_words, Definitions, Maximum_commands,
-           Extension_functions)
+           Module_name, Definitions,
+           Extension_functions, params)
 
 #
 # Warning: this code is very subtle and has a matching inverse function in

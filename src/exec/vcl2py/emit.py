@@ -7,24 +7,24 @@ def output(out_file, statements,
            _VocolaVersion,
            _Should_emit_dictation_support,
            _Module_name,
-           _Number_words,
            _Definitions,
-           _Maximum_commands,
-           _Extension_functions
+           _Extension_functions,
+           params
            ):
     global NestedCallLevel
     global VocolaVersion, Should_emit_dictation_support
     global Module_name, Number_words, Definitions, Maximum_commands
     global Extension_functions
 
+    Number_words     = params["number_words"]
+    Maximum_commands = params["maximum_commands"]
+
     NestedCallLevel               = 0
 
     VocolaVersion = _VocolaVersion
     Should_emit_dictation_support = _Should_emit_dictation_support
     Module_name = _Module_name
-    Number_words = _Number_words
     Definitions = _Definitions
-    Maximum_commands = _Maximum_commands
     Extension_functions = _Extension_functions
 
     emit_output(out_file, statements)
