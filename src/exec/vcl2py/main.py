@@ -54,10 +54,8 @@ def main_routine():
 
     # Debug states: 0 = no info, 1 = show statements, 2 = detailed info
     Debug                    = 0
-    Default_maximum_commands = 1
     Error_encountered        = False
     Force_processing         = False
-    Default_number_words     = {}
 
 
     extensions_file          = ""
@@ -66,6 +64,10 @@ def main_routine():
     log_file                 = ""
     log_to_stdout            = False
     suffix                   = "_vcl"
+
+    params = {}
+    params["maximum_commands"] = 1
+    params["number_words"]     = {}
 
     argv = sys.argv[1:]
     while len(argv) > 0:
@@ -86,15 +88,9 @@ def main_routine():
         elif option == "-INI_file":     ini_file        = argument
         elif option == "-log_file":     log_file        = argument
         elif option == "-max_commands":
-            Default_maximum_commands = safe_int(argument, 1)
+            params["maximum_commands"] = safe_int(argument, 1)
         elif option == "-numbers":
-            Default_number_words = {}
-            numbers = re.split(r'\s*,\s*', argument.strip())
-            i = 0
-            for number in numbers:
-                if number != "":
-                    Default_number_words[i] = number
-                i = i + 1
+            params["number_words"] = parse_number_words(argument)
         elif option == "-suffix":       suffix                   = argument
         else:
             usage("unknown option: " + option)
@@ -133,10 +129,6 @@ def main_routine():
                         "' for writing: " + str(e))
 
 
-    params = {}
-    params["number_words"]     = Default_number_words
-    params["maximum_commands"] = Default_maximum_commands
-
     if not ignore_INI_file:
         params = read_ini_file(ini_file, params)
     if extensions_file != "":
@@ -164,6 +156,16 @@ def safe_int(text, default=0):
         return int(text)
     except ValueError:
         return default
+
+def parse_number_words(text):
+    number_words = {}
+    numbers = re.split(r'\s*,\s*', text.strip())
+    i = 0
+    for number in numbers:
+        if number != "":
+            number_words[i] = number
+        i = i + 1
+    return number_words
 
 def read_ini_file(ini_file, params):
     global Debug
@@ -285,14 +287,8 @@ def convert_file(in_file, out_folder, suffix, params):
                 params_per_file["maximum_commands"] \
                     = safe_int(statement["TEXT"], 1)
             elif key == "numbers":
-                number_words = {}
-                numbers = re.split(r'\s*,\s*', statement["TEXT"].strip())
-                i = 0
-                for number in numbers:
-                    if number != "":
-                        number_words[i] = number
-                    i = i + 1
-                params_per_file["number_words"] = number_words
+                params_per_file["number_words"] \
+                    = parse_number_words(statement["TEXT"].strip())
 
     if error_count > 0:
         if error_count == 1:
