@@ -142,8 +142,14 @@ def main_routine():
         print_log("default maximum commands per utterance = " +
                   str(Default_maximum_commands))
 
+    params = {}
+    params["number_words"]     = Default_number_words
+    params["maximum_commands"] = Default_maximum_commands
+
     initialize_token_properties()
-    convert_files(in_file, out_folder, suffix)
+    files = expand_in_file(in_file, In_folder)
+    for in_file in files:
+        convert_file(in_file, out_folder, suffix, params)
 
     close_log()
     if not Error_encountered:
@@ -220,25 +226,15 @@ def expand_in_file(in_file, in_folder):
         fatal_error("Couldn't open/list folder '" + in_folder + "': " + str(e))
 
 
-def convert_files(in_file, out_folder, suffix):
-    global In_folder
-
-    files = expand_in_file(in_file, In_folder)
-    for in_file in files:
-        convert_file(in_file, out_folder, suffix)
-    return
-
 # Convert one Vocola command file to a .py file
 
   # in_file is just the base name; actual pathname is
   # <In_folder>/<in_file>.vcl where / is the correct separator
-def convert_file(in_file, out_folder, suffix):
+def convert_file(in_file, out_folder, suffix, params):
     global Debug, Error_encountered
     global Force_processing
     global In_folder
     global Input_name, Module_name
-    global Default_number_words, Number_words
-    global Default_maximum_commands, Maximum_commands
     global Extension_functions
 
     out_file = convert_filename(in_file)
@@ -279,21 +275,22 @@ def convert_file(in_file, out_folder, suffix):
     #print_log(unparse_statements(statements), True)
 
     # Handle $set directives:
-    Maximum_commands = Default_maximum_commands
-    Number_words     = Default_number_words
+    params_per_file = params.copy()
     for statement in statements:
         if statement["TYPE"] == "set":
             key = statement["KEY"]
             if key == "MaximumCommands":
-                Maximum_commands = safe_int(statement["TEXT"], 1)
+                params_per_file["maximum_commands"] \
+                    = safe_int(statement["TEXT"], 1)
             elif key == "numbers":
-                Number_words = {}
+                number_words = {}
                 numbers = re.split(r'\s*,\s*', statement["TEXT"].strip())
                 i = 0
                 for number in numbers:
                     if number != "":
-                        Number_words[i] = number
+                        number_words[i] = number
                     i = i + 1
+                params_per_file["number_words"] = number_words
 
     if error_count > 0:
         if error_count == 1:
@@ -314,17 +311,13 @@ def convert_file(in_file, out_folder, suffix):
         print_log("  Warning: no commands in file.")
         return
 
-    params = {}
-    params["number_words"] = Number_words
-    params["maximum_commands"] = Maximum_commands
-
     from vcl2py.emit import output
     #emit_output(out_file, statements)
     output(out_file, statements,
            VocolaVersion,
            should_emit_dictation_support,
            Module_name, Definitions,
-           Extension_functions, params)
+           Extension_functions, params_per_file)
 
 #
 # Warning: this code is very subtle and has a matching inverse function in
