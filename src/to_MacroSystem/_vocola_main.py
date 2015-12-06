@@ -209,8 +209,9 @@ class ThisGrammar(GrammarBase):
 Vocola Warning: no language "%s" translations for the built-in Vocola
 commands (e.g., commands to load voice commands) are currently
 available; consider helping translate them -- inquire on
-http://www.speechcomputing.com.  For now the English versions, like "Edit
-Commands" and "Edit Global Commands" are activated.
+https://www.knowbrainer.com/forums/forum/categories.cfm?catid=25.  For
+now the English versions, like "Edit Commands" and "Edit Global
+Commands" are activated.
 """ % language
 
 
