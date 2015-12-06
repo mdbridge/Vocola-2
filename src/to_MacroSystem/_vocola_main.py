@@ -79,6 +79,14 @@ if VocolaEnabled:
 
 
 def get_command_folder():
+    commandFolder = get_top_command_folder()
+    if commandFolder:
+        uDir = os.path.join(commandFolder, language)
+        if os.path.isdir(uDir):
+            commandFolder = uDir
+    return commandFolder
+
+def get_top_command_folder():
     configured = None
     try:
         import natlinkstatus
@@ -103,7 +111,7 @@ def get_command_folder():
         return systemCommandFolder
 
     return None
-    
+
 commandFolder = get_command_folder()
 if VocolaEnabled and not commandFolder:
     print >> sys.stderr, "Warning: no Vocola command folder found!"
