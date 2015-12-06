@@ -17,10 +17,10 @@
 # publish, distribute, sublicense, and/or sell copies of the Software,
 # and to permit persons to whom the Software is furnished to do so,
 # subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -79,6 +79,14 @@ if VocolaEnabled:
 
 
 def get_command_folder():
+    commandFolder = get_top_command_folder()
+    if commandFolder:
+        uDir = os.path.join(commandFolder, language)
+        if os.path.isdir(uDir):
+            commandFolder = uDir
+    return commandFolder
+
+def get_top_command_folder():
     configured = None
     try:
         import natlinkstatus
@@ -90,12 +98,12 @@ def get_command_folder():
             import win32con
             # Scott's installer:
             r = RegistryDict.RegistryDict(win32con.HKEY_CURRENT_USER,
-                                          "Software\NatLink")             
-            if r:                                                         
-                configured = r["VocolaUserDirectory"]              
+                                          "Software\NatLink")
+            if r:
+                configured = r["VocolaUserDirectory"]
         except ImportError:
             pass
-    if os.path.isdir(configured):                      
+    if os.path.isdir(configured):
         return configured
 
     systemCommandFolder = os.path.join(VocolaFolder, 'Commands')
@@ -103,7 +111,7 @@ def get_command_folder():
         return systemCommandFolder
 
     return None
-    
+
 commandFolder = get_command_folder()
 if VocolaEnabled and not commandFolder:
     print >> sys.stderr, "Warning: no Vocola command folder found!"
@@ -169,7 +177,7 @@ class ThisGrammar(GrammarBase):
 <loadGlobal>        exported = Lade globale [Sprach] Befehle;
 <loadExtensions>    exported = Lade [Sprach] Extensions;
 <discardOld>        exported = Verwerfe alte [Sprach] Befehle;
-    """   
+    """
     elif language == 'ita':
         gramSpec = """
 <NatLinkWindow>     exported = [Mostra] Finestra Di (NatLink|Vocola);
@@ -201,8 +209,9 @@ class ThisGrammar(GrammarBase):
 Vocola Warning: no language "%s" translations for the built-in Vocola
 commands (e.g., commands to load voice commands) are currently
 available; consider helping translate them -- inquire on
-http://www.speechcomputing.com.  For now the English versions, like "Edit
-Commands" and "Edit Global Commands" are activated.
+https://www.knowbrainer.com/forums/forum/categories.cfm?catid=25.  For
+now the English versions, like "Edit Commands" and "Edit Global
+Commands" are activated.
 """ % language
 
 
@@ -216,13 +225,13 @@ Commands" and "Edit Global Commands" are activated.
 
         self.load(self.gramSpec)
         self.activateAll()
-                    
+
     def gotBegin(self,moduleInfo):
         self.currentModule = moduleInfo
         # delay enabling until now to avoid NatLink clobbering our callback:
-        enable_callback() 
+        enable_callback()
 
-                                      
+
     # Get app name by stripping folder and extension from currentModule name
     def getCurrentApplicationName(self):
         return string.lower(os.path.splitext(os.path.split(self.currentModule[0]) [1]) [0])
@@ -335,14 +344,14 @@ Commands" and "Edit Global Commands" are activated.
         comment = 'Global voice commands on ' + self.machine
         self.openCommandFile(file, comment)
 
-    
+
     def FindExistingCommandFile(self, file):
         if commandFolder:
             f = commandFolder + '\\' + file
             if os.path.isfile(f): return f
 
         return ""
-    
+
     # Open a Vocola command file (using the application associated with ".vcl")
     def openCommandFile(self, file, comment):
         if not commandFolder:
@@ -352,7 +361,7 @@ Commands" and "Edit Global Commands" are activated.
         path = self.FindExistingCommandFile(file)
         if not path:
             path = commandFolder + '\\' + file
-        
+
             new = open(path, 'w')
             new.write('# ' + comment + '\n\n')
             new.close()
@@ -366,7 +375,7 @@ Commands" and "Edit Global Commands" are activated.
 
         #try:
         #    os.startfile(path)
-        #except WindowsError, e: 
+        #except WindowsError, e:
         #    print
         #    print "Unable to open voice command file with associated editor: " + str(e)
         #    print "Trying to open it with notepad instead."
@@ -397,7 +406,7 @@ def compile_Vocola(inputFileOrFolder, force):
 
     arguments += ['-extensions', ExtensionsFolder + r'\extensions.csv']
     if language == "enx":
-        arguments += ['-numbers', 
+        arguments += ['-numbers',
                       'zero,one,two,three,four,five,six,seven,eight,nine']
 
     arguments += ["-suffix", "_vcl" ]
@@ -420,13 +429,13 @@ def compile_Vocola(inputFileOrFolder, force):
 # Unload all commands, including those of files no longer existing
 def purgeOutput():
     pattern = re.compile("_vcl\d*\.pyc?$")
-    [os.remove(os.path.join(NatLinkFolder,f)) for f 
+    [os.remove(os.path.join(NatLinkFolder,f)) for f
      in os.listdir(NatLinkFolder) if pattern.search(f)]
 
-# 
+#
 # Run program with path executable and arguments arguments.  Waits for
 # the program to finish.  Runs the program in a hidden window.
-# 
+#
 def hidden_call(executable, arguments):
     args = [executable] + arguments
     try:
@@ -554,9 +563,9 @@ def utterance_start_callback(moduleInfo):
 #                                                                         #
 ###########################################################################
 
-# 
+#
 # With Quintijn's installer as of February 4, 2008:
-# 
+#
 #   _vocola_main is loaded before any other NatLink modules
 #   vocolaBeginCallback is called directly by natlinkmain before any
 #     other grammer's gotBegin method
