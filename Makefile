@@ -36,12 +36,6 @@ prepare:
 	cp src/to_MacroSystem/*.py   build/Vocola/to_MacroSystem/
 	#
 	(cd build; zip -r Vocola Vocola) > /dev/null
-	#
-	# installer version:
-	(cd build; cp -r Vocola installer-Vocola)
-	sed 's/[0-9]\.[0-9]\(\.[0-9]\)*/&I/' src/README.html > build/installer-Vocola/README.html
-	# HACK for now:  <<<>>>
-	cp ${NATLINK}/MacroSystem/_vocola_main.py build/installer-Vocola/to_MacroSystem/
 
 clean::
 	rm -rf build
@@ -51,26 +45,28 @@ clean::
 ## Installing to the NatLink installer repository:
 ## 
 
-short_compare_installer: prepare
+short_compare: prepare
 	@echo "=========="
-	@-diff --brief -b build/installer-Vocola/to_MacroSystem/_vocola_main.py \
+	@-diff --brief -b build/Vocola/to_MacroSystem/_vocola_main.py \
                            ${NATLINK}/MacroSystem/
-	@-diff --brief -b build/installer-Vocola/to_core/VocolaUtils.py \
+	@-diff --brief -b build/Vocola/to_core/VocolaUtils.py \
                            ${NATLINK}/MacroSystem/core/
-	@-diff --brief -r -x .svn -b build/installer-Vocola ${NATLINK}/Vocola
-
-compare_installer: prepare
-	diff -r -x .svn -b build/installer-Vocola ${NATLINK}/Vocola | more
+	@-diff --brief -r -x .svn -b build/Vocola ${NATLINK}/Vocola
 
 compare: prepare
-	diff -b build/Vocola/to_MacroSystem/_vocola_main.py \
-                ${NATLINK}/MacroSystem/_vocola_main.py | more
+	@echo "=========="
+	diff -r -x .svn -b build/Vocola ${NATLINK}/Vocola 
+	diff build/Vocola/to_core/VocolaUtils.py \
+                ${NATLINK}/MacroSystem/core/
+	diff build/Vocola/to_MacroSystem/_vocola_main.py \
+                ${NATLINK}/MacroSystem/_vocola_main.py
+
 
 install: prepare
-	(cd build/installer-Vocola; find . -type f -exec cp {} ${NATLINK}/Vocola/{} \;)
-	cp build/installer-Vocola/to_MacroSystem/_vocola_main.py \
+	(cd build/Vocola; find . -type f -exec cp {} ${NATLINK}/Vocola/{} \;)
+	cp build/Vocola/to_MacroSystem/_vocola_main.py \
                            ${NATLINK}/MacroSystem/
-	cp build/installer-Vocola/to_core/VocolaUtils.py \
+	cp build/Vocola/to_core/VocolaUtils.py \
                            ${NATLINK}/MacroSystem/core/
 	@echo
 	@echo "***** Do not forget to update version number in natlinkInstaller/setupnatlinkwithinno.py"
