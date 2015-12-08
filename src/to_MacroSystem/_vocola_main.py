@@ -68,8 +68,10 @@ NatLinkFolder = re.sub(r'\core$', "", NatLinkFolder)
 
 
 VocolaFolder     = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola'))
-ExecFolder       = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 'exec'))
-ExtensionsFolder = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 'extensions'))
+ExecFolder       = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 
+                                                 'exec'))
+ExtensionsFolder = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 
+                                                 'extensions'))
 
 NatLinkFolder = os.path.abspath(NatLinkFolder)
 
@@ -226,7 +228,7 @@ Commands" are activated.
         self.load(self.gramSpec)
         self.activateAll()
 
-    def gotBegin(self,moduleInfo):
+    def gotBegin(self, moduleInfo):
         self.currentModule = moduleInfo
         # delay enabling until now to avoid NatLink clobbering our callback:
         enable_callback()
@@ -234,7 +236,8 @@ Commands" are activated.
 
     # Get app name by stripping folder and extension from currentModule name
     def getCurrentApplicationName(self):
-        return string.lower(os.path.splitext(os.path.split(self.currentModule[0]) [1]) [0])
+        return string.lower(os.path.splitext(
+            os.path.split(self.currentModule[0]) [1]) [0])
 
 
 ### Miscellaneous commands
@@ -302,7 +305,9 @@ Commands" are activated.
         else:
             print >> sys.stderr
             if module == "":
-                print >> sys.stderr, "Found no Vocola global command files [for machine '" + self.machine + "']"
+                print >> sys.stderr, \
+                    "Found no Vocola global command files [for machine '" + \
+                    self.machine + "']"
             else:
                 print >> sys.stderr, "Found no Vocola command files for application '" + module + "' [for machine '" + self.machine + "']"
 
@@ -355,7 +360,8 @@ Commands" are activated.
     # Open a Vocola command file (using the application associated with ".vcl")
     def openCommandFile(self, file, comment):
         if not commandFolder:
-            print >> sys.stderr, "Error: Unable to create command file because no Vocola command folder found."
+            print >> sys.stderr, "Error: Unable to create command file " + \
+                "because no Vocola command folder found."
             return
 
         path = self.FindExistingCommandFile(file)
@@ -409,7 +415,7 @@ def compile_Vocola(inputFileOrFolder, force):
         arguments += ['-numbers',
                       'zero,one,two,three,four,five,six,seven,eight,nine']
 
-    arguments += ["-suffix", "_vcl" ]
+    arguments += ["-suffix", "_vcl"]
     if force: arguments += ["-f"]
 
     arguments += [inputFileOrFolder, NatLinkFolder]
@@ -420,7 +426,7 @@ def compile_Vocola(inputFileOrFolder, force):
         try:
             log = open(logName, 'r')
             compiler_error = True
-            print  >> sys.stderr, log.read()
+            print >> sys.stderr, log.read()
             log.close()
             os.remove(logName)
         except IOError:  # no log file means no Vocola errors
@@ -443,8 +449,8 @@ def hidden_call(executable, arguments):
         si             = subprocess.STARTUPINFO()
         # Location of below constants seems to vary from Python
         # version to version so hardcode them:
-        si.dwFlags     = 1 # subprocess.STARTF_USESHOWWINDOW
-        si.wShowWindow = 0 # subprocess.SW_HIDE
+        si.dwFlags     = 1  # subprocess.STARTF_USESHOWWINDOW
+        si.wShowWindow = 0  # subprocess.SW_HIDE
         return subprocess.call(args, startupinfo=si)
     except ImportError:
         pid = os.spawnv(os.P_NOWAIT, executable, args)
@@ -465,7 +471,7 @@ def compile_changed():
         compiler_error = False
         thisGrammar.loadAllFiles(False)
         if not compiler_error:
-            lastVocolaFileTime =  current
+            lastVocolaFileTime = current
 
     #source_changed = False
     #if commandFolder:
