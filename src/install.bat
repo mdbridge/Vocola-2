@@ -6,6 +6,8 @@ copy Release-2-6-notes.txt C:\NatLink\NatLink\Vocola
 copy Release-2-7-notes.txt C:\NatLink\NatLink\Vocola
 copy Release-2-8-notes.txt C:\NatLink\NatLink\Vocola
 
+mkdir C:\NatLink\NatLink\Vocola\commands
+
 mkdir C:\NatLink\NatLink\Vocola\exec\vcl2py
 copy exec\*.exe	      C:\NatLink\NatLink\Vocola\exec
 copy exec\*.pl	      C:\NatLink\NatLink\Vocola\exec
