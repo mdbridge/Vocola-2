@@ -21,6 +21,8 @@ prepare:
 	cp src/exec/*.exe	     build/Vocola/exec/
 	cp src/exec/*.pl	     build/Vocola/exec/
 	cp src/exec/*.py	     build/Vocola/exec/
+	mkdir build/Vocola/exec/vcl2py
+	cp src/exec/vcl2py/*.py	     build/Vocola/exec/vcl2py/
 	#
 	# extensions:
 	cp src/extensions/README.txt build/Vocola/extensions/
@@ -52,14 +54,16 @@ short_compare: prepare
 	@-diff --brief -b build/Vocola/to_core/VocolaUtils.py \
                            ${NATLINK}/MacroSystem/core/
 	@-diff --brief -r -x .svn -b build/Vocola ${NATLINK}/Vocola
+	@grep "including Vocola" ${NATLINK}/natlinkInstaller/setupnatlinkwithinno.py
 
 compare: prepare
 	@echo "=========="
-	diff -r -x .svn -b build/Vocola ${NATLINK}/Vocola 
-	diff build/Vocola/to_core/VocolaUtils.py \
+	-diff -r -x .svn -b build/Vocola ${NATLINK}/Vocola 
+	-diff build/Vocola/to_core/VocolaUtils.py \
                 ${NATLINK}/MacroSystem/core/
-	diff build/Vocola/to_MacroSystem/_vocola_main.py \
+	-diff build/Vocola/to_MacroSystem/_vocola_main.py \
                 ${NATLINK}/MacroSystem/_vocola_main.py
+	grep "including Vocola" ${NATLINK}/natlinkInstaller/setupnatlinkwithinno.py
 
 
 install: prepare
