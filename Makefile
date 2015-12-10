@@ -12,6 +12,7 @@ prepare:
 	#
 	# top level:
 	(cd build/Vocola; mkdir commands exec extensions samples to_core to_MacroSystem)
+	cp src/install.bat	     build/Vocola/
 	cp src/README.html	     build/Vocola/
 	cp src/Release*.txt	     build/Vocola/
 	#
@@ -38,6 +39,12 @@ prepare:
 	cp src/to_MacroSystem/*.py   build/Vocola/to_MacroSystem/
 	#
 	(cd build; zip -r Vocola Vocola) > /dev/null
+	#
+	#
+	cp -r build/Vocola build/Vocola_for_NatLink
+	rm     build/Vocola_for_NatLink/install.bat
+	rm -rf build/Vocola_for_NatLink/to_MacroSystem
+	rm -rf build/Vocola_for_NatLink/to_core
 
 clean::
 	rm -rf build
@@ -53,12 +60,12 @@ short_compare: prepare
                            ${NATLINK}/MacroSystem/
 	@-diff --brief -b build/Vocola/to_core/VocolaUtils.py \
                            ${NATLINK}/MacroSystem/core/
-	@-diff --brief -r -x .svn -b build/Vocola ${NATLINK}/Vocola
+	@-diff --brief -r -x .svn -b build/Vocola_for_NatLink ${NATLINK}/Vocola
 	@grep "including Vocola" ${NATLINK}/natlinkInstaller/setupnatlinkwithinno.py
 
 compare: prepare
 	@echo "=========="
-	-diff -r -x .svn -b build/Vocola ${NATLINK}/Vocola 
+	-diff -r -x .svn -b build/Vocola_for_NatLink ${NATLINK}/Vocola 
 	-diff build/Vocola/to_core/VocolaUtils.py \
                 ${NATLINK}/MacroSystem/core/
 	-diff build/Vocola/to_MacroSystem/_vocola_main.py \
@@ -67,7 +74,7 @@ compare: prepare
 
 
 install: prepare
-	(cd build/Vocola; find . -type f -exec cp {} ${NATLINK}/Vocola/{} \;)
+	(cd build/Vocola_for_NatLink; find . -type f -exec cp {} ${NATLINK}/Vocola/{} \;)
 	cp build/Vocola/to_MacroSystem/_vocola_main.py \
                            ${NATLINK}/MacroSystem/
 	cp build/Vocola/to_core/VocolaUtils.py \
