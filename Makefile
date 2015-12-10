@@ -41,6 +41,7 @@ prepare:
 
 clean::
 	rm -rf build
+	rm -f src/exec/vcl2py/*.pyc
 
 
 ## 
