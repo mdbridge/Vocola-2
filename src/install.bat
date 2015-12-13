@@ -3,32 +3,37 @@ REM  to C:\NatLink\NatLink\Vocola
 
 
 SETLOCAL
-SET target=C:\NatLink\NatLink\Vocola
+SET target=C:\NatLink\NatLink
 
 
 CD /d "%~dp0"
 
-mkdir %target%
-copy README.html	   %target%
-copy Release-2-6-notes.txt %target%
-copy Release-2-7-notes.txt %target%
-copy Release-2-8-notes.txt %target%
+mkdir %target%\Vocola
+copy README.html	   %target%\Vocola
+copy Release-2-6-notes.txt %target%\Vocola
+copy Release-2-7-notes.txt %target%\Vocola
+copy Release-2-8-notes.txt %target%\Vocola
 
-mkdir %target%\commands
+mkdir %target%\Vocola\commands
 
-mkdir %target%\exec\vcl2py
-copy exec\*.exe	      %target%\exec
-copy exec\*.pl	      %target%\exec
-copy exec\*.py	      %target%\exec
-copy exec\vcl2py\*.py %target%\exec\vcl2py
+mkdir %target%\Vocola\exec\vcl2py
+copy exec\*.exe	      %target%\Vocola\exec
+copy exec\*.pl	      %target%\Vocola\exec
+copy exec\*.py	      %target%\Vocola\exec
+del                   %target%\Vocola\exec\*.pyc
+copy exec\vcl2py\*.py %target%\Vocola\exec\vcl2py
+del                   %target%\Vocola\exec\vcl2py\*.pyc
 
-mkdir %target%\extensions
-copy extensions\*.* %target%\extensions
+mkdir %target%\Vocola\extensions
+copy extensions\*.* %target%\Vocola\extensions
+del                 %target%\Vocola\extensions\*.pyc
 
-mkdir %target%\samples
-copy samples\*.* %target%\samples
+mkdir %target%\Vocola\samples
+copy samples\*.* %target%\Vocola\samples
 
-copy to_MacroSystem\*.py C:\NatLink\NatLink\MacroSystem
-copy to_core\*.py	 C:\NatLink\NatLink\MacroSystem\core
+copy to_MacroSystem\*.py %target%\MacroSystem
+del                      %target%\MacroSystem\*.pyc
+copy to_core\*.py	 %target%\MacroSystem\core
+del                    	 %target%\MacroSystem\core\*.pyc
 
 REM pause
