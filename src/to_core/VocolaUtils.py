@@ -258,6 +258,8 @@ def eval_template(template, *arguments):
     expression = re.sub(r'%.', handle_descriptor, template)
     try:
         return eval('str(' + expression + ')', variables.copy())
+    except VocolaRuntimeAbort:
+        raise
     except Exception, e:
         m = "when Eval[Template] called Python to evaluate:\n" \
             + '        str(' + expression + ')\n' \
