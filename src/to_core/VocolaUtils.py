@@ -4,6 +4,8 @@
 ###
 ### Copyright (c) 2002-2011 by Rick Mohr.
 ###
+### Portions Copyright (c) 2015 by Hewlett-Packard Development Company, L.P.
+###
 ### Permission is hereby granted, free of charge, to any person
 ### obtaining a copy of this software and associated documentation
 ### files (the "Software"), to deal in the Software without
@@ -32,6 +34,11 @@ from   types import *
 import traceback  # for debugging traceback code in handle_error
 
 import natlink
+
+
+# DNS short name of current language being used, set by _vocola_main.py:
+Language = "enx"
+
 
 
 #
@@ -119,7 +126,30 @@ def convert_keys(keys):
                            (?:[^}]|[-a-zA-Z0-9/*+.\x80-\xff]+) )
                       [ _]
                       (\d+) \}""", r'{\1 \2}', keys)
+
+    # prefix with current language appropriate version of {shift}
+    # to prevent doubling/dropping bug:
+    shift = name_for_shift()
+    if shift:
+        keys += "{" + shift + "}" + keys
+
     return keys
+
+def name_for_shift():
+    if Language == "enx":
+        return "shift"
+    elif Language == "nld":
+        return "shift"
+    elif Language == "fra":
+        return "Maj"
+    elif Language == "deu":
+        return "Umschalt"
+    elif Language == "ita":
+        return "MAIUSC"
+    elif Language == "esp":
+        return "MAYÚS"
+    else:
+        return None
 
 def call_Dragon(function_name, argument_types, arguments):
     global dragon_prefix
