@@ -37,10 +37,18 @@ import traceback  # for debugging traceback code in handle_error
 import natlink
 
 
+##
+## Global variables:
+##
+
 # DNS short name of current language being used, set by _vocola_main.py:
-Language = "enx"
+Language = None
 
 
+
+##
+## Handling <_anything>:
+##
 
 #
 # Massage recognition results to make a single entry for each

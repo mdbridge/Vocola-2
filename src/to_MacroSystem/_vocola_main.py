@@ -119,6 +119,10 @@ if VocolaEnabled and not commandFolder:
     print >> sys.stderr, "Warning: no Vocola command folder found!"
 
 
+import VocolaUtils
+VocolaUtils.Language = language
+
+
 
 ###########################################################################
 #                                                                         #
