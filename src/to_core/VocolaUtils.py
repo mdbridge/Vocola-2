@@ -1,3 +1,4 @@
+# coding: latin-1
 ###
 ### VocolaUtils.py - Code used by Vocola's generated Python code
 ###
@@ -131,7 +132,7 @@ def convert_keys(keys):
     # to prevent doubling/dropping bug:
     shift = name_for_shift()
     if shift:
-        keys += "{" + shift + "}" + keys
+        keys = "{" + shift + "}" + keys
 
     return keys
 
