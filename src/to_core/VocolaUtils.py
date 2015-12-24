@@ -1,3 +1,4 @@
+# -*- encoding: latin-1 -*-
 ###
 ### VocolaUtils.py - Code used by Vocola's generated Python code
 ###
@@ -35,6 +36,19 @@ import traceback  # for debugging traceback code in handle_error
 
 import natlink
 
+
+##
+## Global variables:
+##
+
+# DNS short name of current language being used, set by _vocola_main.py:
+Language = None
+
+
+
+##
+## Handling <_anything>:
+##
 
 #
 # Massage recognition results to make a single entry for each
@@ -129,7 +143,30 @@ def convert_keys(keys):
                            (?:[^}]|[-a-zA-Z0-9/*+.\x80-\xff]+) )
                       [ _]
                       (\d+) \}""", r'{\1 \2}', keys)
+
+    # prefix with current language appropriate version of {shift}
+    # to prevent doubling/dropping bug:
+    shift = name_for_shift()
+    if shift:
+        keys = "{" + shift + "}" + keys
+
     return keys
+
+def name_for_shift():
+    if Language == "enx":
+        return "shift"
+    elif Language == "nld":
+        return "shift"
+    elif Language == "fra":
+        return "Maj"
+    elif Language == "deu":
+        return "Umschalt"
+    elif Language == "ita":
+        return "MAIUSC"
+    elif Language == "esp":
+        return "MAYÚS"
+    else:
+        return None
 
 def call_Dragon(function_name, argument_types, arguments):
     global dragon_prefix
