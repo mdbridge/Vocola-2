@@ -144,6 +144,13 @@ def convert_keys(keys):
                       [ _]
                       (\d+) \}""", r'{\1 \2}', keys)
 
+    # DNS 11.5 @ bug workaround:
+    keys = re.sub(r"""(?x) 
+                      \{ ( (?: [a-zA-Z\x80-\xff]+ \+ )* )
+                           @
+                      ( (?: [ ] \d+)? ) \}""", r'{\1shift+2\2}', keys)
+    keys = re.sub(r"""@""", "{shift+2}", keys)
+
     # prefix with current language appropriate version of {shift}
     # to prevent doubling/dropping bug:
     shift = name_for_shift()
