@@ -252,8 +252,16 @@ def call_Unimacro(argumentString):
 ## EvalTemplate built-in function:
 ##
 
+eval_context    = {'natlink':globals()['natlink']}
+try:
+    import ext
+    eval_context['ext'] = globals()['ext']
+except ImportError:
+    pass
+
 def eval_template(template, *arguments):
-    variables = {}
+    #variables = {}
+    variables = eval_context.copy()
 
     waiting = list(arguments)
     def get_argument():
