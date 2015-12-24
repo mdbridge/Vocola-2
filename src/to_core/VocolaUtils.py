@@ -4,6 +4,8 @@
 ###
 ### Copyright (c) 2002-2011 by Rick Mohr.
 ###
+### Portions Copyright (c) 2015 by Hewlett-Packard Development Company, L.P.
+###
 ### Permission is hereby granted, free of charge, to any person
 ### obtaining a copy of this software and associated documentation
 ### files (the "Software"), to deal in the Software without
@@ -71,6 +73,26 @@ def combineDictationWords(fullResults):
 class VocolaRuntimeError(Exception):
     pass
 
+# raise this to abort current utterance without error:
+class VocolaRuntimeAbort(Exception):
+    pass
+
+
+def handle_error(filename, line, command, exception):
+    if isinstance(exception, VocolaRuntimeAbort):
+        return
+
+    print
+    print >> sys.stderr, "While executing the following Vocola command:"
+    print >> sys.stderr, "    " + command
+    print >> sys.stderr, "defined at line " + str(line) + " of " + filename +","
+    print >> sys.stderr, "the following error occurred:"
+    print >> sys.stderr, "    " + exception.__class__.__name__ + ": " \
+        + str(exception)
+    #traceback.print_exc()
+    #raise exception
+
+
 def to_long(string):
     try:
         return long(string)
@@ -87,18 +109,6 @@ def do_flush(functional_context, buffer):
     if buffer != '':
         natlink.playString(convert_keys(buffer))
     return ''
-
-
-def handle_error(filename, line, command, exception):
-    print
-    print >> sys.stderr, "While executing the following Vocola command:"
-    print >> sys.stderr, "    " + command
-    print >> sys.stderr, "defined at line " + str(line) + " of " + filename +","
-    print >> sys.stderr, "the following error occurred:"
-    print >> sys.stderr, "    " + exception.__class__.__name__ + ": " \
-        + str(exception)
-    #traceback.print_exc()
-    #raise exception
 
 
 
@@ -248,6 +258,8 @@ def eval_template(template, *arguments):
     expression = re.sub(r'%.', handle_descriptor, template)
     try:
         return eval('str(' + expression + ')', variables.copy())
+    except VocolaRuntimeAbort:
+        raise
     except Exception, e:
         m = "when Eval[Template] called Python to evaluate:\n" \
             + '        str(' + expression + ')\n' \

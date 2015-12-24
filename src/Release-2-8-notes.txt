@@ -2,6 +2,9 @@ New in 2.8.5:
 
 * 
 
+* New exception, VocolaRuntimeAbort, that Vocola extensions may raise to
+  abort the current utterance without error.
+
 ! Updating to a different version of Vocola is now much easier; just:
     unzip it to a temporary location, say T
     run (e.g., double click) T/install.bat
