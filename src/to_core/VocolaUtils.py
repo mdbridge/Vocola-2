@@ -1,4 +1,4 @@
-# coding: latin-1
+# -*- encoding: latin-1 -*-
 ###
 ### VocolaUtils.py - Code used by Vocola's generated Python code
 ###
@@ -156,7 +156,7 @@ def name_for_shift():
     elif Language == "ita":
         return "MAIUSC"
     elif Language == "esp":
-        return "MAYÃšS"
+        return "MAYÚS"
     else:
         return None
 
