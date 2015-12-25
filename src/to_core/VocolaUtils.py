@@ -44,6 +44,12 @@ import natlink
 # DNS short name of current language being used, set by _vocola_main.py:
 Language = None
 
+callback = None
+
+def do_callback(keys = None):
+    if callback:
+        callback()
+
 
 
 ##
@@ -121,6 +127,7 @@ def do_flush(functional_context, buffer):
             'attempt to call Unimacro, Dragon, or a Vocola extension ' +
             'procedure in a functional context!')
     if buffer != '':
+        do_callback(buffer)
         natlink.playString(convert_keys(buffer))
     return ''
 
@@ -205,10 +212,12 @@ def call_Dragon(function_name, argument_types, arguments):
     #print '[' + script + ']'
     try:
         if function_name == "SendDragonKeys":
+            do_callback(arguments[0])
             natlink.playString(convert_keys(arguments[0]))
         elif function_name == "ShiftKey":
             dragon_prefix = script + chr(10)
         else:
+            do_callback()
             natlink.execScript(script)
     except Exception, e:
         m = "when Vocola called Dragon to execute:\n" \
@@ -235,6 +244,7 @@ def call_Unimacro(argumentString):
     if unimacro_available:
         #print '[' + argumentString + ']'
         try:
+            do_callback()
             actions.doAction(argumentString)
         except Exception, e:
             m = "when Vocola called Unimacro to execute:\n" \
