@@ -27,7 +27,7 @@ prepare:
 	#
 	# extensions:
 	cp src/extensions/README.txt build/Vocola/extensions/
-	#cp src/extensions/*.py      build/Vocola/extensions/
+	cp src/extensions/*.py      build/Vocola/extensions/
 	#
 	# samples:
 	cp src/samples/*.vc[hl]      build/Vocola/samples/
