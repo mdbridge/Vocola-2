@@ -44,11 +44,14 @@ import natlink
 # DNS short name of current language being used, set by _vocola_main.py:
 Language = None
 
-callback = None
+
+def do_nothing(keys):
+    pass
+
+callback = do_nothing
 
 def do_callback(keys = None):
-    if callback:
-        callback()
+    callback(keys)
 
 
 
