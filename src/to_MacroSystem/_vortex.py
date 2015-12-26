@@ -278,7 +278,7 @@ class BasicTextControl:
     # Routines for interacting with Vocola:
     #
 
-    def vocola_pending_action(keys):
+    def vocola_pending_action(self, keys):
         print "pending action: " + repr(keys)
         if self.my_handle == win32gui.GetForegroundWindow():
             self.set_buffer_unknown()
