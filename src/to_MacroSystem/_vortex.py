@@ -281,11 +281,23 @@ class BasicTextControl:
     def vocola_pending_action(self, keys):
         print "pending action: " + repr(keys)
         if self.my_handle == win32gui.GetForegroundWindow():
-            self.set_buffer_unknown()
+            if self.keys != "":
+                print "sending: " + keys
+                self.play_string(keys)
+                self.keys = ""
+            if keys and  keys.find("{") == -1:
+                print "assuming typed: " + keys
+                self.replace(self.app_start, self.app_end, keys)
+                self.selStart,  self.selEnd  = self.app_start, self.app_end
+                self.keys = ""
+            else:
+                self.set_buffer_unknown()
+            self.showState()
         else:
             if not keys:
                 self.set_buffer_unknown()
-                
+                self.showState()                
+
 
 
 #---------------------------------------------------------------------------
