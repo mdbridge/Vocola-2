@@ -1,3 +1,7 @@
+###
+### Vortex: attempt to provide basic text control for nonstandard applications
+###
+
 #
 # code adapted from windict.py, which is copyright 1999 by Joel Gould
 #
@@ -22,8 +26,8 @@ import vocola_ext_keys
 #
 # This class provides a way of encapsulating the voice dictation (DictObj)
 # of NatLink.  We can not derive a class from DictObj because DictObj is an
-# exporeted C class, not a Python class.  But we can create a class which
-# references a DictObj instance and makes it lkook like the class was
+# exported C class, not a Python class.  But we can create a class that
+# references a DictObj instance and makes it look like the class was
 # inherited from DictObj.        
 
 class VoiceDictation:
@@ -225,7 +229,7 @@ class BasicTextControl:
     # into the dictation object.  We currently don't bother to indicate
     # exactly what changed.  The dictation object will compare the text we
     # write with the contents of its buffer and only make the necessary
-    # changes (as long as on one contigious region has changed).
+    # changes (as long as only one contigious region has changed).
     def updateState(self):
         #print "updating state..."
 
@@ -269,6 +273,19 @@ class BasicTextControl:
         print "end onTextChange"
         #self.dictObj.setLock(0)
 
+
+    #
+    # Routines for interacting with Vocola:
+    #
+
+    def vocola_pending_action(keys):
+        print "pending action: " + repr(keys)
+        if self.my_handle == win32gui.GetForegroundWindow():
+            self.set_buffer_unknown()
+        else:
+            if not keys:
+                self.set_buffer_unknown()
+                
 
 
 #---------------------------------------------------------------------------
@@ -338,8 +355,7 @@ command.initialize()
 
 def reset_buffer(argument):
     if command.basic_text_control:
-        if command.basic_text_control.my_handle == win32gui.GetForegroundWindow():
-            command.basic_text_control.set_buffer_unknown()
+        command.basic_text_control.vocola_pending_action(argument)
 VocolaUtils.callback = reset_buffer  # <<<>>>
 
 def unload():
