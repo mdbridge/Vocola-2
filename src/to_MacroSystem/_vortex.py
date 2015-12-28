@@ -279,14 +279,13 @@ class BasicTextControl:
     #
 
     def vocola_pre_action(self, keys):
-        print "pre-Vocola action: " + repr(keys)
         if self.my_handle == win32gui.GetForegroundWindow():
             if self.keys != "":
-                print "sending: " + keys
+                print "  sending: " + keys
                 self.play_string(keys)
                 self.keys = ""
             if keys and  keys.find("{") == -1:
-                print "assuming typed: " + keys
+                print "  assuming typed: " + keys
                 self.replace(self.app_start, self.app_end, keys)
                 self.selStart,  self.selEnd  = self.app_start, self.app_end
                 self.keys = ""
@@ -329,7 +328,7 @@ class CommandGrammar(GrammarBase):
 
 
     def vortex_off(self):
-        handle = win32gui.GetForegroundWindow()
+        handle  = win32gui.GetForegroundWindow()
         control = basic_control.get(handle, None)
         if control:
             control.unload()
@@ -337,7 +336,7 @@ class CommandGrammar(GrammarBase):
 
     def vortex_on(self):
         self.vortex_off()
-        handle = win32gui.GetForegroundWindow()
+        handle  = win32gui.GetForegroundWindow()
         control = BasicTextControl(handle)
         basic_control[handle] = control
         return control
@@ -346,9 +345,9 @@ class CommandGrammar(GrammarBase):
     def gotResults_start(self,words,fullResults):
         option = words[1]
         if option == "on":
-            self. vortex_on()
+            self.vortex_on()
         elif option == "off":
-            self. vortex_off()
+            self.vortex_off()
 
     def gotResults_load(self,words,fullResults):
         control = self.vortex_on()
@@ -372,11 +371,13 @@ class CommandGrammar(GrammarBase):
 ## 
 
 def pre_action(keys):
+    print "pre-Vocola action: " + repr(keys)
     for ID in basic_control:
         control = basic_control[ID]
         if control:
             control.vocola_pre_action(keys)
 VocolaUtils.callback = pre_action
+
 
 command = CommandGrammar()
 command.initialize()
