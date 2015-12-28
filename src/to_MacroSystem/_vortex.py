@@ -309,6 +309,7 @@ class CommandGrammar(GrammarBase):
 
     gramSpec = """
         <start> exported = vortex (on | off);
+        <all>   exported = vortex (on | off) everywhere;
         <load>  exported = vortex (load | line);
     """
 
@@ -319,11 +320,7 @@ class CommandGrammar(GrammarBase):
     
     def terminate(self):
         print "Exit vortex"
-        for ID in basic_control:
-            control = basic_control[ID]
-            if control:
-                control.unload()
-        basic_control.clear()
+        self.vortex_off_everywhere()
         self.unload()
 
 
@@ -333,6 +330,13 @@ class CommandGrammar(GrammarBase):
         if control:
             control.unload()
         basic_control[handle] = None
+
+    def vortex_off_everywhere(self):
+        for ID in basic_control:
+            control = basic_control[ID]
+            if control:
+                control.unload()
+        basic_control.clear()
 
     def vortex_on(self):
         self.vortex_off()
@@ -348,6 +352,13 @@ class CommandGrammar(GrammarBase):
             self.vortex_on()
         elif option == "off":
             self.vortex_off()
+
+    def gotResults_all(self,words,fullResults):
+        option = words[1]
+        if option == "on":
+            self.vortex_on()  # <<<>>>
+        elif option == "off":
+            self.vortex_off_everywhere()
 
     def gotResults_load(self,words,fullResults):
         control = self.vortex_on()
