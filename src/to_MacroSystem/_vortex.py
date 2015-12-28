@@ -84,7 +84,7 @@ class BasicTextControl:
         self.updateState()
 
     def unload(self):
-        print "unloading BasicTextControl"
+        print "unloading BasicTextControl attached to window ID 0x%08x" % (self.my_handle)
         self.dictObj.terminate()
         self.dictObj = None
 
@@ -278,8 +278,8 @@ class BasicTextControl:
     # Routines for interacting with Vocola:
     #
 
-    def vocola_pending_action(self, keys):
-        print "pending action: " + repr(keys)
+    def vocola_pre_action(self, keys):
+        print "pre-Vocola action: " + repr(keys)
         if self.my_handle == win32gui.GetForegroundWindow():
             if self.keys != "":
                 print "sending: " + keys
@@ -303,6 +303,9 @@ class BasicTextControl:
 #---------------------------------------------------------------------------
 # Command grammar
 
+# window ID -> BasicTextControl instance or None
+basic_control = {}
+
 class CommandGrammar(GrammarBase):
 
     gramSpec = """
@@ -311,38 +314,44 @@ class CommandGrammar(GrammarBase):
     """
 
     def initialize(self):
-        print "Init"
-        self.basic_text_control = None
+        print "Init Vortex"
         self.load(self.gramSpec)
         self.activateAll()
     
     def terminate(self):
-        print "Exit"
-        if self.basic_text_control:
-            self.basic_text_control.unload()
-            self.basic_text_control = None
+        print "Exit vortex"
+        for ID in basic_control:
+            control = basic_control[ID]
+            if control:
+                control.unload()
+        basic_control.clear()
         self.unload()
+
+
+    def vortex_off(self):
+        handle = win32gui.GetForegroundWindow()
+        control = basic_control.get(handle, None)
+        if control:
+            control.unload()
+        basic_control[handle] = None
+
+    def vortex_on(self):
+        self.vortex_off()
+        handle = win32gui.GetForegroundWindow()
+        control = BasicTextControl(handle)
+        basic_control[handle] = control
+        return control
 
 
     def gotResults_start(self,words,fullResults):
         option = words[1]
         if option == "on":
-            if self.basic_text_control:
-                self.basic_text_control.unload()
-            handle = win32gui.GetForegroundWindow()
-            self.basic_text_control = BasicTextControl(handle)
+            self. vortex_on()
         elif option == "off":
-            if self.basic_text_control:
-                self.basic_text_control.unload()
-                self.basic_text_control = None
+            self. vortex_off()
 
     def gotResults_load(self,words,fullResults):
-        # "vortex on":
-        if self.basic_text_control:
-            self.basic_text_control.unload()
-        handle = win32gui.GetForegroundWindow()
-        self.basic_text_control = BasicTextControl(handle)
-
+        control = self.vortex_on()
         option = words[1]
         if option == "load":
             selector = "{ctrl+home}{ctrl+shift+end}"
@@ -354,7 +363,7 @@ class CommandGrammar(GrammarBase):
         time.sleep(.1)
         text = vocola_ext_clipboard.clipboard_get()
         print "loaded: "+ repr(text)
-        self.basic_text_control.set_buffer(text)
+        control.set_buffer(text)
 
 
 
@@ -362,13 +371,15 @@ class CommandGrammar(GrammarBase):
 ## Starting up and stopping our command grammar:
 ## 
 
+def pre_action(keys):
+    for ID in basic_control:
+        control = basic_control[ID]
+        if control:
+            control.vocola_pre_action(keys)
+VocolaUtils.callback = pre_action
+
 command = CommandGrammar()
 command.initialize()
-
-def reset_buffer(argument):
-    if command.basic_text_control:
-        command.basic_text_control.vocola_pending_action(argument)
-VocolaUtils.callback = reset_buffer  # <<<>>>
 
 def unload():
     global command
