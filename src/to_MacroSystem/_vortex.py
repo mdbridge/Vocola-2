@@ -305,6 +305,10 @@ class BasicTextControl:
 # window ID -> BasicTextControl instance or None
 basic_control = {}
 
+# should we try and turn on vortex for each new window?
+auto_on = False
+
+
 class CommandGrammar(GrammarBase):
 
     gramSpec = """
@@ -324,6 +328,15 @@ class CommandGrammar(GrammarBase):
         self.unload()
 
 
+    def gotBegin(self,moduleInfo):
+        if auto_on:
+            handle  = win32gui.GetForegroundWindow()
+            control = basic_control.get(handle, None)
+            if not control:
+                print "auto turning on vortex for new window"
+                self.vortex_on()
+
+
     def vortex_off(self):
         handle  = win32gui.GetForegroundWindow()
         control = basic_control.get(handle, None)
@@ -332,6 +345,8 @@ class CommandGrammar(GrammarBase):
         basic_control[handle] = None
 
     def vortex_off_everywhere(self):
+        global auto_on
+        auto_on = False
         for ID in basic_control:
             control = basic_control[ID]
             if control:
@@ -345,6 +360,11 @@ class CommandGrammar(GrammarBase):
         basic_control[handle] = control
         return control
 
+    def vortex_on_everywhere(self):
+        global auto_on
+        auto_on = True
+        self.vortex_on()
+        
 
     def gotResults_start(self,words,fullResults):
         option = words[1]
@@ -356,7 +376,7 @@ class CommandGrammar(GrammarBase):
     def gotResults_all(self,words,fullResults):
         option = words[1]
         if option == "on":
-            self.vortex_on()  # <<<>>>
+            self.vortex_on_everywhere()
         elif option == "off":
             self.vortex_off_everywhere()
 
