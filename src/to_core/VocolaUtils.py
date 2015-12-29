@@ -68,9 +68,9 @@ def combineDictationWords(fullResults):
     return fullResults
 
 def format_words(word_list):
+    format_words2(word_list)  # for print side effect
     import nsformat
-    result = nsformat.formatWords(word_list)
-    print "format_words2: %s -> '%s'"  % (repr(word_list), format_words2(word_list))
+    result, _new_state = nsformat.formatWords(word_list)
     print "format_words: %s -> '%s'"  % (repr(word_list), result)
     return result
 
