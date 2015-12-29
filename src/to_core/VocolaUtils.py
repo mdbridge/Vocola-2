@@ -64,6 +64,7 @@ def combineDictationWords(fullResults):
                 word_list = word_list + [fullResults[j][0]]
                 del fullResults[j]
             fullResults[i] = [format_words(word_list), "converted dgndictation"]
+        i += 1
     return fullResults
 
 def format_words(word_list):
