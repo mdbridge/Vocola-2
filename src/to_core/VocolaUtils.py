@@ -68,6 +68,13 @@ def combineDictationWords(fullResults):
     return fullResults
 
 def format_words(word_list):
+    import nsformat
+    result = nsformat.formatWords(word_list)
+    print "format_words2: %s -> '%s'"  % (repr(word_list), format_words2(word_list))
+    print "format_words: %s -> '%s'"  % (repr(word_list), result)
+    return result
+
+def format_words2(word_list):
     result = ""
     for word in word_list:
         # Convert to written form if necessary, e.g. "@\at-sign" --> "@"
