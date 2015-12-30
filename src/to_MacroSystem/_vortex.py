@@ -378,7 +378,7 @@ class CommandGrammar(GrammarBase):
             if control == -1:
                 print "auto turning on vortex for new window"
                 if spare_control:
-                    print "using spare control"
+                    print "  using spare control"
                     basic_control[handle] = spare_control
                     spare_control.attach(handle)
                     spare_control = BasicTextControl()
