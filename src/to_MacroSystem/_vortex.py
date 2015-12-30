@@ -176,12 +176,25 @@ class BasicTextControl:
             self.app_end = end
 
     def replace(self, start, end, new_text):
-        if start < self.fake_prefix and end >= self.fake_prefix:
-            fake_deletion = self.text[start:self.fake_prefix]
-            if new_text.startswith(fake_deletion):
-                print "nop overwrite of fake prefix ignored"
-                start = max(self.fake_prefix, start)
-                new_text = new_text[len(fake_deletion):]
+        while start<self.fake_prefix and start<end and len(new_text)>0:
+            # attempt to replace a fake prefix character
+            old = self.text[start]
+            new = new_text[0]
+            if old == new:
+                print "  nop overwrite of leading fake prefix character ignored"
+                start += 1
+                new_text = new_text[1:]
+            elif old.lower() == new.lower():
+                print "  case change of leading fake prefix character ignored"
+                start += 1
+                new_text = new_text[1:]
+            elif old == " " and new == "-":
+                print "  attempt to hyphenate fake prefix ignored"
+                start += 1
+                new_text = new_text[1:]
+            else:
+                break
+
 
         if start < self.fake_prefix and start != end:
             print
