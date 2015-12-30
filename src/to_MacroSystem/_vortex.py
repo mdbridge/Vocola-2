@@ -207,7 +207,7 @@ class BasicTextControl:
             self.app_start = self.app_end = start + len(new_text)
 
     def play_string(self,keys):
-        shift = VocolaUtils.name_for_shift()
+        shift = "{" + VocolaUtils.name_for_shift() + "}"
 
         # the following does not work because it causes onTextChange to be called:
         #natlink.playString(shift + keys)
