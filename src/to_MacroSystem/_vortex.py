@@ -182,19 +182,19 @@ class BasicTextControl:
             new = new_text[0]
             if old == new:
                 print "  nop overwrite of leading fake prefix character ignored"
-                start += 1
-                new_text = new_text[1:]
             elif old.lower() == new.lower():
                 print "  case change of leading fake prefix character ignored"
-                start += 1
-                new_text = new_text[1:]
             elif old == " " and new == "-":
                 print "  attempt to hyphenate fake prefix ignored"
-                start += 1
-                new_text = new_text[1:]
             else:
                 break
+            start += 1
+            new_text = new_text[1:]
 
+        if start+1== self.fake_prefix and start<end and self.text[start]==" ":
+            # trying to delete trailing space of fake prefix:
+            print "  attempt to remove trailing space of fake prefix ignored"
+            start += 1
 
         if start < self.fake_prefix and start != end:
             print
