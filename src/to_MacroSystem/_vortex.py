@@ -35,29 +35,38 @@ class VoiceDictation:
     def __init__(self):
         self.dictObj = None
 
-    # Initialization.  Create a DictObj instance and activate it for the
-    # dialog box window.  All callbacks from the DictObj instance will go
-    # directly to the dialog box.
-
-    def initialize(self,dlg):
+    # Initialization.  Create a DictObj instance associated with the
+    # given dialog box class, dlg.  If handle given, activate the
+    # DictObj instance for window handle.  All callbacks from the
+    # DictObj instance will go directly to the dialog class.
+    def initialize(self, dlg, handle=None):
         self.dlg = dlg
         self.dictObj = natlink.DictObj()
         self.dictObj.setBeginCallback(dlg.onTextBegin)
         self.dictObj.setChangeCallback(dlg.onTextChange)
-        self.dictObj.activate(dlg.GetSafeHwnd())
+        self.my_handle = None
+        self.activate(handle)
+
+    # Activate the Dictobj instance for window handle (None means
+    # deactivate).  If already activated for another window,
+    # deactivate first.
+    def activate(self, handle):
+        if self.my_handle:
+            self.dictObj.deactivate()
+        self.my_handle = handle
+        if handle:
+            self.dictObj.activate(handle)
 
     # Call this function to cleanup.  We have to reset the callback
     # functions or the object will not be freed.
-        
     def terminate(self):
-        self.dictObj.deactivate()
+        self.activate(None)
         self.dictObj.setBeginCallback(None)
         self.dictObj.setChangeCallback(None)
         self.dictObj = None
 
     # This makes it possible to access the member functions of the DictObj
     # directly as member functions of this class.
-        
     def __getattr__(self,attr):
         try:
             if attr != '__dict__':
@@ -80,16 +89,13 @@ class BasicTextControl:
         self.set_buffer_unknown()
 
         self.dictObj = VoiceDictation()
-        self.dictObj.initialize(self)
+        self.dictObj.initialize(self, handle)
         self.updateState()
 
     def unload(self):
         print "unloading BasicTextControl attached to window ID 0x%08x" % (self.my_handle)
         self.dictObj.terminate()
         self.dictObj = None
-
-    def GetSafeHwnd(self):
-        return self.my_handle
 
 
     def set_buffer(self, text):
