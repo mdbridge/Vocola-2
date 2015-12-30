@@ -100,7 +100,7 @@ class BasicTextControl:
             print "BasicTextControl attaching to window ID 0x%08x" % (handle)
             print "  with title '%s'" % (win32gui.GetWindowText(handle))
         self.my_handle = handle
-        self.dictObj.attach(handle)
+        self.dictObj.activate(handle)
         self.set_buffer_unknown()
         self.updateState()
 
@@ -341,6 +341,8 @@ class BasicTextControl:
 # window ID -> BasicTextControl instance or None
 basic_control = {}
 
+spare_control = None
+
 # should we try and turn on vortex for each new window?
 auto_on = False
 
@@ -359,18 +361,30 @@ class CommandGrammar(GrammarBase):
         self.activateAll()
     
     def terminate(self):
+        global spare_control
         print "Exit vortex"
         self.vortex_off_everywhere()
+        if spare_control:
+             spare_control.unload()
+             spare_control = None
         self.unload()
 
 
     def gotBegin(self,moduleInfo):
+        global spare_control
         if auto_on:
             handle  = win32gui.GetForegroundWindow()
             control = basic_control.get(handle, -1)
             if control == -1:
                 print "auto turning on vortex for new window"
-                self.vortex_on()
+                if spare_control:
+                    print "using spare control"
+                    basic_control[handle] = spare_control
+                    spare_control.attach(handle)
+                    spare_control = BasicTextControl()
+                else:
+                    self.vortex_on()
+                    spare_control = BasicTextControl()
 
 
     def vortex_off(self):
@@ -397,9 +411,11 @@ class CommandGrammar(GrammarBase):
         return control
 
     def vortex_on_everywhere(self):
-        global auto_on
+        global auto_on, spare_control
         auto_on = True
         self.vortex_on()
+        if not spare_control:
+            spare_control = BasicTextControl()
         
 
     def gotResults_start(self,words,fullResults):
