@@ -352,8 +352,8 @@ class CommandGrammar(GrammarBase):
     def gotBegin(self,moduleInfo):
         if auto_on:
             handle  = win32gui.GetForegroundWindow()
-            control = basic_control.get(handle, None)
-            if not control:
+            control = basic_control.get(handle, -1)
+            if control == -1:
                 print "auto turning on vortex for new window"
                 self.vortex_on()
 
