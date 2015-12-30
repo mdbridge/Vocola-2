@@ -81,19 +81,34 @@ class VoiceDictation:
 #---------------------------------------------------------------------------
 
 class BasicTextControl:
-    def __init__(self, handle):
-        print "BasicTextControl attaching to window ID 0x%08x" % (handle)
-        print "  with title '%s'" % (win32gui.GetWindowText(handle))
+    def __init__(self, handle=None):
         self.my_handle = handle
+        if handle:
+            print "BasicTextControl attaching to window ID 0x%08x" % (handle)
+            print "  with title '%s'" % (win32gui.GetWindowText(handle))
 
         self.set_buffer_unknown()
-
         self.dictObj = VoiceDictation()
         self.dictObj.initialize(self, handle)
+        if handle:
+            self.updateState()
+
+    def attach(self, handle=None):
+        if self.my_handle:
+            print "unattaching BasicTextControl attached to window ID 0x%08x" % (self.my_handle)
+        if handle:
+            print "BasicTextControl attaching to window ID 0x%08x" % (handle)
+            print "  with title '%s'" % (win32gui.GetWindowText(handle))
+        self.my_handle = handle
+        self.dictObj.attach(handle)
+        self.set_buffer_unknown()
         self.updateState()
 
     def unload(self):
-        print "unloading BasicTextControl attached to window ID 0x%08x" % (self.my_handle)
+        if self.my_handle:
+            print "unloading BasicTextControl attached to window ID 0x%08x" % (self.my_handle)
+        else:
+            print "unloading BasicTextControl"
         self.dictObj.terminate()
         self.dictObj = None
 
