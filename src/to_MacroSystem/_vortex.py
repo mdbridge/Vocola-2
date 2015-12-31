@@ -197,25 +197,25 @@ class BasicTextControl:
             self.app_end = end
 
     def replace(self, start, end, new_text):
-        while start<self.fake_prefix and start<end and len(new_text)>0:
-            # attempt to replace a fake prefix character
-            old = self.text[start]
-            new = new_text[0]
-            if old == new:
-                print "  nop overwrite of leading fake prefix character ignored"
-            elif old.lower() == new.lower():
-                print "  case change of leading fake prefix character ignored"
-            elif old == " " and new == "-":
-                print "  attempt to hyphenate fake prefix ignored"
-            else:
-                break
-            start += 1
-            new_text = new_text[1:]
+        #while start<self.fake_prefix and start<end and len(new_text)>0:
+        #    # attempt to replace a fake prefix character
+        #    old = self.text[start]
+        #    new = new_text[0]
+        #    if old == new:
+        #        print "  nop overwrite of leading fake prefix character ignored"
+        #    elif old.lower() == new.lower():
+        #        print "  case change of leading fake prefix character ignored"
+        #    elif old == " " and new == "-":
+        #        print "  attempt to hyphenate fake prefix ignored"
+        #    else:
+        #        break
+        #    start += 1
+        #    new_text = new_text[1:]
 
-        if start+1== self.fake_prefix and start<end and self.text[start]==" ":
-            # trying to delete trailing space of fake prefix:
-            print "  attempt to remove trailing space of fake prefix ignored"
-            start += 1
+        #if start+1== self.fake_prefix and start<end and self.text[start]==" ":
+        #    # trying to delete trailing space of fake prefix:
+        #    print "  attempt to remove trailing space of fake prefix ignored"
+        #    start += 1
 
         if start < self.fake_prefix and start != end:
             print
@@ -268,7 +268,6 @@ class BasicTextControl:
     # changes (as long as only one contigious region has changed).
     def updateState(self):
         #print "updating state..."
-
         self.dictObj.setLock(1)
         self.dictObj.setText(self.text, 0, 0x7FFFFFFF)
         self.dictObj.setTextSel(self.selStart, self.selEnd)
@@ -282,11 +281,25 @@ class BasicTextControl:
     # like text is added or something is selected by voice.  We then update
     # the edit control to match the dictation object.
     def onTextChange(self,delStart,delEnd,newText,selStart,selEnd):
-        #self.dictObj.setLock(1)
-        print "onTextChange %d,%d,%s,%d,%d" % (delStart,delEnd,newText,selStart,selEnd)
-        #print "onTextChange %d,%d,%s,%d,%d" % (delStart,delEnd,repr(newText),selStart,selEnd)
+        print "onTextChange %d,%d, %s, %d,%d" % \
+            (delStart,delEnd,repr(newText),selStart,selEnd)
+
+        # corrections can attempt to remove the last space of the fake
+        # prefix (e.g., correct Fred to .c); "select all", "scratch
+        # that" also tries to do that.
+        if delStart+1==self.fake_prefix and delStart<delEnd and \
+           self.text[delStart]==" " and not(len(newText)>0 and newText[0]==" "):
+            print "  ignoring attempt to remove trailing space in fake prefix"
+            delStart += 1
+            selStart += 1
+            selEnd   += 1
 
         self.replace(delStart, delEnd, newText)
+
+        # prevent "select all" from selecting fake prefix:
+        selStart = max(self.fake_prefix, selStart)
+        selEnd   = max(self.fake_prefix, selEnd)
+
         self.select(selStart, selEnd)
         self.selStart = selStart
         self.selEnd   = selEnd
@@ -298,16 +311,15 @@ class BasicTextControl:
         keys = self.keys
         handle = win32gui.GetForegroundWindow()
         if handle == self.my_handle:
-            print "sending: " + keys
+            print "  sending: " + keys
             self.play_string(keys)
             keys = ""
         else:
-            print "WARNING: delaying keys due to different active window, window ID 0x%08x" % (handle)
+            print "  WARNING: delaying keys due to different active window, window ID 0x%08x" % (handle)
 
         self.keys = keys
         self.showState()
         print "end onTextChange"
-        #self.dictObj.setLock(0)
 
 
     #
