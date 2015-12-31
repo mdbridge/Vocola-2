@@ -286,13 +286,20 @@ class BasicTextControl:
 
         # corrections can attempt to remove the last space of the fake
         # prefix (e.g., correct Fred to .c); "select all", "scratch
-        # that" also tries to do that.
+        # that" also tries to do that.  Corrections can also attempt
+        # to replace the trailing space with itself.
         if delStart+1==self.fake_prefix and delStart<delEnd and \
-           self.text[delStart]==" " and not(len(newText)>0 and newText[0]==" "):
-            print "  ignoring attempt to remove trailing space in fake prefix"
-            delStart += 1
-            selStart += 1
-            selEnd   += 1
+           self.text[delStart]==" ":
+            # attempting to delete/replace trailing whitespace in fake prefix
+            if len(newText)>0 and newText[0]==" ":
+                print "  ignoring nop overwrite to trailing space in fake prefix"
+                delStart += 1
+                newText = newText[1:]
+            else:
+                print "  ignoring attempt to remove trailing space in fake prefix"
+                delStart += 1
+                selStart += 1
+                selEnd   += 1
 
         self.replace(delStart, delEnd, newText)
 
