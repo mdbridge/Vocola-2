@@ -43,10 +43,27 @@ Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
 
 
 # ---------------------------------------------------------------------------
+# Parsing parameters
+
+def default_parameters():
+    params = {}
+    params["force_processing"] = False
+
+    params["ignore_INI_file"] = False
+    params["log_to_stdout"] = False
+
+    params["maximum_commands"] = 1
+    params["number_words"]     = {}
+
+    return params
+
+
+
+# ---------------------------------------------------------------------------
 # Main control flow
 
 def main_routine():
-    global Debug, Error_encountered, Force_processing, In_folder
+    global Debug, Error_encountered, In_folder
     global Extension_functions
 
     # flush output after every print statement:
@@ -55,19 +72,14 @@ def main_routine():
     # Debug states: 0 = no info, 1 = show statements, 2 = detailed info
     Debug                    = 0
     Error_encountered        = False
-    Force_processing         = False
 
 
     extensions_file          = ""
-    ignore_INI_file          = False
     ini_file                 = ""
     log_file                 = ""
-    log_to_stdout            = False
     suffix                   = "_vcl"
 
-    params = {}
-    params["maximum_commands"] = 1
-    params["number_words"]     = {}
+    params = default_parameters()
 
     argv = sys.argv[1:]
     while len(argv) > 0:
@@ -75,9 +87,9 @@ def main_routine():
         if not option[0:1] == "-": break
         argv.pop(0)
 
-        if   option == "-f":          Force_processing = True; continue
-        elif option == "-log_stdout": log_to_stdout    = True; continue
-        elif option == "-q":          ignore_INI_file  = True; continue
+        if   option == "-f":          params["force_processing"] = True; continue
+        elif option == "-log_stdout": params["log_to_stdout"]    = True; continue
+        elif option == "-q":          params["ignore_INI_file"]  = True; continue
 
         if len(argv) == 0:
             usage("missing argument for option " + option)
@@ -119,7 +131,7 @@ def main_routine():
     if log_file == "": log_file = In_folder + os.sep + "vcl2py_log.txt"
     if ini_file == "": ini_file = In_folder + os.sep + "Vocola.INI"
 
-    if log_to_stdout:
+    if params["log_to_stdout"]:
         set_log(sys.stdout)
     else:
         try:
@@ -129,7 +141,7 @@ def main_routine():
                         "' for writing: " + str(e))
 
 
-    if not ignore_INI_file:
+    if not params["ignore_INI_file"]:
         params = read_ini_file(ini_file, params)
     if extensions_file != "":
         Extension_functions = read_extensions_file(extensions_file)
@@ -146,7 +158,7 @@ def main_routine():
 
     close_log()
     if not Error_encountered:
-        if not log_to_stdout: os.remove(log_file)
+        if not params["log_to_stdout"]: os.remove(log_file)
         sys.exit(0)
     else:
         sys.exit(1)
@@ -236,7 +248,6 @@ def expand_in_file(in_file, in_folder):
   # <In_folder>/<in_file>.vcl where / is the correct separator
 def convert_file(in_file, out_folder, suffix, params):
     global Debug, Error_encountered
-    global Force_processing
     global In_folder
     global Input_name, Module_name
     global Extension_functions
@@ -256,7 +267,7 @@ def convert_file(in_file, out_folder, suffix, params):
         in_time  = os.path.getmtime(in_path)
         out_time = 0
         if os.path.exists(out_file): out_time = os.path.getmtime(out_file)
-        if in_time<out_time and not Force_processing:
+        if in_time<out_time and not params["force_processing"]:
             return
 
 
