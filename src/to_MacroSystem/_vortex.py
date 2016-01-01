@@ -395,6 +395,14 @@ class CommandGrammar(GrammarBase):
             handle  = win32gui.GetForegroundWindow()
             control = basic_control.get(handle, -1)
             if control == -1:
+                to_free = []
+                for window in basic_control:
+                    if basic_control[window] and not win32gui.IsWindow(window):
+                        to_free += [window]
+                for window in to_free:
+                    basic_control[window].unload()
+                    del basic_control[window]
+
                 print "auto turning on vortex for new window"
                 if spare_control:
                     print "  using spare control"
