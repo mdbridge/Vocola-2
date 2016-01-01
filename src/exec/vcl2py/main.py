@@ -66,6 +66,43 @@ def default_parameters():
     return params
 
 
+def parse_command_arguments(argv, default_params):
+    p = default_params
+    while len(argv) > 0:
+        option = argv[0]
+        if not option[0:1] == "-": 
+            break
+
+        argv.pop(0)
+        if   option == "-f":          p["force_processing"] = True; continue
+        elif option == "-log_stdout": p["log_to_stdout"]    = True; continue
+        elif option == "-q":          p["ignore_INI_file"]  = True; continue
+
+        if len(argv) == 0:
+            usage("missing argument for option " + option)
+
+        argument = argv.pop(0)
+        if   option == "-debug":      p["debug"]           = safe_int(argument, 1)
+        elif option == "-extensions": p["extensions_file"] = argument
+        elif option == "-INI_file":   p["INI_file"]        = argument
+        elif option == "-log_file":   p["log_file"]        = argument
+        elif option == "-max_commands":
+            p["maximum_commands"] = safe_int(argument, 1)
+        elif option == "-numbers":
+            p["number_words"] = parse_number_words(argument)
+        elif option == "-suffix":     p["suffix"]          = argument
+        else:
+            usage("unknown option: " + option)
+
+    if len(argv) == 2:
+        inputFileOrFolder = argv[0]
+        out_folder        = argv[1]
+    else:
+        usage()
+
+    return params, inputFileOrFolder, out_folder
+
+
 
 # ---------------------------------------------------------------------------
 # Main control flow
@@ -80,40 +117,8 @@ def main_routine():
     Error_encountered        = False
 
 
-    params = default_parameters()
-
-    argv = sys.argv[1:]
-    while len(argv) > 0:
-        option = argv[0]
-        if not option[0:1] == "-": break
-        argv.pop(0)
-
-        if   option == "-f":          params["force_processing"] = True; continue
-        elif option == "-log_stdout": params["log_to_stdout"]    = True; continue
-        elif option == "-q":          params["ignore_INI_file"]  = True; continue
-
-        if len(argv) == 0:
-            usage("missing argument for option " + option)
-        argument = argv.pop(0)
-
-        if   option == "-debug":        params["debug"] = safe_int(argument, 1)
-        elif option == "-extensions":   params["extensions_file"] = argument
-        elif option == "-INI_file":     params["INI_file"]        = argument
-        elif option == "-log_file":     params["log_file"]        = argument
-        elif option == "-max_commands":
-            params["maximum_commands"] = safe_int(argument, 1)
-        elif option == "-numbers":
-            params["number_words"] = parse_number_words(argument)
-        elif option == "-suffix":       params["suffix"] = argument
-        else:
-            usage("unknown option: " + option)
-
-    if len(argv) == 2:
-        inputFileOrFolder = argv[0]
-        out_folder        = argv[1]
-    else:
-        usage()
-
+    params, inputFileOrFolder, out_folder \
+        = parse_command_arguments(sys.argv[1:], default_parameters())
 
     Debug = params["debug"]
 
@@ -131,6 +136,7 @@ def main_routine():
                         "' must end in '.vcl'")
     else:
         fatal_error("Nonexistent input filename '" + inputFileOrFolder + "'")
+
     log_file = params["log_file"]
     if not log_file: log_file = In_folder + os.sep + "vcl2py_log.txt"
     ini_file = params["ini_file"]
