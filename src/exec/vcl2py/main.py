@@ -47,10 +47,18 @@ Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
 
 def default_parameters():
     params = {}
-    params["force_processing"] = False
 
-    params["ignore_INI_file"] = False
-    params["log_to_stdout"] = False
+    # debug states: 0 = no info, 1 = show statements, 2 = detailed info
+    params["debug"]            = 0
+
+    params["extensions_file"]  = None
+    params["ignore_INI_file"]  = False
+    params["INI_file"]         = None
+    params["log_file"]         = None
+    params["log_to_stdout"]    = False
+
+    params["force_processing"] = False
+    params["suffix"]           = "_vcl"
 
     params["maximum_commands"] = 1
     params["number_words"]     = {}
@@ -69,15 +77,8 @@ def main_routine():
     # flush output after every print statement:
     #sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)    # <<<>>>
 
-    # Debug states: 0 = no info, 1 = show statements, 2 = detailed info
-    Debug                    = 0
     Error_encountered        = False
 
-
-    extensions_file          = ""
-    ini_file                 = ""
-    log_file                 = ""
-    suffix                   = "_vcl"
 
     params = default_parameters()
 
@@ -95,15 +96,15 @@ def main_routine():
             usage("missing argument for option " + option)
         argument = argv.pop(0)
 
-        if   option == "-debug":        Debug           = safe_int(argument, 1)
-        elif option == "-extensions":   extensions_file = argument
-        elif option == "-INI_file":     ini_file        = argument
-        elif option == "-log_file":     log_file        = argument
+        if   option == "-debug":        params["debug"] = safe_int(argument, 1)
+        elif option == "-extensions":   params["extensions_file"] = argument
+        elif option == "-INI_file":     params["INI_file"]        = argument
+        elif option == "-log_file":     params["log_file"]        = argument
         elif option == "-max_commands":
             params["maximum_commands"] = safe_int(argument, 1)
         elif option == "-numbers":
             params["number_words"] = parse_number_words(argument)
-        elif option == "-suffix":       suffix                   = argument
+        elif option == "-suffix":       params["suffix"] = argument
         else:
             usage("unknown option: " + option)
 
@@ -113,6 +114,8 @@ def main_routine():
     else:
         usage()
 
+
+    Debug = params["debug"]
 
     in_file = ""
     if os.path.isdir(inputFileOrFolder):
@@ -128,8 +131,10 @@ def main_routine():
                         "' must end in '.vcl'")
     else:
         fatal_error("Nonexistent input filename '" + inputFileOrFolder + "'")
-    if log_file == "": log_file = In_folder + os.sep + "vcl2py_log.txt"
-    if ini_file == "": ini_file = In_folder + os.sep + "Vocola.INI"
+    log_file = params["log_file"]
+    if not log_file: log_file = In_folder + os.sep + "vcl2py_log.txt"
+    ini_file = params["ini_file"]
+    if not ini_file: ini_file = In_folder + os.sep + "Vocola.INI"
 
     if params["log_to_stdout"]:
         set_log(sys.stdout)
@@ -143,8 +148,8 @@ def main_routine():
 
     if not params["ignore_INI_file"]:
         params = read_ini_file(ini_file, params)
-    if extensions_file != "":
-        Extension_functions = read_extensions_file(extensions_file)
+    if params["extensions_file"]:
+        Extension_functions = read_extensions_file(params["extensions_file"])
     else:
         Extension_functions = {}
     if Debug >= 1:
@@ -154,7 +159,7 @@ def main_routine():
     initialize_token_properties()
     files = expand_in_file(in_file, In_folder)
     for in_file in files:
-        convert_file(in_file, out_folder, suffix, params)
+        convert_file(in_file, out_folder, params)
 
     close_log()
     if not Error_encountered:
@@ -246,7 +251,7 @@ def expand_in_file(in_file, in_folder):
 
   # in_file is just the base name; actual pathname is
   # <In_folder>/<in_file>.vcl where / is the correct separator
-def convert_file(in_file, out_folder, suffix, params):
+def convert_file(in_file, out_folder, params):
     global Debug, Error_encountered
     global In_folder
     global Input_name, Module_name
@@ -260,7 +265,7 @@ def convert_file(in_file, out_folder, suffix, params):
     # The global Input_name is used below for error logging
     Input_name = in_file + ".vcl"
 
-    out_file = out_folder + os.sep + out_file + suffix + ".py"
+    out_file = out_folder + os.sep + out_file + params["suffix"] + ".py"
 
     in_path = In_folder + os.sep + Input_name
     if os.path.exists(in_path):
