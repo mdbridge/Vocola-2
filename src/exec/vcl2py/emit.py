@@ -137,21 +137,20 @@ def emit_context_activations(contexts):
     global Module_name
     app = Module_name
     module_is_global = (app.startswith("_"))
-    module_has_prefix = 0
-    match = re.match(r'^(.+?)_.*', app)
-    if match:
-        prefix = match.group(1)
-        module_has_prefix = 1
     #emit(2, "self.activateAll()\n") if module_is_global;
     emit(0, "\n    def gotBegin(self,moduleInfo):\n")
     if module_is_global:
         emit(2, "window = moduleInfo[2]\n")
     else:
         emit(2, "# Return if wrong application\n")
-        emit(2, "window = matchWindow(moduleInfo,'" + app + "','')\n")
-        if module_has_prefix:
+        executable = app
+        emit(2, "window = matchWindow(moduleInfo,'" + executable + "','')\n")
+        while executable.find("_") != -1:
+            match = re.match(r'^(.+?)_+[^_]*$', executable)
+            if not match: break
+            executable = match.group(1)
             emit(2, "if not window: window = matchWindow(moduleInfo,'" + \
-                    prefix + "','')\n")
+                    executable + "','')\n")
         emit(2, "if not window: return None\n")
     emit(2, "self.firstWord = 0\n")
     emit(2, "# Return if same window and title as before\n")
