@@ -9,8 +9,7 @@ def output(out_file, statements,
            _Module_name,
            _Definitions,
            _Extension_functions,
-           params
-           ):
+           params):
     global NestedCallLevel
     global VocolaVersion, Should_emit_dictation_support
     global Module_name, Number_words, Definitions, Maximum_commands

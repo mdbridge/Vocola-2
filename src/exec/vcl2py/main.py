@@ -6,7 +6,6 @@ import os
 import re
 import sys
 
-from vcl2py.backend_NatLink import output
 from vcl2py.lex       import initialize_token_properties
 from vcl2py.log       import *
 from vcl2py.parse     import parse_input, check_forward_references
@@ -169,7 +168,7 @@ def get_parameters():
 # Main control flow
 
 def main_routine():
-    global Debug
+    global Debug, Backend
 
     # flush output after every print statement:
     #sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)    # <<<>>>
@@ -198,12 +197,17 @@ def main_routine():
     if Debug >= 1:
         print_log("default maximum commands per utterance = " +
                   str(params["maximum_commands"]))
+    try:
+        Backend = __import__("vcl2py.backend_NatLink", fromlist=["output"])
+    except ImportError:
+        fatal_error("unable to load backend")
 
     initialize_token_properties()
     error_count = 0
     files = expand_in_file(in_file, in_folder)
     for in_file in files:
-        error_count += convert_file(in_folder, in_file, out_folder, extension_functions, params)
+        error_count += convert_file(in_folder, in_file, out_folder, 
+                                    extension_functions, params)
 
     close_log()
     if error_count == 0:
@@ -331,7 +335,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         print_log("  Warning: no commands in file.")
         return error_count
 
-    output(out_file, statements,
+    Backend.output(out_file, statements,
            VocolaVersion,
            should_emit_dictation_support,
            module_name, definitions,
