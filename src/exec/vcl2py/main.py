@@ -103,6 +103,38 @@ def parse_command_arguments(argv, default_params):
     return p, inputFileOrFolder, out_folder
 
 
+def read_INI_file(ini_file, params):
+    try:
+        input = open(ini_file)
+        for line in input:
+            match = re.match(r'^(.*?)=(.*)$', line)
+            if not match: continue
+            keyword = match.group(1)
+            value   = match.group(2)
+            if keyword == "MaximumCommands":
+                params["maximum_commands"] = safe_int(value, 1)
+    except IOError, e:
+        pass
+    return params
+
+
+def safe_int(text, default=0):
+    try:
+        return int(text)
+    except ValueError:
+        return default
+
+def parse_number_words(text):
+    number_words = {}
+    numbers = re.split(r'\s*,\s*', text.strip())
+    i = 0
+    for number in numbers:
+        if number != "":
+            number_words[i] = number
+        i = i + 1
+    return number_words
+
+
 def get_parameters():
     params, inputFileOrFolder, out_folder \
         = parse_command_arguments(sys.argv[1:], default_parameters())
@@ -122,6 +154,14 @@ def get_parameters():
     else:
         fatal_error("Nonexistent input filename '" + inputFileOrFolder + "'")
 
+    if not params["log_file"]:
+        params["log_file"] = in_folder + os.sep + "vcl2py_log.txt"
+    if not params["INI_file"]:
+        params["INI_file"] = in_folder + os.sep + "Vocola.INI"
+
+    if not params["ignore_INI_file"]:
+        params = read_INI_file(params["INI_file"], params)
+
     return params, in_folder, in_file, out_folder
 
 
@@ -136,16 +176,12 @@ def main_routine():
     # flush output after every print statement:
     #sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)    # <<<>>>
 
-    Error_encountered        = False
+    Error_encountered = False
 
     params, in_folder, in_file, out_folder = get_parameters()
-
-    Debug = params["debug"]
-
+    Debug    = params["debug"]
     log_file = params["log_file"]
-    if not log_file: log_file = in_folder + os.sep + "vcl2py_log.txt"
     ini_file = params["INI_file"]
-    if not ini_file: ini_file = in_folder + os.sep + "Vocola.INI"
 
     if params["log_to_stdout"]:
         set_log(sys.stdout)
@@ -156,9 +192,8 @@ def main_routine():
             fatal_error("Unable to open log file '" + log_file +
                         "' for writing: " + str(e))
 
+    if Debug >= 1: print_log("INI file is '" + ini_file + "'")
 
-    if not params["ignore_INI_file"]:
-        params = read_ini_file(ini_file, params)
     if params["extensions_file"]:
         Extension_functions = read_extensions_file(params["extensions_file"])
     else:
@@ -178,39 +213,6 @@ def main_routine():
         sys.exit(0)
     else:
         sys.exit(1)
-
-def safe_int(text, default=0):
-    try:
-        return int(text)
-    except ValueError:
-        return default
-
-def parse_number_words(text):
-    number_words = {}
-    numbers = re.split(r'\s*,\s*', text.strip())
-    i = 0
-    for number in numbers:
-        if number != "":
-            number_words[i] = number
-        i = i + 1
-    return number_words
-
-def read_ini_file(ini_file, params):
-    global Debug
-
-    if Debug >= 1: print_log("INI file is '" + ini_file + "'")
-    try:
-        input = open(ini_file)
-        for line in input:
-            match = re.match(r'^(.*?)=(.*)$', line)
-            if not match: continue
-            keyword = match.group(1)
-            value   = match.group(2)
-            if keyword == "MaximumCommands":
-                params["maximum_commands"] = safe_int(value, 1)
-    except IOError, e:
-        pass
-    return params
 
 def read_extensions_file(extensions_filename):
     global Debug
