@@ -46,7 +46,8 @@ Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
 def default_parameters():
     params = {}
 
-    # debug states: 0 = no info, 1 = show statements, 2 = detailed info
+    params["Vocola_version"]   = VocolaVersion
+    # debug states: 0          = no info, 1 = show statements, 2 = detailed info
     params["debug"]            = 0
 
     params["extensions_file"]  = None
@@ -331,10 +332,9 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         return error_count
 
     Backend.output(out_file, statements, file_empty,
-           VocolaVersion,
-           should_emit_dictation_support,
-           module_name, definitions,
-           extension_functions, params_per_file)
+                   should_emit_dictation_support,
+                   module_name, definitions,
+                   extension_functions, params_per_file)
 
     return logged_errors()
 

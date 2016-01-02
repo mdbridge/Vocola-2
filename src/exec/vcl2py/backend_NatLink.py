@@ -3,7 +3,6 @@ from vcl2py.ast import *
 from vcl2py.log import *
 
 def output(out_file, statements, file_empty,
-           _VocolaVersion,
            _Should_emit_dictation_support,
            _Module_name,
            _Definitions,
@@ -14,12 +13,12 @@ def output(out_file, statements, file_empty,
     global Module_name, Number_words, Definitions, Maximum_commands
     global Extension_functions
 
+    VocolaVersion    = params["Vocola_version"]
     Number_words     = params["number_words"]
     Maximum_commands = params["maximum_commands"]
 
     NestedCallLevel               = 0
 
-    VocolaVersion = _VocolaVersion
     Should_emit_dictation_support = _Should_emit_dictation_support
     Module_name = _Module_name
     Definitions = _Definitions
