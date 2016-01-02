@@ -273,14 +273,16 @@ def expand_in_file(in_file, in_folder):
   # in_file is just the base name; actual pathname is
   # <in_folder>/<in_file>.vcl where / is the correct separator
 def convert_file(in_folder, in_file, out_folder, extension_functions, params):
-    out_file = convert_filename(in_file)
+    input_name = in_file + ".vcl"
+    set_error_prologue("Converting " + input_name)
 
     # module_name is used below to implement application-specific
     # commands in the output Python
-    module_name = out_file.lower()
-    input_name  = in_file + ".vcl"
-    set_error_prologue("Converting " + input_name)
+    module_name = in_file.lower()
+    if module_name.find("@") != -1:
+        module_name = module_name[:module_name.find("@")]
 
+    out_file = convert_filename(in_file)
     out_file = out_folder + os.sep + out_file + params["suffix"] + ".py"
 
     in_path = in_folder + os.sep + input_name
