@@ -41,6 +41,11 @@ def output(out_file, statements, file_empty,
     out.close()
 
 
+def implementation_error(error):
+    log_error(error)
+    raise RuntimeError, error    # <<<>>>
+
+
 
 # ---------------------------------------------------------------------------
 # Emit NatLink output

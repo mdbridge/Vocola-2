@@ -32,6 +32,7 @@ Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
   where <option> ::= -debug <n> | -extensions <filename> | -f
                   |-INI_file <filename> | -log_file <filename> | -log_stdout
                   | -max_commands <n> | -q | -suffix <s>
+                  | -backend <backend>
 
 '''
     print >>sys.stderr, "Vocola 2 version: " + VocolaVersion
@@ -56,6 +57,7 @@ def default_parameters():
 
     params["force_processing"] = False
     params["suffix"]           = "_vcl"
+    params["backend"]          = "NatLink"
 
     params["maximum_commands"] = 1
     params["number_words"]     = {}
@@ -79,7 +81,8 @@ def parse_command_arguments(argv, default_params):
             usage("missing argument for option " + option)
 
         argument = argv.pop(0)
-        if   option == "-debug":      p["debug"]           = safe_int(argument, 1)
+        if   option == "-backend":    p["backend"]         = argument
+        elif option == "-debug":      p["debug"]           = safe_int(argument, 1)
         elif option == "-extensions": p["extensions_file"] = argument
         elif option == "-INI_file":   p["INI_file"]        = argument
         elif option == "-log_file":   p["log_file"]        = argument
@@ -198,9 +201,10 @@ def main_routine():
         print_log("default maximum commands per utterance = " +
                   str(params["maximum_commands"]))
     try:
-        Backend = __import__("vcl2py.backend_NatLink", fromlist=["output"])
+        Backend = __import__("vcl2py.backend_" + params["backend"],
+                             fromlist=["output"])
     except ImportError:
-        fatal_error("unable to load backend")
+        fatal_error("unable to load backend " + params["backend"])
 
     initialize_token_properties()
     error_count = 0
