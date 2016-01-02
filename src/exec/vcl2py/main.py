@@ -290,9 +290,9 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
     if Debug>=1: print_log("\n==============================")
 
     statements, definitions, function_definitions, statement_count, \
-        error_count, should_emit_dictation_support, file_empty \
+        should_emit_dictation_support, file_empty \
         = parse_input(input_name, in_folder, extension_functions, Debug)
-    if error_count == 0:
+    if logged_errors() == 0:
         check_forward_references()
 
     # Prepend a "global" context statement if necessary
@@ -317,6 +317,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
                 params_per_file["number_words"] \
                     = parse_number_words(statement["TEXT"].strip())
 
+    error_count = logged_errors()
     if error_count > 0:
         if error_count == 1:
             s = ""
@@ -330,11 +331,10 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
             OUT = open(out_file, "w")
             OUT.close()
         except IOError, e:
-            print_log("Couldn't open output file '" + out_file + "' for writing")
-            error_count += 1
+            log_error("Couldn't open output file '" + out_file + "' for writing")
         print_log("Converting " + input_name)
         print_log("  Warning: no commands in file.")
-        return error_count
+        return logged_errors()
 
     Backend.output(out_file, statements,
            VocolaVersion,
@@ -342,7 +342,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
            module_name, definitions,
            extension_functions, params_per_file)
 
-    return 0
+    return logged_errors()
 
 
 #

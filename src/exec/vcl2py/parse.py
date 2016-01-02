@@ -17,7 +17,7 @@ def parse_input(in_file, in_folder, extension_functions, debug):
 
     global Included_files, Include_stack_file, Include_stack_line
     global Functions, Function_definitions, Definitions, Statement_count
-    global Forward_references, Last_include_position, Error_count
+    global Forward_references, Last_include_position
     global Should_emit_dictation_support, File_empty
 
     Definitions                   = {}
@@ -29,12 +29,11 @@ def parse_input(in_file, in_folder, extension_functions, debug):
     Include_stack_file            = []
     Include_stack_line            = []
     Last_include_position         = None
-    Error_count                   = 0
     File_empty                    = True
     Should_emit_dictation_support = False
     Statement_count               = 1
 
-    return parse_file(in_file), Definitions, Function_definitions, Statement_count, Error_count, Should_emit_dictation_support, File_empty
+    return parse_file(in_file), Definitions, Function_definitions, Statement_count, Should_emit_dictation_support, File_empty
 
 
 # ---------------------------------------------------------------------------
@@ -730,10 +729,8 @@ def error(message, position, advice=""):
     raise RuntimeError, message    # <<<>>>
 
 def log_parse_error(message, position=None, advice=""):
-    global Error_count
     location, message = format_error_message(message, position, advice)
     log_error(message, location, True)
-    Error_count += 1
 
 def format_error_message(message, position=None, advice=""):
     global Include_stack_file, Include_stack_line
