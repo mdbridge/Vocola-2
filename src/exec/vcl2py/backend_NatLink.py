@@ -2,27 +2,24 @@ import re
 from vcl2py.ast import *
 from vcl2py.log import *
 
-def output(out_file, statements, file_empty,
-           _Should_emit_dictation_support,
-           _Module_name,
-           _Definitions,
-           _Extension_functions,
-           params):
+def output(out_file, module_name, statements, definitions,
+           file_empty, should_emit_dictation_support,
+           extension_functions, params):
     global NestedCallLevel
     global VocolaVersion, Should_emit_dictation_support
     global Module_name, Number_words, Definitions, Maximum_commands
     global Extension_functions
 
+    Module_name                   = module_name
+    Definitions                   = definitions
+    Should_emit_dictation_support = should_emit_dictation_support
+    Extension_functions           = extension_functions
+
     VocolaVersion    = params["Vocola_version"]
     Number_words     = params["number_words"]
     Maximum_commands = params["maximum_commands"]
 
-    NestedCallLevel               = 0
-
-    Should_emit_dictation_support = _Should_emit_dictation_support
-    Module_name = _Module_name
-    Definitions = _Definitions
-    Extension_functions = _Extension_functions
+    NestedCallLevel = 0
 
     try:
         out = open(out_file, "w")

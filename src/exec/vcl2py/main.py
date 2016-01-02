@@ -333,9 +333,8 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         print_log("  " + str(error_count) + " error" + s + " -- file not converted.")
         return error_count
 
-    Backend.output(out_file, statements, file_empty,
-                   should_emit_dictation_support,
-                   module_name, definitions,
+    Backend.output(out_file, module_name, statements, definitions, 
+                   file_empty, should_emit_dictation_support,
                    extension_functions, params_per_file)
 
     return logged_errors()
