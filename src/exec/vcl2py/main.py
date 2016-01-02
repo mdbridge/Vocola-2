@@ -268,19 +268,17 @@ def expand_in_file(in_file, in_folder):
   # <in_folder>/<in_file>.vcl where / is the correct separator
 def convert_file(in_folder, in_file, out_folder, extension_functions, params):
     global Debug, Error_encountered
-    global Input_name, Module_name
 
     out_file = convert_filename(in_file)
 
-    # The global Module_name is used below to implement application-specific
+    # module_name is used below to implement application-specific
     # commands in the output Python
-    Module_name = out_file.lower()
-    # The global Input_name is used below for error logging
-    Input_name = in_file + ".vcl"
+    module_name = out_file.lower()
+    input_name = in_file + ".vcl"
 
     out_file = out_folder + os.sep + out_file + params["suffix"] + ".py"
 
-    in_path = in_folder + os.sep + Input_name
+    in_path = in_folder + os.sep + input_name
     if os.path.exists(in_path):
         in_time  = os.path.getmtime(in_path)
         out_time = 0
@@ -293,7 +291,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
 
     statements, Definitions, Function_definitions, statement_count, \
         error_count, should_emit_dictation_support, file_empty \
-        = parse_input(Input_name, in_folder, extension_functions, Debug)
+        = parse_input(input_name, in_folder, extension_functions, Debug)
     if error_count == 0:
         check_forward_references()
 
@@ -334,7 +332,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
             OUT.close()
         except IOError, e:
             print_log("Couldn't open output file '" + out_file + "' for writing")
-        print_log("Converting " + Input_name)
+        print_log("Converting " + input_name)
         print_log("  Warning: no commands in file.")
         return
 
@@ -343,7 +341,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
     output(out_file, statements,
            VocolaVersion,
            should_emit_dictation_support,
-           Module_name, Definitions,
+           module_name, Definitions,
            extension_functions, params_per_file)
 
 #
