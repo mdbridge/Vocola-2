@@ -274,6 +274,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
     # commands in the output Python
     module_name = out_file.lower()
     input_name  = in_file + ".vcl"
+    set_error_prologue("Converting " + input_name)
 
     out_file = out_folder + os.sep + out_file + params["suffix"] + ".py"
 

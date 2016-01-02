@@ -1,7 +1,6 @@
 import re
 from vcl2py.ast import *
-
-log_error = None   # temporary kludge
+from vcl2py.log import log_error
 
 def output(out_file, statements,
            _VocolaVersion,
