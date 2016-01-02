@@ -100,36 +100,21 @@ def parse_command_arguments(argv, default_params):
     else:
         usage()
 
-    return params, inputFileOrFolder, out_folder
+    return p, inputFileOrFolder, out_folder
 
 
-
-# ---------------------------------------------------------------------------
-# Main control flow
-
-def main_routine():
-    global Debug, Error_encountered, In_folder
-    global Extension_functions
-
-    # flush output after every print statement:
-    #sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)    # <<<>>>
-
-    Error_encountered        = False
-
-
+def get_parameters():
     params, inputFileOrFolder, out_folder \
         = parse_command_arguments(sys.argv[1:], default_parameters())
 
-    Debug = params["debug"]
-
-    in_file = ""
     if os.path.isdir(inputFileOrFolder):
         # inputFileOrFolder is an entire folder
-        In_folder = inputFileOrFolder
+        in_folder = inputFileOrFolder
+        in_file   = None
     elif os.path.exists(inputFileOrFolder):
         # inputFileOrFolder is a single file
-        In_folder, filename = os.path.split(inputFileOrFolder)
-        if In_folder == "": In_folder = "."
+        in_folder, filename = os.path.split(inputFileOrFolder)
+        if in_folder == "": in_folder = "."
         in_file, extension  = os.path.splitext(filename)
         if not extension == ".vcl":
             fatal_error("Input file '" + inputFileOrFolder +
@@ -137,10 +122,30 @@ def main_routine():
     else:
         fatal_error("Nonexistent input filename '" + inputFileOrFolder + "'")
 
+    return params, in_folder, in_file, out_folder
+
+
+
+# ---------------------------------------------------------------------------
+# Main control flow
+
+def main_routine():
+    global Debug, Error_encountered
+    global Extension_functions
+
+    # flush output after every print statement:
+    #sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)    # <<<>>>
+
+    Error_encountered        = False
+
+    params, in_folder, in_file, out_folder = get_parameters()
+
+    Debug = params["debug"]
+
     log_file = params["log_file"]
-    if not log_file: log_file = In_folder + os.sep + "vcl2py_log.txt"
-    ini_file = params["ini_file"]
-    if not ini_file: ini_file = In_folder + os.sep + "Vocola.INI"
+    if not log_file: log_file = in_folder + os.sep + "vcl2py_log.txt"
+    ini_file = params["INI_file"]
+    if not ini_file: ini_file = in_folder + os.sep + "Vocola.INI"
 
     if params["log_to_stdout"]:
         set_log(sys.stdout)
@@ -163,9 +168,9 @@ def main_routine():
                   str(params["maximum_commands"]))
 
     initialize_token_properties()
-    files = expand_in_file(in_file, In_folder)
+    files = expand_in_file(in_file, in_folder)
     for in_file in files:
-        convert_file(in_file, out_folder, params)
+        convert_file(in_folder, in_file, out_folder, params)
 
     close_log()
     if not Error_encountered:
@@ -232,7 +237,7 @@ def read_extensions_file(extensions_filename):
 
 
 def expand_in_file(in_file, in_folder):
-    if in_file != "":
+    if in_file:
         # just one file
         return [in_file]
 
@@ -256,10 +261,9 @@ def expand_in_file(in_file, in_folder):
 # Convert one Vocola command file to a .py file
 
   # in_file is just the base name; actual pathname is
-  # <In_folder>/<in_file>.vcl where / is the correct separator
-def convert_file(in_file, out_folder, params):
+  # <in_folder>/<in_file>.vcl where / is the correct separator
+def convert_file(in_folder, in_file, out_folder, params):
     global Debug, Error_encountered
-    global In_folder
     global Input_name, Module_name
     global Extension_functions
 
@@ -273,7 +277,7 @@ def convert_file(in_file, out_folder, params):
 
     out_file = out_folder + os.sep + out_file + params["suffix"] + ".py"
 
-    in_path = In_folder + os.sep + Input_name
+    in_path = in_folder + os.sep + Input_name
     if os.path.exists(in_path):
         in_time  = os.path.getmtime(in_path)
         out_time = 0
@@ -286,7 +290,7 @@ def convert_file(in_file, out_folder, params):
 
     statements, Definitions, Function_definitions, statement_count, \
         error_count, should_emit_dictation_support, file_empty \
-        = parse_input(Input_name, In_folder, Extension_functions, Debug)
+        = parse_input(Input_name, in_folder, Extension_functions, Debug)
     if error_count == 0:
         check_forward_references()
 
