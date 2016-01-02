@@ -76,7 +76,8 @@ def term_element(term):
         #return emit_menu_element(name)
         return "menu_" + name
     else:
-         return "UNKNOWN"
+        log_error("unable to handle element type " + type)
+        return "UNKNOWN"
     
 def terms_element_list(terms):
     return "[" + ", ".join([term_element(term) for term in terms]) + "]"
