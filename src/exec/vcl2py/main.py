@@ -325,18 +325,8 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
             s = "s"
         print_log("  " + str(error_count) + " error" + s + " -- file not converted.")
         return error_count
-    if file_empty:
-        # Write empty output file, for modification time comparisons
-        try:
-            OUT = open(out_file, "w")
-            OUT.close()
-        except IOError, e:
-            log_error("Couldn't open output file '" + out_file + "' for writing")
-        print_log("Converting " + input_name)
-        print_log("  Warning: no commands in file.")
-        return logged_errors()
 
-    Backend.output(out_file, statements,
+    Backend.output(out_file, statements, file_empty,
            VocolaVersion,
            should_emit_dictation_support,
            module_name, definitions,

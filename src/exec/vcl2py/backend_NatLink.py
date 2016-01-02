@@ -1,8 +1,8 @@
 import re
 from vcl2py.ast import *
-from vcl2py.log import log_error
+from vcl2py.log import *
 
-def output(out_file, statements,
+def output(out_file, statements, file_empty,
            _VocolaVersion,
            _Should_emit_dictation_support,
            _Module_name,
@@ -25,21 +25,29 @@ def output(out_file, statements,
     Definitions = _Definitions
     Extension_functions = _Extension_functions
 
-    emit_output(out_file, statements)
+    try:
+        out = open(out_file, "w")
+    except IOError, e:
+        log_error("Unable to open output file '" + out_file + \
+                  "' for writing: " + str(e))
+        return
+        
+    if not file_empty:
+        emit_output(out, statements)
+    else:
+        # note that we write an empty output file for modification time comparisons
+        log_warn("no commands in file.")
+        
+    out.close()
 
 
 
 # ---------------------------------------------------------------------------
 # Emit NatLink output
 
-def emit_output(out_file, statements):
+def emit_output(out, statements):
     global Should_emit_dictation_support, OUT
-    try:
-        OUT = open(out_file, "w")
-    except IOError, e:
-        log_error("Unable to open output file '" + out_file + \
-                  "' for writing: " + str(e))
-        return
+    OUT = out
     emit_file_header()
     if Should_emit_dictation_support: emit_dictation_grammar()
     for statement in statements:
@@ -54,7 +62,6 @@ def emit_output(out_file, statements):
         if    type == "function":   pass
         elif type == "command":     emit_top_command_actions (statement)
     emit_file_trailer()
-    OUT.close()
 
 def emit_sequence_and_context_code(statements):
     # Build a list of context statements, and commands defined in each
