@@ -25,8 +25,6 @@ def fatal_error(message):
 
 
 def usage(message=""):
-    global VocolaVersion
-
     if message != "":
         print >>sys.stderr, "vcl2py.py: Error: " + message
 
@@ -266,8 +264,6 @@ def expand_in_file(in_file, in_folder):
   # in_file is just the base name; actual pathname is
   # <in_folder>/<in_file>.vcl where / is the correct separator
 def convert_file(in_folder, in_file, out_folder, extension_functions, params):
-    global Debug
-
     out_file = convert_filename(in_file)
 
     # module_name is used below to implement application-specific
@@ -288,7 +284,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
 
     if Debug>=1: print_log("\n==============================")
 
-    statements, Definitions, Function_definitions, statement_count, \
+    statements, definitions, function_definitions, statement_count, \
         error_count, should_emit_dictation_support, file_empty \
         = parse_input(input_name, in_folder, extension_functions, Debug)
     if error_count == 0:
@@ -301,7 +297,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         context["STRINGS"] = [""]
         statements.insert(0, context)
     #print_log(unparse_statements(statements), True)
-    statements = transform(statements, Function_definitions, statement_count)
+    statements = transform(statements, function_definitions, statement_count)
     #print_log(unparse_statements(statements), True)
 
     # Handle $set directives:
@@ -340,7 +336,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
     output(out_file, statements,
            VocolaVersion,
            should_emit_dictation_support,
-           module_name, Definitions,
+           module_name, definitions,
            extension_functions, params_per_file)
 
     return 0
