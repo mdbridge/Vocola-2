@@ -171,12 +171,10 @@ def get_parameters():
 # Main control flow
 
 def main_routine():
-    global Debug, Error_encountered
+    global Debug
 
     # flush output after every print statement:
     #sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)    # <<<>>>
-
-    Error_encountered = False
 
     params, in_folder, in_file, out_folder = get_parameters()
     Debug    = params["debug"]
@@ -204,12 +202,13 @@ def main_routine():
                   str(params["maximum_commands"]))
 
     initialize_token_properties()
+    error_count = 0
     files = expand_in_file(in_file, in_folder)
     for in_file in files:
-        convert_file(in_folder, in_file, out_folder, extension_functions, params)
+        error_count += convert_file(in_folder, in_file, out_folder, extension_functions, params)
 
     close_log()
-    if not Error_encountered:
+    if error_count == 0:
         if not params["log_to_stdout"]: os.remove(log_file)
         sys.exit(0)
     else:
@@ -267,14 +266,14 @@ def expand_in_file(in_file, in_folder):
   # in_file is just the base name; actual pathname is
   # <in_folder>/<in_file>.vcl where / is the correct separator
 def convert_file(in_folder, in_file, out_folder, extension_functions, params):
-    global Debug, Error_encountered
+    global Debug
 
     out_file = convert_filename(in_file)
 
     # module_name is used below to implement application-specific
     # commands in the output Python
     module_name = out_file.lower()
-    input_name = in_file + ".vcl"
+    input_name  = in_file + ".vcl"
 
     out_file = out_folder + os.sep + out_file + params["suffix"] + ".py"
 
@@ -284,7 +283,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         out_time = 0
         if os.path.exists(out_file): out_time = os.path.getmtime(out_file)
         if in_time<out_time and not params["force_processing"]:
-            return
+            return 0
 
 
     if Debug>=1: print_log("\n==============================")
@@ -323,8 +322,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         else:
             s = "s"
         print_log("  " + str(error_count) + " error" + s + " -- file not converted.")
-        Error_encountered = True
-        return
+        return error_count
     if file_empty:
         # Write empty output file, for modification time comparisons
         try:
@@ -332,9 +330,10 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
             OUT.close()
         except IOError, e:
             print_log("Couldn't open output file '" + out_file + "' for writing")
+            error_count += 1
         print_log("Converting " + input_name)
         print_log("  Warning: no commands in file.")
-        return
+        return error_count
 
     from vcl2py.emit import output
     #emit_output(out_file, statements)
@@ -343,6 +342,9 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
            should_emit_dictation_support,
            module_name, Definitions,
            extension_functions, params_per_file)
+
+    return 0
+
 
 #
 # Warning: this code is very subtle and has a matching inverse function in
