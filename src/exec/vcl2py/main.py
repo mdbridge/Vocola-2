@@ -103,7 +103,8 @@ def parse_command_arguments(argv, default_params):
     return p, inputFileOrFolder, out_folder
 
 
-def read_INI_file(ini_file, params):
+def read_INI_file(ini_file, default_params):
+    params = default_params
     try:
         input = open(ini_file)
         for line in input:
@@ -171,7 +172,6 @@ def get_parameters():
 
 def main_routine():
     global Debug, Error_encountered
-    global Extension_functions
 
     # flush output after every print statement:
     #sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)    # <<<>>>
@@ -181,7 +181,6 @@ def main_routine():
     params, in_folder, in_file, out_folder = get_parameters()
     Debug    = params["debug"]
     log_file = params["log_file"]
-    ini_file = params["INI_file"]
 
     if params["log_to_stdout"]:
         set_log(sys.stdout)
@@ -192,12 +191,14 @@ def main_routine():
             fatal_error("Unable to open log file '" + log_file +
                         "' for writing: " + str(e))
 
-    if Debug >= 1: print_log("INI file is '" + ini_file + "'")
+    if Debug >= 1: print_log("INI file is '" + params["INI_file"] + "'")
 
-    if params["extensions_file"]:
-        Extension_functions = read_extensions_file(params["extensions_file"])
-    else:
-        Extension_functions = {}
+    extension_functions = {}
+    extensions_filename = params["extensions_file"]
+    if extensions_filename:
+        if Debug >= 1: print_log("extensions file is '" + extensions_filename + "'")
+        extension_functions = read_extensions_file(extensions_filename)
+
     if Debug >= 1:
         print_log("default maximum commands per utterance = " +
                   str(params["maximum_commands"]))
@@ -205,7 +206,7 @@ def main_routine():
     initialize_token_properties()
     files = expand_in_file(in_file, in_folder)
     for in_file in files:
-        convert_file(in_folder, in_file, out_folder, params)
+        convert_file(in_folder, in_file, out_folder, extension_functions, params)
 
     close_log()
     if not Error_encountered:
@@ -214,10 +215,9 @@ def main_routine():
     else:
         sys.exit(1)
 
+
 def read_extensions_file(extensions_filename):
-    global Debug
     extension_functions = {}
-    if Debug >= 1: print_log("extensions file is '" + extensions_filename + "'")
     try:
         input = open(extensions_filename)
         for line in input:
@@ -260,14 +260,15 @@ def expand_in_file(in_file, in_folder):
         fatal_error("Couldn't open/list folder '" + in_folder + "': " + str(e))
 
 
-# Convert one Vocola command file to a .py file
+
+# ---------------------------------------------------------------------------
+# Converting one Vocola command file to a .py file
 
   # in_file is just the base name; actual pathname is
   # <in_folder>/<in_file>.vcl where / is the correct separator
-def convert_file(in_folder, in_file, out_folder, params):
+def convert_file(in_folder, in_file, out_folder, extension_functions, params):
     global Debug, Error_encountered
     global Input_name, Module_name
-    global Extension_functions
 
     out_file = convert_filename(in_file)
 
@@ -292,7 +293,7 @@ def convert_file(in_folder, in_file, out_folder, params):
 
     statements, Definitions, Function_definitions, statement_count, \
         error_count, should_emit_dictation_support, file_empty \
-        = parse_input(Input_name, in_folder, Extension_functions, Debug)
+        = parse_input(Input_name, in_folder, extension_functions, Debug)
     if error_count == 0:
         check_forward_references()
 
@@ -343,7 +344,7 @@ def convert_file(in_folder, in_file, out_folder, params):
            VocolaVersion,
            should_emit_dictation_support,
            Module_name, Definitions,
-           Extension_functions, params_per_file)
+           extension_functions, params_per_file)
 
 #
 # Warning: this code is very subtle and has a matching inverse function in
