@@ -6,7 +6,7 @@ import os
 import re
 import sys
 
-from vcl2py.emit      import output
+from vcl2py.backend_NatLink import output
 from vcl2py.lex       import initialize_token_properties
 from vcl2py.log       import *
 from vcl2py.parse     import parse_input, check_forward_references
@@ -331,8 +331,6 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         print_log("  Warning: no commands in file.")
         return error_count
 
-    from vcl2py.emit import output
-    #emit_output(out_file, statements)
     output(out_file, statements,
            VocolaVersion,
            should_emit_dictation_support,

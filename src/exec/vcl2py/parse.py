@@ -871,5 +871,5 @@ def check_forward_references():
 
 import vcl2py.lex as lex
 lex.log_error = log_error  # temporary kludge
-import vcl2py.emit as emit
+import vcl2py.backend_NatLink as emit
 emit.log_error = log_error  # temporary kludge
