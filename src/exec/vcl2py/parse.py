@@ -26,7 +26,7 @@ def parse_input(in_file, in_folder, extension_functions, debug):
 
     Forward_references            = []
     Included_files                = []
-    Include_stack_file            = []
+    Include_stack_file            = []  # short names (relative to In_folder)
     Include_stack_line            = []
     Last_include_position         = None
     Error_count                   = 0
@@ -158,23 +158,35 @@ Dragon_functions = {
 # executed in this routine.
 
 def parse_file(in_file):    # returns a list of statements
-    global In_folder, Include_stack_file, Included_files
+    global Include_stack_file, Included_files
 
-    in_path = os.path.join(In_folder, in_file)
-
-    canonical_path = os.path.realpath(os.path.abspath(in_path))
+    short_name, canonical_path = canonicalize_in_file(in_file)
     Included_files.append(canonical_path)
 
-    text = read_file(in_path)
+    text = read_file(canonical_path)
     open_text(text)
     try:
-        Include_stack_file.append(in_file)
+        Include_stack_file.append(short_name)
         statements = parse_statements()
     finally:
         close_text()
         Include_stack_file.pop()
 
     return statements
+
+def canonicalize_in_file(in_file):
+    from_folder = In_folder
+    if len(Include_stack_file) > 0:
+        from_folder = os.path.dirname(os.path.join(In_folder,Include_stack_file[-1]))
+
+    in_path        = os.path.join(from_folder, in_file)
+    canonical_path = os.path.realpath(os.path.abspath(in_path))
+
+    short_name = in_file
+    if not os.path.isabs(short_name):
+        short_name = os.path.relpath(in_path, In_folder)
+
+    return short_name, canonical_path
 
 def read_file(in_file):
     global Last_include_position
@@ -769,9 +781,7 @@ def format_error_message(message, position=None, advice=""):
 
 # Return TRUE if filename was already included in the current .vcl file
 def already_included(filename):
-    global Included_files
-    in_path = os.path.join(In_folder, filename)
-    canonical_path = os.path.realpath(os.path.abspath(in_path))
+    _short_name, canonical_path = canonicalize_in_file(filename)
     return canonical_path in Included_files
 
 def expand_variables(actions):
