@@ -160,10 +160,10 @@ Dragon_functions = {
 def parse_file(in_file):    # returns a list of statements
     global In_folder, Include_stack_file, Included_files
 
-    Included_files.append(in_file)
-    in_path = in_file
-    if not re.match(re.escape(os.sep), in_path):
-        in_path = In_folder + os.sep + in_path
+    in_path = os.path.join(In_folder, in_file)
+
+    canonical_path = os.path.realpath(os.path.abspath(in_path))
+    Included_files.append(canonical_path)
 
     text = read_file(in_path)
     open_text(text)
@@ -767,10 +767,12 @@ def format_error_message(message, position=None, advice=""):
 
     return message
 
+# Return TRUE if filename was already included in the current .vcl file
 def already_included(filename):
     global Included_files
-    # Return TRUE if filename was already included in the current file
-    return filename in Included_files
+    in_path = os.path.join(In_folder, filename)
+    canonical_path = os.path.realpath(os.path.abspath(in_path))
+    return canonical_path in Included_files
 
 def expand_variables(actions):
     result = ""
