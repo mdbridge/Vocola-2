@@ -1,0 +1,9 @@
+### 
+### Regression tests for Vocola 2.8.5, part II
+### 
+
+error if included twice = true;
+
+  # to work, this must not be relative to command directory; this file
+  # also includes a file in the command directory:
+include ..\_regression_2_7_IV.vcl;
