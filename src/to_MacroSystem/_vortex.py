@@ -218,13 +218,15 @@ class BasicTextControl:
         #    start += 1
 
         if start < self.fake_prefix and start != end:
-            print
-            print "***** ATTEMPT TO DELETE (PART OF) FAKE PREFIX DENIED!"
-            print
+            print >> sys.stderr
+            print >> sys.stderr, \
+                "***** ATTEMPT TO DELETE (PART OF) FAKE PREFIX DENIED!"
+            print >> sys.stderr
         if end   < self.fake_prefix and new_text != "":
-            print
-            print "***** ATTEMPT TO INSERT IN FAKE PREFIX DENIED!"
-            print
+            print >> sys.stderr
+            print >> sys.stderr, \
+                "***** ATTEMPT TO INSERT IN FAKE PREFIX DENIED!"
+            print >> sys.stderr
         start = max(self.fake_prefix, start)
         end   = max(self.fake_prefix, end)
 
