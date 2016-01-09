@@ -374,6 +374,7 @@ class CommandGrammar(GrammarBase):
         <start> exported = vortex (on | off);
         <all>   exported = vortex (on | off) everywhere;
         <load>  exported = vortex (load | line);
+        <clip>  exported = vortex load clipboard;
     """
 
     def initialize(self):
@@ -475,6 +476,12 @@ class CommandGrammar(GrammarBase):
         natlink.playString("{shift}" + selector + "{ctrl+Ins}" + unselect)
         time.sleep(.1)
         text = vocola_ext_clipboard.clipboard_get()
+        print "loaded: "+ repr(text)
+        control.set_buffer(text)
+
+    def gotResults_clip(self,words,fullResults):
+        control = self.vortex_on()
+        text    = vocola_ext_clipboard.clipboard_get()
         print "loaded: "+ repr(text)
         control.set_buffer(text)
 
