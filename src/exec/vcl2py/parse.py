@@ -175,9 +175,14 @@ def parse_file(in_file):    # returns a list of statements
     return statements
 
 def canonicalize_in_file(in_file):
+    # allow \ as a file separator even on Linux:
+    if os.sep == '/':
+        in_file = in_file.replace('\\', '/')
+
     from_folder = In_folder
     if len(Include_stack_file) > 0:
-        from_folder = os.path.dirname(os.path.join(In_folder,Include_stack_file[-1]))
+        from_folder = os.path.dirname(os.path.join(In_folder,
+                                                   Include_stack_file[-1]))
 
     in_path        = os.path.join(from_folder, in_file)
     canonical_path = os.path.realpath(os.path.abspath(in_path))
