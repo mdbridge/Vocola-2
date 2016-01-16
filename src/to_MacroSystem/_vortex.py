@@ -150,16 +150,16 @@ class BasicTextControl:
 
 
 
-    #
-    # Application control routines
-    #
-    # Invariant: after sending self.keys to application, the selection
-    #            is [self.app_start,self.app_end) with the cursor
-    #            before self.app_end.
-    #
-    # Invariants: self.app_{start,end} >= self.fake_prefix
-    #             self.app_start <= self.app_end
-    #
+    ##
+    ## Application control routines
+    ##
+    ## Invariant: after sending self.keys to application, the selection
+    ##            is [self.app_start,self.app_end) with the cursor
+    ##            before self.app_end.
+    ##
+    ## Invariants: self.app_{start,end} >= self.fake_prefix
+    ##             self.app_start <= self.app_end
+    ##
 
     # returns end-start except counts each \r\n as 1 character:
     def distance(self, start, end):
@@ -252,9 +252,9 @@ class BasicTextControl:
         vocola_ext_keys.send_input(shift + keys)
 
 
-    #
-    # Routines for interacting with DNS:
-    #
+    ##
+    ## Routines for interacting with DNS:
+    ##
 
     # We get this callback just before recognition starts. This is our
     # chance to update the dictation object just in case we missed a change
@@ -289,7 +289,7 @@ class BasicTextControl:
         # corrections can attempt to remove the last space of the fake
         # prefix (e.g., correct Fred to .c); "select all", "scratch
         # that" also tries to do that.  Corrections can also attempt
-        # to replace the trailing space with itself.
+        # to replace the prefix's trailing space with another space.
         if delStart+1==self.fake_prefix and delStart<delEnd and \
            self.text[delStart]==" ":
             # attempting to delete/replace trailing whitespace in fake prefix
@@ -302,6 +302,24 @@ class BasicTextControl:
                 delStart += 1
                 selStart += 1
                 selEnd   += 1
+
+        if self.fake_prefix>0 and delStart<delEnd and newText!="":
+            if delStart==self.fake_prefix and \
+               self.text[delStart]==" " and newText[0]!=" ":
+                print >> sys.stderr, \
+                    "***** SPACE GUARD preserved leading space"
+                delStart += 1
+                selStart += 1
+                selEnd   += 1
+            if delEnd==len(self.text) and self.text[delEnd-1]==" " and \
+               newText[-1]!=" ":
+                print >> sys.stderr, \
+                    "***** SPACE GUARD preserved trailing space"
+                delEnd -= 1
+                if selStart==delStart+len(newText) and selStart==selEnd:
+                    selStart += 1
+                    selEnd   += 1
+                    
 
         self.replace(delStart, delEnd, newText)
 
@@ -331,9 +349,9 @@ class BasicTextControl:
         print "end onTextChange"
 
 
-    #
-    # Routines for interacting with Vocola:
-    #
+    ##
+    ## Routines for interacting with Vocola:
+    ##
 
     def vocola_pre_action(self, keys):
         if self.my_handle == win32gui.GetForegroundWindow():
