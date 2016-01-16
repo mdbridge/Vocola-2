@@ -113,28 +113,34 @@ class BasicTextControl:
         self.dictObj = None
 
 
-    def set_buffer(self, text):
-        self.fake_prefix = 0
+    def set_buffer(self, text, unknown_prefix=False, select_all=False):
+        buffer_text = ""
+        if unknown_prefix:
+            # Effectively set state to no capitalization and no space
+            # required before next word, hopefully not affecting
+            # language model any:
+            buffer_text = "First, "
+        start = len(buffer_text)
+        self.fake_prefix = start
+
+        end = len(buffer_text)
+        if not select_all:
+            start = end
+
         # text in application around cursor except for
         # [0:self.fake_prefix]:
-        self.text = text   
-
-        end = len(text)
+        self.text = buffer_text
         # application selection:
-        self.app_start, self.app_end = end, end  
+        self.app_start, self.app_end = start, end  
         # what we claim is selected to DNS (can differ due to fake
         # prefix):
-        self.selStart,  self.selEnd  = end, end  
+        self.selStart,  self.selEnd  = start, end  
         self.keys = ""  # any pending keystrokes for application
 
         self.showState()
 
     def set_buffer_unknown(self):
-        # Effectively set state to no capitalization and no space
-        # required before next word, hopefully not affecting language
-        # model any:
-        self.set_buffer("First, ")
-        self.fake_prefix = self.app_end
+        self.set_buffer("", True)
 
     def showState(self):
         text = self.text
@@ -378,9 +384,11 @@ class BasicTextControl:
 # Command grammar
 
 # window ID -> BasicTextControl instance or None
-basic_control = {}
+basic_control    = {}
+# subset for spelling windows; never mapped to None
+spelling_windows = {}
 
-spare_control = None
+spare_control    = None
 
 # should we try and turn on vortex for each new window?
 auto_on = False
@@ -411,7 +419,23 @@ class CommandGrammar(GrammarBase):
 
 
     def gotBegin(self,moduleInfo):
-        global spare_control
+        global spelling_windows, spare_control
+
+        # remove BasicControls for spelling windows as soon as they
+        # become non-visible (DNS reuses spelling Windows):
+        nonexistent = []
+        for window in spelling_windows:
+            if not win32gui.IsWindowVisible(window):
+                nonexistent += [window]
+                print "unloading BasicControl for spelling window 0x%08x" % (window)
+            else:
+                print "spelling window 0x%08x is still visible" % (window)
+        for window in nonexistent:
+            if basic_control[window]:
+                basic_control[window].unload()
+                del basic_control[window]
+            del spelling_windows[window]
+
         if auto_on:
             handle  = win32gui.GetForegroundWindow()
             control = basic_control.get(handle, -1)
@@ -435,6 +459,13 @@ class CommandGrammar(GrammarBase):
                 else:
                     self.vortex_on()
                     spare_control = BasicTextControl()
+                if win32gui.GetWindowText(handle)=="Spelling Window":
+                    spelling_windows[handle] = basic_control[handle]
+                    vocola_ext_keys.send_input("{shift}" + "{ctrl+Ins}")
+                    time.sleep(.1)
+                    text = vocola_ext_clipboard.clipboard_get()
+                    print "loaded: "+ repr(text)
+                    basic_control[handle].set_buffer(text, True, True)
 
 
     def vortex_off(self):
