@@ -123,6 +123,7 @@ class BasicTextControl:
         start = len(buffer_text)
         self.fake_prefix = start
 
+        buffer_text += text
         end = len(buffer_text)
         if not select_all:
             start = end
@@ -144,13 +145,15 @@ class BasicTextControl:
 
     def showState(self):
         text = self.text
-        print "text: '%s<%s>%s'" % (text[:self.selStart], 
-                                    text[self.selStart:self.selEnd],
-                                    text[self.selEnd:])
+        h = self.my_handle
+        if not h: h = 0
+        print "0x%08x: '%s<%s>%s'" % (h, text[:self.selStart], 
+                                      text[self.selStart:self.selEnd],
+                                      text[self.selEnd:])
         if self.selStart != self.app_start or self.selEnd != self.app_end:
-            print "      '%s[%s]%s'" % (text[:self.app_start], 
-                                        text[self.app_start:self.app_end],
-                                        text[self.app_end:])
+            print "            '%s[%s]%s'" % (text[:self.app_start], 
+                                              text[self.app_start:self.app_end],
+                                              text[self.app_end:])
         if self.keys != "":
             print "  postponed keys: '%s'" % (self.keys)
 
