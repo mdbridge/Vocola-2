@@ -373,13 +373,12 @@ class BasicTextControl:
                 self.replace(self.app_start, self.app_end, keys)
                 self.selStart,  self.selEnd  = self.app_start, self.app_end
                 self.keys = ""
+                self.showState()
             else:
                 self.set_buffer_unknown()
-            self.showState()
         else:
             if not keys:
                 self.set_buffer_unknown()
-                self.showState()                
 
 
 
