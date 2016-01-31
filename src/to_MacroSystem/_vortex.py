@@ -543,6 +543,8 @@ class CommandGrammar(GrammarBase):
 ## 
 
 def pre_action(keys):
+    if not basic_control:
+        return
     print "pre-Vocola action: " + repr(keys)
     for ID in basic_control:
         control = basic_control[ID]
