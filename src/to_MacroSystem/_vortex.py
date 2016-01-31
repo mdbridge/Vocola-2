@@ -22,17 +22,29 @@ import vocola_ext_clipboard
 import vocola_ext_keys
 
 
+#
 # Don't ever automatically turn vortex on for windows belonging to
 # these executables:
+#
 Blacklist = [
+    # Dragon's own programs have FullTextControl:
+    "natspeak.exe",  # DragonPad, dictation box, Command Browser, vocabulary editor
+
+    # Dragon provides FullTextControl for most Microsoft office applications:
     "excel.exe",
     "winword.exe",
+    "outlook.exe",
     "lync.exe",
+    # PowerPoint does not have FullTextControl so benefits from vortex on
 
+    # editors with text controls that Dragon gives FullTextControl for:
     "notepad.exe",
-    "wordpad.exe"
+    "wordpad.exe",
+    "win32pad.exe",
+
+    # all controls that can be enabled, Dragon gives FullTextControl:
+    "explorer.exe"
 ]
-# PowerPoint does not have FulltextControl so benefits from vortex on
 
 
 
