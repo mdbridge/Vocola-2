@@ -6,6 +6,7 @@
 # code adapted from windict.py, which is copyright 1999 by Joel Gould
 #
 
+import os.path
 import re
 import string
 import sys
@@ -19,6 +20,20 @@ import VocolaUtils
 
 import vocola_ext_clipboard
 import vocola_ext_keys
+
+
+# Don't ever automatically turn vortex on for windows belonging to
+# these executables:
+Blacklist = [
+    "excel.exe",
+    "winword.exe",
+    "lync.exe",
+
+    "notepad.exe",
+    "wordpad.exe"
+]
+# PowerPoint does not have FulltextControl so benefits from vortex on
+
 
 
 #---------------------------------------------------------------------------
@@ -429,7 +444,7 @@ class CommandGrammar(GrammarBase):
         for window in spelling_windows:
             if not win32gui.IsWindowVisible(window):
                 nonexistent += [window]
-                print "unloading BasicControl for spelling window 0x%08x" % (window)
+                print "preparing to unload BasicControl for spelling window 0x%08x" % (window)
             else:
                 print "spelling window 0x%08x is still visible" % (window)
         for window in nonexistent:
@@ -438,7 +453,7 @@ class CommandGrammar(GrammarBase):
                 del basic_control[window]
             del spelling_windows[window]
 
-        if auto_on:
+        if auto_on and not self.blacklisted(moduleInfo):
             handle  = win32gui.GetForegroundWindow()
             control = basic_control.get(handle, -1)
             if control == -1:
@@ -469,6 +484,9 @@ class CommandGrammar(GrammarBase):
                     print "loaded: "+ repr(text)
                     basic_control[handle].set_buffer(text, True, True)
 
+    def blacklisted(self, moduleInfo):
+        executable = os.path.basename(moduleInfo[0]).lower()
+        return executable in Blacklist
 
     def vortex_off(self):
         handle  = win32gui.GetForegroundWindow()
