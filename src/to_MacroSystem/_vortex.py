@@ -414,8 +414,6 @@ class BasicTextControl:
 
 # window ID -> BasicTextControl instance or None
 basic_control    = {}
-# subset for spelling windows; never mapped to None
-spelling_windows = {}
 
 spare_control    = None
 
@@ -434,6 +432,7 @@ class CommandGrammar(GrammarBase):
 
     def initialize(self):
         print "Init Vortex"
+        self.visible_spelling_windows = []
         self.load(self.gramSpec)
         self.activateAll()
     
@@ -448,22 +447,7 @@ class CommandGrammar(GrammarBase):
 
 
     def gotBegin(self,moduleInfo):
-        global spelling_windows, spare_control
-
-        # remove BasicControls for spelling windows as soon as they
-        # become non-visible (DNS reuses spelling Windows):
-        nonexistent = []
-        for window in spelling_windows:
-            if not win32gui.IsWindowVisible(window):
-                nonexistent += [window]
-                print "preparing to unload BasicControl for spelling window 0x%08x" % (window)
-            else:
-                print "spelling window 0x%08x is still visible" % (window)
-        for window in nonexistent:
-            if basic_control[window]:
-                basic_control[window].unload()
-                del basic_control[window]
-            del spelling_windows[window]
+        global spare_control
 
         if auto_on and not self.blacklisted(moduleInfo):
             handle  = win32gui.GetForegroundWindow()
@@ -488,17 +472,40 @@ class CommandGrammar(GrammarBase):
                 else:
                     self.vortex_on()
                     spare_control = BasicTextControl()
-                if win32gui.GetWindowText(handle)=="Spelling Window":
-                    spelling_windows[handle] = basic_control[handle]
+
+        if moduleInfo[1]=="Spelling Window":
+            handle  = win32gui.GetForegroundWindow()
+            control = basic_control.get(handle, -1)
+            if control != -1:
+                # DNS reuses spelling windows, so we load each
+                # time a spelling window becomes visible:
+                if not handle in self.visible_spelling_windows:
                     vocola_ext_keys.send_input("{shift}" + "{ctrl+Ins}")
                     time.sleep(.1)
                     text = vocola_ext_clipboard.clipboard_get()
-                    print "loaded: "+ repr(text)
-                    basic_control[handle].set_buffer(text, True, True)
+                    print "loaded from spelling window: "+ repr(text)
+                    control.set_buffer(text, True, True)
+            self.track_visible_spelling_windows(handle)
+        else:
+            self.track_visible_spelling_windows()
 
     def blacklisted(self, moduleInfo):
+        if moduleInfo[1] == "Spelling Window":
+            return False
         executable = os.path.basename(moduleInfo[0]).lower()
         return executable in Blacklist
+
+    # remove BasicControls for spelling windows as soon as they
+    # become non-visible (DNS reuses spelling Windows):
+    def track_visible_spelling_windows(self, handle=-1):
+        still_visible = []
+        for window in self.visible_spelling_windows:
+            if win32gui.IsWindowVisible(window):
+                still_visible += [window]
+        if handle != -1 and not handle in still_visible:
+            still_visible += [handle]
+        self.visible_spelling_windows = still_visible
+
 
     def vortex_off(self):
         handle  = win32gui.GetForegroundWindow()
