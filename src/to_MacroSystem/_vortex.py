@@ -420,6 +420,8 @@ spare_control    = None
 # should we try and turn on vortex for each new window?
 auto_on = False
 
+nonexistent_windows = []
+
 
 class CommandGrammar(GrammarBase):
 
@@ -447,21 +449,22 @@ class CommandGrammar(GrammarBase):
 
 
     def gotBegin(self,moduleInfo):
-        global spare_control
+        global spare_control, nonexistent_windows
+
+        # unload controls for/forget about no longer existing windows:
+        for window in nonexistent_windows:
+            if basic_control[window]:
+                basic_control[window].unload()
+            del basic_control[window]
+        nonexistent_windows = []
 
         if auto_on and not self.blacklisted(moduleInfo):
             handle  = win32gui.GetForegroundWindow()
             control = basic_control.get(handle, -1)
             if control == -1:
-                # unload controls for/forget about no longer existing windows:
-                nonexistent = []
                 for window in basic_control:
                     if not win32gui.IsWindow(window):
-                        nonexistent += [window]
-                for window in nonexistent:
-                    if basic_control[window]:
-                        basic_control[window].unload()
-                    del basic_control[window]
+                        nonexistent_windows += [window]
 
                 print "auto turning on vortex for new window"
                 if spare_control:
