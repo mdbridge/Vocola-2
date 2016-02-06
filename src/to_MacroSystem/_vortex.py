@@ -22,13 +22,21 @@ import vocola_ext_clipboard
 import vocola_ext_keys
 
 
+#---------------------------------------------------------------------------
+# What windows should not be automatically enabled when vortex on
+# everywhere is in use.
+#
+
 #
 # Don't ever automatically turn vortex on for windows belonging to
 # these executables:
 #
-Blacklist = [
-    # Dragon's own programs have FullTextControl:
-    "natspeak.exe",  # DragonPad, dictation box, Command Browser, vocabulary editor
+Blacklisted_applications = [
+    # Dragon's own programs (except spelling window) have FullTextControl:
+    #   DragonPad, dictation box, Command Browser, vocabulary editor, 
+    #   NatLink messages but not (whitelisted) spelling window
+    "natspeak.exe",
+    
 
     # Dragon provides FullTextControl for most Microsoft office applications:
     "excel.exe",
@@ -45,6 +53,14 @@ Blacklist = [
     # all controls that can be enabled, Dragon gives FullTextControl:
     "explorer.exe"
 ]
+
+def blacklisted(moduleInfo):
+    executable = os.path.basename(moduleInfo[0]).lower()
+
+    if executable=="natspeak.exe" and moduleInfo[1]=="Spelling Window":
+        return False
+
+    return executable in Blacklisted_applications
 
 
 
@@ -448,8 +464,9 @@ class CommandGrammar(GrammarBase):
         self.unload()
 
 
-    def gotBegin(self,moduleInfo):
+    def gotBegin(self, moduleInfo):
         global spare_control, nonexistent_windows
+        handle = moduleInfo[2]
 
         # unload controls for/forget about no longer existing windows:
         for window in nonexistent_windows:
@@ -458,28 +475,30 @@ class CommandGrammar(GrammarBase):
             del basic_control[window]
         nonexistent_windows = []
 
-        if auto_on and not self.blacklisted(moduleInfo):
-            handle  = win32gui.GetForegroundWindow()
-            control = basic_control.get(handle, -1)
-            if control == -1:
-                for window in basic_control:
-                    if not win32gui.IsWindow(window):
-                        nonexistent_windows += [window]
+        control = basic_control.get(handle, -1)
+        if control==-1 and auto_on:
+            for window in basic_control:
+                if not win32gui.IsWindow(window):
+                    nonexistent_windows += [window]
 
-                print "auto turning on vortex for new window"
+            if blacklisted(moduleInfo):
+                print "auto turning OFF vortex for new window '%s'" % (
+                    moduleInfo[1])
+                basic_control[handle] = None
+            else:
+                print "auto turning ON vortex for new window:"
                 if spare_control:
-                    print "  using spare control"
                     basic_control[handle] = spare_control
                     spare_control.attach(handle)
                     spare_control = BasicTextControl()
                 else:
+                    print "  not using spare control"
                     self.vortex_on()
                     spare_control = BasicTextControl()
 
         if moduleInfo[1]=="Spelling Window":
-            handle  = win32gui.GetForegroundWindow()
-            control = basic_control.get(handle, -1)
-            if control != -1:
+            control = basic_control.get(handle, None)
+            if control != None:
                 # DNS reuses spelling windows, so we load each
                 # time a spelling window becomes visible:
                 if not handle in self.visible_spelling_windows:
@@ -491,12 +510,6 @@ class CommandGrammar(GrammarBase):
             self.track_visible_spelling_windows(handle)
         else:
             self.track_visible_spelling_windows()
-
-    def blacklisted(self, moduleInfo):
-        if moduleInfo[1] == "Spelling Window":
-            return False
-        executable = os.path.basename(moduleInfo[0]).lower()
-        return executable in Blacklist
 
     # remove BasicControls for spelling windows as soon as they
     # become non-visible (DNS reuses spelling Windows):
