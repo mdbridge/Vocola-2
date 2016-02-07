@@ -56,8 +56,11 @@ Blacklisted_applications = [
 
 def blacklisted(moduleInfo):
     executable = os.path.basename(moduleInfo[0]).lower()
+    title      = moduleInfo[1]
+    handle     = moduleInfo[2]
+    #class_name = win32gui.GetClassName(handle)
 
-    if executable=="natspeak.exe" and moduleInfo[1]=="Spelling Window":
+    if executable=="natspeak.exe" and title=="Spelling Window":
         return False
 
     return executable in Blacklisted_applications
@@ -405,7 +408,7 @@ class BasicTextControl:
     ## Routines for interacting with Vocola:
     ##
 
-    def vocola_pre_action(self, keys):
+    def vocola_pre_action(self, keys, action):
         if self.my_handle == win32gui.GetForegroundWindow():
             if self.keys != "":
                 print "  sending: " + keys
@@ -595,14 +598,19 @@ class CommandGrammar(GrammarBase):
 ## Starting up and stopping our command grammar:
 ## 
 
-def pre_action(keys):
+def pre_action(keys, action):
     if not basic_control:
         return
-    print "pre-Vocola action: " + repr(keys)
+
+    if keys:
+        print "pre-Vocola keys: " + repr(keys)
+    if action:
+        print "pre-Vocola action: " + repr(action)
+
     for ID in basic_control:
         control = basic_control[ID]
         if control:
-            control.vocola_pre_action(keys)
+            control.vocola_pre_action(keys, action)
 VocolaUtils.callback = pre_action
 
 

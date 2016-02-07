@@ -45,13 +45,13 @@ import natlink
 Language = None
 
 
-def do_nothing(keys):
+def do_nothing(keys, action):
     pass
 
 callback = do_nothing
 
-def do_callback(keys = None):
-    callback(keys)
+def do_callback(keys=None, action=None):
+    callback(keys, action)
 
 
 
@@ -220,7 +220,7 @@ def call_Dragon(function_name, argument_types, arguments):
         elif function_name == "ShiftKey":
             dragon_prefix = script + chr(10)
         else:
-            do_callback()
+            do_callback(None, script)
             natlink.execScript(script)
     except Exception, e:
         m = "when Vocola called Dragon to execute:\n" \
@@ -247,7 +247,7 @@ def call_Unimacro(argumentString):
     if unimacro_available:
         #print '[' + argumentString + ']'
         try:
-            do_callback()
+            do_callback(None, "Unimacro " + argumentString)
             actions.doAction(argumentString)
         except Exception, e:
             m = "when Vocola called Unimacro to execute:\n" \
