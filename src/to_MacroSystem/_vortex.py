@@ -409,12 +409,21 @@ class BasicTextControl:
     ##
 
     def vocola_pre_action(self, keys, action):
-        if self.my_handle == win32gui.GetForegroundWindow():
-            if self.keys != "":
-                print "  sending: " + keys
-                self.play_string(keys)
-                self.keys = ""
-            if keys and  keys.find("{") == -1:
+        if self.my_handle != win32gui.GetForegroundWindow():
+            # we are not the active window
+            if action:
+                if re.search("ButtonClick|DragToPoint|Unimacro", action):
+                    self.set_buffer_unknown()
+            return
+
+        # we are the active window
+        if self.keys != "":
+            print "  sending: " + keys
+            self.play_string(keys)
+            self.keys = ""
+
+        if keys:
+            if keys.find("{") == -1:
                 print "  assuming typed: " + keys
                 self.replace(self.app_start, self.app_end, keys)
                 self.selStart,  self.selEnd  = self.app_start, self.app_end
@@ -422,8 +431,8 @@ class BasicTextControl:
                 self.showState()
             else:
                 self.set_buffer_unknown()
-        else:
-            if not keys:
+        elif action:
+            if re.search("ActiveControlPick|ActiveMenuPick|ButtonClick|ControlPick|DragToPoint|MenuCancel|MenuPick|SendKeys|SendSystemKeys|Unimacro", action):
                 self.set_buffer_unknown()
 
 
