@@ -482,7 +482,7 @@ class CommandGrammar(GrammarBase):
 
         # unload controls for/forget about no longer existing windows:
         for window in nonexistent_windows:
-            if basic_control[window]:
+            if basic_control.get(window):
                 basic_control[window].unload()
             del basic_control[window]
         nonexistent_windows = []
