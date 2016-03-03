@@ -137,7 +137,9 @@ def emit_context_activations(contexts):
     global Module_name
     app = Module_name
     module_is_global = (app.startswith("_"))
-    #emit(2, "self.activateAll()\n") if module_is_global;
+    if module_is_global:
+        emit(2, "for rule in self.ruleSet1:\n")
+        emit(3, "self.activate(rule)\n")
     emit(0, "\n    def gotBegin(self,moduleInfo):\n")
     if module_is_global:
         emit(2, "window = moduleInfo[2]\n")
@@ -156,6 +158,8 @@ def emit_context_activations(contexts):
     emit(2, "# Return if same window and title as before\n")
     emit(2, "if moduleInfo == self.currentModule: return None\n")
     emit(2, "self.currentModule = moduleInfo\n\n")
+    if module_is_global: # <<<>>>
+        return None      # <<<>>>
     emit(2, "self.deactivateAll()\n")
     emit(2, "title = string.lower(moduleInfo[1])\n")
 
