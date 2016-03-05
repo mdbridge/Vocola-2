@@ -83,7 +83,6 @@ def emit_sequence_and_context_code(statements):
             context["RULENAMES"].append(statement["NAME"])
     emit_sequence_rules(contexts)
     emit_file_middle()
-    #emit_context_definitions(contexts)
     emit_context_activations(contexts)
 
 def emit_sequence_rules(contexts):
@@ -119,19 +118,6 @@ def repeated_upto(spec, count):
         result = spec + " [" + result + "]"
         count = count - 1
     return result
-
-def emit_context_definitions(contexts):
-    global OUT
-    # Emit a "rule set" definition containing all command names in this context
-    number = 0
-    for context in contexts:
-        names = context["RULENAMES"]
-        if len(names) == 0: continue
-        number += 1
-        first_name = names[0]
-        emit(2, "self.ruleSet" + str(number) + " = ['" + first_name + "'")
-        for name in names[1:]: print >>OUT, ",'" + name + "'"
-        emit(0, "]\n")
 
 def emit_context_activations(contexts):
     app = Module_name
@@ -696,7 +682,7 @@ def emit_file_middle():
 
 def emit_file_middle2():
     print >>OUT, '''    
-    def activate_rule(self, window, status):
+    def activate_rule(self, rule, window, status):
         current = self.rule_state.get(rule)
         active = (current == window)
         if status == active: return
