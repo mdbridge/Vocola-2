@@ -83,7 +83,7 @@ def emit_sequence_and_context_code(statements):
             context["RULENAMES"].append(statement["NAME"])
     emit_sequence_rules(contexts)
     emit_file_middle()
-    emit_context_definitions(contexts)
+    #emit_context_definitions(contexts)
     emit_context_activations(contexts)
 
 def emit_sequence_rules(contexts):
@@ -134,13 +134,21 @@ def emit_context_definitions(contexts):
         emit(0, "]\n")
 
 def emit_context_activations(contexts):
-    global Module_name
     app = Module_name
     module_is_global = (app.startswith("_"))
+
     if module_is_global:
-        emit(2, "for rule in self.ruleSet1:\n")
-        emit(3, "self.activate(rule)\n")
+        for context in contexts:
+            names = context["RULENAMES"]
+            if len(names) == 0: continue
+            strings = context["STRINGS"]
+            if strings[0] == "":
+                emit(2, "self.activate('" + names[0] + "')\n")
+
+    emit_file_middle2()
+
     emit(0, "\n    def gotBegin(self,moduleInfo):\n")
+    emit(2, "self.firstWord = 0\n")
     if module_is_global:
         emit(2, "window = moduleInfo[2]\n")
     else:
@@ -154,44 +162,28 @@ def emit_context_activations(contexts):
             emit(2, "if not window: window = matchWindow(moduleInfo,'" + \
                     executable + "','')\n")
         emit(2, "if not window: return None\n")
-    emit(2, "self.firstWord = 0\n")
+
     emit(2, "# Return if same window and title as before\n")
     emit(2, "if moduleInfo == self.currentModule: return None\n")
     emit(2, "self.currentModule = moduleInfo\n\n")
-    if module_is_global: # <<<>>>
-        return None      # <<<>>>
-    emit(2, "self.deactivateAll()\n")
-    emit(2, "title = string.lower(moduleInfo[1])\n")
 
-    # Emit code to activate the context's commands if one of the context
+    # Emit code to activate the context's commands iff one of the context
     # strings matches the current window
-    number = 0
+    emit(2, "title = string.lower(moduleInfo[1])\n")
     for context in contexts:
-        if len(context["RULENAMES"]) == 0: continue
-        number += 1
+        names = context["RULENAMES"]
+        if len(names) == 0: continue
         targets = context["STRINGS"]
-        targets = [make_safe_python_string(target) for target in targets]
-        tests = " or ".join(["string.find(title,'" + target + "') >= 0" for target in targets])
-        emit(2, "if " + tests + ":\n")
-        emit(3, "for rule in self.ruleSet" + str(number) + ":\n")
-        if module_is_global: emit(4, "self.activate(rule)\n")
+        if targets[0] == "":
+            if not module_is_global:
+                emit(2, "self.activate_rule('" + names[0] + "', moduleInfo[2], True)\n")
         else:
-            emit(4, "try:\n")
-            emit(5, "self.activate(rule,window)\n")
-            emit(4, "except natlink.BadWindow:\n")
-            emit(5, "pass\n")
+            targets = [make_safe_python_string(target) for target in targets]
+            tests = " or ".join(["string.find(title,'" + target + "') >= 0" for target in targets])
+            emit(2, "status = (" + tests + ")\n")
+            emit(2, "self.activate_rule('" + names[0] + "', moduleInfo[2], status)\n")
     emit(0, "\n")
 
-#        if (not $module_is_global) {
-#            emit(3, "    self.activate(rule,window)\n");
-#        } else {
-#            emit(3, "    if rule not in self.activeRules:\n");
-#            emit(3, "        self.activate(rule,window)\n");
-#            emit(2, "else:\n");
-#            emit(3, "for rule in self.ruleSet$number:\n");
-#            emit(3, "    if rule in self.activeRules:\n");
-#            emit(3, "        self.deactivate(rule,window)\n");
-#        }
 
 def emit_dictation_grammar():
     emit(2, "<dgndictation> imported;\n")
@@ -699,6 +691,24 @@ def emit_file_middle():
     def initialize(self):
         self.load(self.gramSpec)
         self.currentModule = ("","",0)
+        self.rule_state = {}
+''',
+
+def emit_file_middle2():
+    print >>OUT, '''    
+    def activate_rule(self, window, status):
+        current = self.rule_state.get(rule)
+        active = (current == window)
+        if status == active: return
+        if current:
+            self.deactivate(rule)
+            self.rule_state[rule] = None
+        if status:
+            try:
+                self.activate(rule, window)
+                self.rule_state[rule] = window
+            except natlink.BadWindow:
+                pass
 ''',
 
 def emit_file_trailer():
