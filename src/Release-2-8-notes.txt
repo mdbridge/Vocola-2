@@ -1,5 +1,9 @@
 New in 2.8.6:
 
+* Fixed an error where include statements were not interpreted relative
+  to the file containing them.  For example, "include bar/baz.vch" in
+  foo/zeep.vcl now correctly refers to foo/zeep/bar/baz.vch.
+
 * Executables whose names contain underscores are now properly handled.
   For example, a Vocola file named xyz_inc_edit__routines.vcl now
   contains commands that work only with executables named
