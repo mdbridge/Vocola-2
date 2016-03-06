@@ -1,5 +1,5 @@
 ### 
-### Regression tests for Vocola 2.8.5, part III
+### Regression tests for Vocola 2.8.6, part III
 ### 
 
 #
@@ -9,4 +9,4 @@
 # Just check filenames in "(included at...)" lines
 #
 
-include subdirectory/_regression_2_8_5_IV_fail.vch;
+include subdirectory/_regression_2_8_6_IV_fail.vch;
