@@ -1,7 +1,7 @@
 New in 2.8.6:
 
 ! Grammar rules are now [de]activated as infrequently as possible; this
-  improves performance with DNS 13/DPI 14, which takes a long time to
+  improves performance with DNS 13/DPI 14, which take a long time to
   deactivate grammars.
 
 * Fixed an error where include statements were not interpreted relative
