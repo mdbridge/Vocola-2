@@ -1,0 +1,6 @@
+#!/bin/csh -f
+
+rm -rf ~/Tmp/redacted
+mkdir ~/Tmp/redacted
+
+( setenv COMPUTERNAME mdl ; python ~/voice/Vocola_development/Vocola_2/src/exec/vcl2py.py -f -extensions ~/extensions.csv -log_stdout -backend redacted ~/voice/my_commands/to_Vocola ~/Tmp/redacted/ )
