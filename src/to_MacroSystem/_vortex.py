@@ -467,12 +467,18 @@ class CommandGrammar(GrammarBase):
         self.activateAll()
     
     def terminate(self):
-        global spare_control
+        global spare_control, nonexistent_windows
         print "Exit vortex"
         self.vortex_off_everywhere()
         if spare_control:
              spare_control.unload()
              spare_control = None
+        for window in nonexistent_windows:
+            if window >= 0:
+                if basic_control.get(window):
+                    basic_control[window].unload()
+                del basic_control[window]
+        nonexistent_windows = []
         self.unload()
 
 
@@ -481,11 +487,15 @@ class CommandGrammar(GrammarBase):
         handle = moduleInfo[2]
 
         # unload controls for/forget about no longer existing windows:
-        for window in nonexistent_windows:
-            if basic_control.get(window):
-                basic_control[window].unload()
-            del basic_control[window]
-        nonexistent_windows = []
+        # once enough utterances have passed
+        while len(nonexistent_windows) > 100:
+            window = nonexistent_windows[0]
+            nonexistent_windows = nonexistent_windows[1:]
+            if window >= 0:
+                if basic_control.get(window):
+                    basic_control[window].unload()
+                del basic_control[window]
+        nonexistent_windows += [-1]
 
         control = basic_control.get(handle, -1)
         if control==-1 and auto_on:
