@@ -473,11 +473,6 @@ class CommandGrammar(GrammarBase):
         if spare_control:
              spare_control.unload()
              spare_control = None
-        for window in nonexistent_windows:
-            if window >= 0:
-                if basic_control.get(window):
-                    basic_control[window].unload()
-                del basic_control[window]
         nonexistent_windows = []
         self.unload()
 
@@ -489,12 +484,12 @@ class CommandGrammar(GrammarBase):
         # unload controls for/forget about no longer existing windows:
         # once enough utterances have passed
         while len(nonexistent_windows) > 100:
-            window = nonexistent_windows[0]
+            window              = nonexistent_windows[0]
             nonexistent_windows = nonexistent_windows[1:]
             if window >= 0:
-                if basic_control.get(window):
+                if basic_control.get(window) and not win32gui.IsWindow(window):
                     basic_control[window].unload()
-                del basic_control[window]
+                    del basic_control[window]
         nonexistent_windows += [-1]
 
         control = basic_control.get(handle, -1)
