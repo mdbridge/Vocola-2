@@ -161,7 +161,7 @@ class BasicTextControl:
     def name(self):
         result = "BasicTextControl"
         if self.my_handle:
-            result += "@0x%08x [%s]" % (self.my_handle, self.title)
+            result += " @ 0x%08x [%s]" % (self.my_handle, self.title)
         return result
 
 
@@ -417,7 +417,7 @@ class BasicTextControl:
     def vocola_pre_action(self, keys, action):
         if self.my_handle != win32gui.GetForegroundWindow():
             # we are not the active window
-            if action:
+            if action and win32gui.IsWindowVisible(self.my_handle):
                 if re.search("ButtonClick|DragToPoint|Unimacro", action):
                     self.set_buffer_unknown()
             return
