@@ -502,7 +502,8 @@ class CommandGrammar(GrammarBase):
         if control==-1 and auto_on:
             for window in basic_control:
                 if not win32gui.IsWindow(window):
-                    print "no longer visible: " + basic_control[window].name()
+                    if basic_control[window]:
+                        print "no longer visible: " + basic_control[window].name()
                     nonexistent_windows += [window]
 
             if blacklisted(moduleInfo):
