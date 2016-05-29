@@ -129,9 +129,11 @@ class VoiceDictation:
 class BasicTextControl:
     def __init__(self, handle=None):
         self.my_handle = handle
+        self.title     = None
         if handle:
+            self.title = win32gui.GetWindowText(handle)
             print "BasicTextControl attaching to window ID 0x%08x" % (handle)
-            print "  with title '%s'" % (win32gui.GetWindowText(handle))
+            print "  with title '%s'" % (self.title)
 
         self.set_buffer_unknown()
         self.dictObj = VoiceDictation()
@@ -141,22 +143,26 @@ class BasicTextControl:
 
     def attach(self, handle=None):
         if self.my_handle:
-            print "unattaching BasicTextControl attached to window ID 0x%08x" % (self.my_handle)
-        if handle:
-            print "BasicTextControl attaching to window ID 0x%08x" % (handle)
-            print "  with title '%s'" % (win32gui.GetWindowText(handle))
+            print "unattaching " + self.name()
         self.my_handle = handle
+        if handle:
+            self.title = win32gui.GetWindowText(handle)
+            print "reattaching to window ID 0x%08x" % (handle)
+            print "  with title '%s'" % (self.title)
         self.dictObj.activate(handle)
         self.set_buffer_unknown()
         self.updateState()
 
     def unload(self):
-        if self.my_handle:
-            print "unloading BasicTextControl attached to window ID 0x%08x" % (self.my_handle)
-        else:
-            print "unloading BasicTextControl"
+        print "unloading " + self.name()
         self.dictObj.terminate()
         self.dictObj = None
+
+    def name(self):
+        result = "BasicTextControl"
+        if self.my_handle:
+            result += "@0x%08x [%s]" % (self.my_handle, self.title)
+        return result
 
 
     def set_buffer(self, text, unknown_prefix=False, select_all=False):
@@ -496,6 +502,7 @@ class CommandGrammar(GrammarBase):
         if control==-1 and auto_on:
             for window in basic_control:
                 if not win32gui.IsWindow(window):
+                    print "no longer visible: " + basic_control[window].name()
                     nonexistent_windows += [window]
 
             if blacklisted(moduleInfo):
