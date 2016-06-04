@@ -444,17 +444,56 @@ class BasicTextControl:
 
 
 #---------------------------------------------------------------------------
-# Command grammar
+# Catch all grammar for unloading BasicTextControl's
 
 # window ID -> BasicTextControl instance or None
 basic_control    = {}
+
+nonexistent_windows = []
+
+
+class CatchAllGrammar(GrammarBase):
+
+    gramSpec = """
+        <start> exported = {emptyList};
+    """
+
+    def initialize(self):
+        self.load(self.gramSpec,allResults=1)
+        self.activateAll()
+
+    def gotResultsObject(self,recogType,resObj):
+        global nonexistent_windows
+        if recogType == 'reject':
+            return
+        print "utterance"
+        
+        # unload controls for/forget about no longer existing windows:
+        # once enough utterances have passed
+        #while len(nonexistent_windows) > 100:
+        while len(nonexistent_windows) > 10:
+            window              = nonexistent_windows[0]
+            nonexistent_windows = nonexistent_windows[1:]
+            if window >= 0:
+                if basic_control.get(window) and not win32gui.IsWindow(window):
+                    basic_control[window].unload()
+                    del basic_control[window]
+        nonexistent_windows += [-1]
+
+
+catchAllGrammar = CatchAllGrammar()
+catchAllGrammar.initialize()
+
+
+
+
+#---------------------------------------------------------------------------
+# Command grammar
 
 spare_control    = None
 
 # should we try and turn on vortex for each new window?
 auto_on = False
-
-nonexistent_windows = []
 
 
 class CommandGrammar(GrammarBase):
@@ -487,23 +526,12 @@ class CommandGrammar(GrammarBase):
         global spare_control, nonexistent_windows
         handle = moduleInfo[2]
 
-        # unload controls for/forget about no longer existing windows:
-        # once enough utterances have passed
-        while len(nonexistent_windows) > 100:
-            window              = nonexistent_windows[0]
-            nonexistent_windows = nonexistent_windows[1:]
-            if window >= 0:
-                if basic_control.get(window) and not win32gui.IsWindow(window):
-                    basic_control[window].unload()
-                    del basic_control[window]
-        nonexistent_windows += [-1]
-
         control = basic_control.get(handle, -1)
         if control==-1 and auto_on:
             for window in basic_control:
                 if not win32gui.IsWindow(window):
                     if basic_control[window]:
-                        print "no longer visible: " + basic_control[window].name()
+                        print "no longer existing: " + basic_control[window].name()
                     nonexistent_windows += [window]
 
             if blacklisted(moduleInfo):
@@ -645,3 +673,8 @@ def unload():
         command.terminate()
     command = None
     VocolaUtils.callback = VocolaUtils.do_nothing
+    
+    global catchAllGrammar
+    if catchAllGrammar:
+        catchAllGrammar.unload()
+    catchAllGrammar = None
