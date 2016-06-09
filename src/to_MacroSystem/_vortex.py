@@ -525,6 +525,10 @@ class CommandGrammar(GrammarBase):
     def gotBegin(self, moduleInfo):
         global spare_control, nonexistent_windows
         handle = moduleInfo[2]
+        if not handle:
+            print >> sys.stderr, \
+                "***** Dragon passed "+repr(handle)+" as the handle!"
+            return
 
         control = basic_control.get(handle, -1)
         if control==-1 and auto_on:
