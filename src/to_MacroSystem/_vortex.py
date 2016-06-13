@@ -131,7 +131,7 @@ class BasicTextControl:
         self.my_handle = None
         self.title     = None
         self.set_buffer_unknown()
-        self.dictObj = VoiceDictation()
+        self.dictObj = VoiceDictation(self)
 
     # Activate us for window handle (None means deactivate).  If
     # already activated for another window, deactivate first.  May
