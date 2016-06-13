@@ -78,30 +78,29 @@ def blacklisted(moduleInfo):
 
 class VoiceDictation:
 
-    def __init__(self):
-        self.dictObj = None
-
     # Initialization.  Create a DictObj instance associated with the
-    # given dialog box class, dlg.  If handle given, activate the
-    # DictObj instance for window handle.  All callbacks from the
-    # DictObj instance will go directly to the dialog class.
-    def initialize(self, dlg, handle=None):
+    # given dialog box class, dlg.  All callbacks from the DictObj
+    # instance will go directly to the dialog class.
+    # May throw natlink.BadWindow, leaving us unattached.
+    def __init__(self, dlg):
         self.dlg = dlg
+        self.my_handle = None
         self.dictObj = natlink.DictObj()
         self.dictObj.setBeginCallback(dlg.onTextBegin)
         self.dictObj.setChangeCallback(dlg.onTextChange)
-        self.my_handle = None
-        self.activate(handle)
 
     # Activate the Dictobj instance for window handle (None means
     # deactivate).  If already activated for another window,
-    # deactivate first.
+    # deactivate first.  May throw natlink.BadWindow, leaving us
+    # unactivated.
     def activate(self, handle):
         if self.my_handle:
             self.dictObj.deactivate()
-        self.my_handle = handle
+            self.my_handle = None
         if handle:
+            # this can throw natlink.BadWindow:
             self.dictObj.activate(handle)
+            self.my_handle = handle
 
     # Call this function to cleanup.  We have to reset the callback
     # functions or the object will not be freed.
@@ -124,34 +123,40 @@ class VoiceDictation:
         raise AttributeError, attr
 
 
+
 #---------------------------------------------------------------------------
 
 class BasicTextControl:
-    def __init__(self, handle=None):
-        self.my_handle = handle
+    def __init__(self):
+        self.my_handle = None
         self.title     = None
-        if handle:
-            self.title = win32gui.GetWindowText(handle)
-            print "BasicTextControl attaching to window ID 0x%08x" % (handle)
-            print "  with title '%s'" % (self.title)
-
         self.set_buffer_unknown()
         self.dictObj = VoiceDictation()
-        self.dictObj.initialize(self, handle)
-        if handle:
-            self.updateState()
 
-    def attach(self, handle=None):
+    # Activate us for window handle (None means deactivate).  If
+    # already activated for another window, deactivate first.  May
+    # throw natlink.BadWindow, leaving us unactivated.
+    def attach(self, handle):
         if self.my_handle:
             print "unattaching " + self.name()
-        self.my_handle = handle
-        if handle:
-            self.title = win32gui.GetWindowText(handle)
-            print "reattaching to window ID 0x%08x" % (handle)
-            print "  with title '%s'" % (self.title)
-        self.dictObj.activate(handle)
+            self.dictObj.activate(None)
+            self.my_handle = None
+            self.title     = None
         self.set_buffer_unknown()
-        self.updateState()
+        if handle:
+            title = win32gui.GetWindowText(handle)
+            print "BasicTextControl attaching to window ID 0x%08x" % (handle)
+            print "  with title '%s'" % (title)
+            try:
+                self.dictObj.activate(handle)
+                self.my_handle = handle
+                self.title     = title
+            except Exception, e:
+                print >> sys.stderr, \
+                    "  ATTACHMENT FAILED: " + repr(e)
+                raise
+        if self.my_handle:
+            self.updateState()
 
     def unload(self):
         print "unloading " + self.name()
@@ -546,8 +551,11 @@ class CommandGrammar(GrammarBase):
                 print "auto turning ON vortex for new window:"
                 if spare_control:
                     basic_control[handle] = spare_control
-                    spare_control.attach(handle)
-                    spare_control = BasicTextControl()
+                    try:
+                        spare_control.attach(handle)
+                        spare_control = BasicTextControl()
+                    except natlink.BadWindow:
+                        del basic_control[handle]
                 else:
                     print "  not using spare control"
                     self.vortex_on()
@@ -599,9 +607,14 @@ class CommandGrammar(GrammarBase):
     def vortex_on(self):
         self.vortex_off()
         handle  = win32gui.GetForegroundWindow()
-        control = BasicTextControl(handle)
-        basic_control[handle] = control
-        return control
+        control = BasicTextControl()
+        try:
+            control.attach(handle)
+            basic_control[handle] = control
+            return control
+        except natlink.BadWindow:
+            control.unload()
+            return None
 
     def vortex_on_everywhere(self):
         global auto_on, spare_control
@@ -627,6 +640,7 @@ class CommandGrammar(GrammarBase):
 
     def gotResults_load(self,words,fullResults):
         control = self.vortex_on()
+        if not control: return
         option = words[1]
         if option == "load":
             selector = "{ctrl+home}{ctrl+shift+end}"
@@ -642,6 +656,7 @@ class CommandGrammar(GrammarBase):
 
     def gotResults_clip(self,words,fullResults):
         control = self.vortex_on()
+        if not control: return
         text    = vocola_ext_clipboard.clipboard_get()
         print "loaded: "+ repr(text)
         control.set_buffer(text)
