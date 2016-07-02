@@ -1,3 +1,6 @@
+New in 2.8.7:
+
+
 New in 2.8.6:
 
 * As of DNS 13, <_anything> can no longer match nothing.  Accordingly,
