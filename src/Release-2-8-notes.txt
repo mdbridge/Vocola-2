@@ -1,4 +1,12 @@
+New in 2.8.7:
+
+
 New in 2.8.6:
+
+* As of DNS 13, <_anything> can no longer match nothing.  Accordingly,
+  [<_anything>], [[with] <_anything>], and the like are now permitted.
+  These were previously prohibited in an attempt to prohibit optional
+  parts whose contents could be empty.
 
 ! Grammar rules are now [de]activated as infrequently as possible; this
   improves performance with DNS 13/DPI 14, which take a long time to

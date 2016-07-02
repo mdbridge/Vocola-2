@@ -500,14 +500,14 @@ def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
             term = parse_term()
 
         term["OPTIONAL"] = optional
-        if (not optional and term["TYPE"] != "dictation"): seen_non_optional = True
+        if (not optional): seen_non_optional = True
         terms.append(term)
 
         if peek(separators):
             break
 
     if not seen_non_optional:
-        error("At least one term must not be optional or <_anything>",
+        error("At least one term must not be optional",
               starting_position)
     else:
         return combine_terms(terms)
