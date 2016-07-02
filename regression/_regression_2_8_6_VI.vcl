@@ -6,4 +6,7 @@
 ## <_anything> is now allowed in optional parts by itself
 ##
 
-optional dog says [<_anything>] = $1;
+optional dog says [<_anything>] = "barking: $1";
+	 cat says  <_anything>  = "meowing: $1";
+
+optional elephant [[says] <_anything>] = "trumpeting: $1";
