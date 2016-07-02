@@ -508,7 +508,7 @@ def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
             break
 
     if not seen_non_optional:
-        error("At least one term must not be optional or <_anything>",
+        error("At least one term must not be optional",
               starting_position)
     else:
         return combine_terms(terms)
