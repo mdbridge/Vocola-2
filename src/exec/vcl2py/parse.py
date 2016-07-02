@@ -501,7 +501,7 @@ def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
             term = parse_term()
 
         term["OPTIONAL"] = optional
-        if (not optional and term["TYPE"] != "dictation"): seen_non_optional = True
+        if (not optional): seen_non_optional = True
         terms.append(term)
 
         if peek(separators):
