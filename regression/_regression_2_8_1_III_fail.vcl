@@ -55,7 +55,8 @@ empty [] terms = parsing error;
 [0..1] [<list>]         = error;
 [[doubly]]              = error;
 ([all] | there)         = error;
-<foo> := (bar | <_anything> [there] | foo);
+<foo> := (bar | <_anything> [there] | foo);  # error now (2.8.6) due to Alternative cannot contain a variable instead
+done panicking = true;
 nesting [there [error ([<list>])]] = error;
 
 
