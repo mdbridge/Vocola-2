@@ -157,14 +157,28 @@ class ApplicationControl:
     ## Invariant: self.start <= self.end
 
     def __init__(self, handle):
-        self.my_handle = None
+        self.my_handle = handle
         self.set_state("")
 
+    def show_state(self, prefix=""):
+        print "0x%08x: '%s%s<%s>%s'" % (self.my_handle, prefix,
+                                        self.text[:self.start], 
+                                        self.text[self.start:self.end],
+                                        self.text[self.end:])
+        if self.postponed_keys != "":
+            print "  postponed keys: '%s'" % (self.postponed_keys)
 
-    # precondition: application cursor is at the end of new_text
-    def set_state(self, new_text):
+
+    # precondition: application cursor is at the end of new_text and
+    #               selection is either all of new_text (select_all)
+    #               or nothing.
+    def set_state(self, new_text, select_all=False):
         self.text = new_text        
-        self.start, self.end = 0, len(new_text)  # selection
+        self.end  = len(new_text)
+        if select_all:
+            self.start = 0
+        else:
+            self.start = self.end
         self.postponed_keys = ""
 
     # precondition: self.postponed_keys == ""
@@ -257,8 +271,9 @@ class BasicTextControl:
     ##
     
     def __init__(self):
-        self.my_handle        = None
-        self.title            = None
+        self.my_handle           = None
+        self.title               = None
+        self.application_control = None
         # creation of DictationObject below calls
         # dictation_begin_callback so need state set:
         self.set_buffer_unknown()
@@ -277,18 +292,21 @@ class BasicTextControl:
         if self.my_handle:
             print "unattaching " + self.name()
             self.dictation_object.activate(None)
-            self.my_handle = None
+            self.my_handle           = None
+            self.application_control = None
         if handle:
             self.title = win32gui.GetWindowText(handle)
             print "BasicTextControl attaching to window ID 0x%08x" % (handle)
             print "  with title '%s'" % (self.title)
             try:
-                self.my_handle = handle
+                self.my_handle           = handle
+                self.application_control = ApplicationControl(handle)
                 # activate below may call dictation_begin_callback so want state set:
                 self.set_buffer_unknown()
                 self.dictation_object.activate(handle)
             except Exception, e:
-                self.my_handle = None
+                self.my_handle           = None
+                self.application_control = None
                 print >> sys.stderr, \
                     "  ATTACHMENT FAILED: " + repr(e)
                 raise
@@ -336,10 +354,15 @@ class BasicTextControl:
     ##             self.app_start <= self.app_end
 
     def show_state(self):
+        if self.application_control:
+            self.application_control.show_state(self.fake_prefix_text)
+        else:
+            print "<unattached " + self.name() + ">"
+
         text = self.text
         h = self.my_handle
         if not h: h = 0
-        print "0x%08x: '%s<%s>%s'" % (h, text[:self.selection_start], 
+        print "v0x%08x: '%s<%s>%s'" % (h, text[:self.selection_start], 
                                       text[self.selection_start:self.selection_end],
                                       text[self.selection_end:])
         if self.selection_start != self.app_start or self.selection_end != self.app_end:
@@ -351,14 +374,18 @@ class BasicTextControl:
 
     
     def set_buffer(self, text, unknown_prefix=False, select_all=False):
-        buffer_text = ""
+        if self.application_control: # <<<>>>
+            self.application_control.set_state(text, select_all)
+        self.fake_prefix_text = ""
         if unknown_prefix:
             # Effectively set state to no capitalization and no space
             # required before next word, hopefully not affecting
             # language model any:
-            buffer_text = "First, "
+            self.fake_prefix_text = "First, "
+        self.fake_prefix = len(self.fake_prefix_text)
+
+        buffer_text = self.fake_prefix_text
         start = len(buffer_text)
-        self.fake_prefix = start
 
         buffer_text += text
         end = len(buffer_text)
@@ -418,10 +445,6 @@ class BasicTextControl:
         self.app_start = self.app_end = target
 
     def select(self, start, end):
-        # do not allow selecting fake prefix:
-        start = max(self.fake_prefix, start)
-        end   = max(self.fake_prefix, end)
-
         if start != self.app_start or end != self.app_end:
             self.move_to(start)
             size = self.distance(start, end)
@@ -429,39 +452,6 @@ class BasicTextControl:
             self.app_end = end
 
     def replace(self, start, end, new_text):
-        #while start<self.fake_prefix and start<end and len(new_text)>0:
-        #    # attempt to replace a fake prefix character
-        #    old = self.text[start]
-        #    new = new_text[0]
-        #    if old == new:
-        #        print "  nop overwrite of leading fake prefix character ignored"
-        #    elif old.lower() == new.lower():
-        #        print "  case change of leading fake prefix character ignored"
-        #    elif old == " " and new == "-":
-        #        print "  attempt to hyphenate fake prefix ignored"
-        #    else:
-        #        break
-        #    start += 1
-        #    new_text = new_text[1:]
-
-        #if start+1== self.fake_prefix and start<end and self.text[start]==" ":
-        #    # trying to delete trailing space of fake prefix:
-        #    print "  attempt to remove trailing space of fake prefix ignored"
-        #    start += 1
-
-        if start < self.fake_prefix and start != end:
-            print >> sys.stderr
-            print >> sys.stderr, \
-                "***** ATTEMPT TO DELETE (PART OF) FAKE PREFIX DENIED!"
-            print >> sys.stderr
-        if end   < self.fake_prefix and new_text != "":
-            print >> sys.stderr
-            print >> sys.stderr, \
-                "***** ATTEMPT TO INSERT IN FAKE PREFIX DENIED!"
-            print >> sys.stderr
-        start = max(self.fake_prefix, start)
-        end   = max(self.fake_prefix, end)
-
         size = self.distance(start, end)
         if size != 0:
             self.move_to(end)
@@ -494,66 +484,86 @@ class BasicTextControl:
     def update_dictation_object_state(self):
         #print "updating state..."
         self.dictation_object.setLock(1)
+        fake_prefix = len(self.fake_prefix_text)
         self.dictation_object.setText(self.text, 0, 0x7FFFFFFF)
         self.dictation_object.setTextSel(self.selection_start, self.selection_end)
         # assume everything except fake prefix is visible all the time:
-        visible_start, visible_end = self.fake_prefix, len(self.text)
+        visible_start, visible_end = fake_prefix, len(self.text)
         self.dictation_object.setVisibleText(visible_start, visible_end)
         self.dictation_object.setLock(0)
 
 
-    def dictation_change_callback(self, deletion_start, deletion_end, newText, 
+    def dictation_change_callback(self, deletion_start, deletion_end, new_text, 
                                   selection_start, selection_end):
         print "dictation_change_callback %d,%d, %s, %d,%d" % \
-            (deletion_start, deletion_end, repr(newText), selection_start,
+            (deletion_start, deletion_end, repr(new_text), selection_start,
              selection_end)
+
+        fake_prefix = len(self.fake_prefix_text)
 
         # corrections can attempt to remove the last space of the fake
         # prefix (e.g., correct Fred to .c); "select all", "scratch
         # that" also tries to do that.  Corrections can also attempt
         # to replace the prefix's trailing space with another space.
-        if deletion_start+1==self.fake_prefix and deletion_start<deletion_end and \
-           self.text[deletion_start]==" ":
+        if deletion_start+1==fake_prefix and deletion_start<deletion_end and \
+           self.fake_prefix_text[-1]==" ":
             # attempting to delete/replace trailing whitespace in fake prefix
-            if len(newText)>0 and newText[0]==" ":
+            if len(new_text)>0 and new_text[0]==" ":
                 print "  ignoring nop overwrite to trailing space in fake prefix"
                 deletion_start += 1
-                newText = newText[1:]
+                new_text = new_text[1:]
             else:
                 print "  ignoring attempt to remove trailing space in fake prefix"
                 deletion_start  += 1
                 selection_start += 1
                 selection_end   += 1
 
-        if self.fake_prefix>0 and deletion_start<deletion_end and newText!="":
-            if deletion_start==self.fake_prefix and \
-               self.text[deletion_start]==" " and newText[0]!=" ":
+        # SPACE GUARD
+        if fake_prefix>0 and deletion_start<deletion_end and new_text!="":
+            if deletion_start==fake_prefix and \
+               self.text[deletion_start]==" " and new_text[0]!=" ":
                 print >> sys.stderr, \
                     "***** SPACE GUARD preserved leading space"
                 deletion_start  += 1
                 selection_start += 1
                 selection_end   += 1
-            if deletion_end==len(self.text) and self.text[deletion_end-1]==" " and \
-               newText[-1]!=" ":
+            if deletion_end==len(self.text) and deletion_start<deletion_end \
+               and self.text[-1]==" " and new_text[-1]!=" ":
                 print >> sys.stderr, \
                     "***** SPACE GUARD preserved trailing space"
                 deletion_end -= 1
-                if selection_start==deletion_start+len(newText) and selection_start==selection_end:
+                if selection_start==deletion_start+len(new_text) \
+                   and selection_start==selection_end:
                     selection_start += 1
                     selection_end   += 1
                     
 
-        self.replace(deletion_start, deletion_end, newText)
+        if deletion_start < fake_prefix:
+            if deletion_start < deletion_end:
+                print >> sys.stderr
+                print >> sys.stderr, \
+                    "***** ATTEMPT TO DELETE (PART OF) FAKE PREFIX DENIED!"
+                print >> sys.stderr
+            if deletion_end<fake_prefix and new_text != "":
+                print >> sys.stderr
+                print >> sys.stderr, \
+                    "***** ATTEMPT TO INSERT IN FAKE PREFIX DENIED!"
+                print >> sys.stderr
+            deletion_start = max(fake_prefix, deletion_start)
+            deletion_end   = max(fake_prefix, deletion_end)
+            
+        self.replace(deletion_start, deletion_end, new_text)
+
 
         # prevent "select all" from selecting fake prefix:
-        selection_start = max(self.fake_prefix, selection_start)
-        selection_end   = max(self.fake_prefix, selection_end)
+        selection_start = max(fake_prefix, selection_start)
+        selection_end   = max(fake_prefix, selection_end)
 
         self.select(selection_start, selection_end)
         self.selection_start = selection_start
         self.selection_end   = selection_end
 
-        if deletion_start==deletion_end and newText=="":
+        if deletion_start==deletion_end and new_text=="":
             # give spelling window time to pop up if it's going to:
             time.sleep(.1)
 
