@@ -46,37 +46,31 @@ import vocola_ext_keys
 
 ###########################################################################
 #                                                                         #
-# Blacklisting                                                            #
+# Blacklisting application/windows                                        #
 #                                                                         #
 ###########################################################################
 
 #
-# What windows should not be automatically enabled when vortex on
-# everywhere is in use.
-#
-
-#
-# Don't ever automatically turn vortex on for windows belonging to
+# Don't ever automatically turn Vortex on for windows belonging to
 # these executables:
 #
 Blacklisted_applications = [
     # Dragon's own programs (except spelling window) have FullTextControl:
     #   DragonPad, dictation box, Command Browser, vocabulary editor, 
-    #   NatLink messages but not (whitelisted) spelling window
+    #   NatLink messages but not (whitelisted below) spelling window
     "natspeak.exe",
     
-
     # Dragon provides FullTextControl for most Microsoft office applications:
     "excel.exe",
-    "winword.exe",
-    "outlook.exe",
     "lync.exe",
-    # PowerPoint does not have FullTextControl so benefits from vortex on
+    "outlook.exe",
+    "winword.exe",
+    # PowerPoint does not have FullTextControl so benefits from Vortex on
 
     # editors with text controls that Dragon gives FullTextControl for:
     "notepad.exe",
-    "wordpad.exe",
     "win32pad.exe",
+    "wordpad.exe",
 
     # all controls that can be enabled, Dragon gives FullTextControl:
     "explorer.exe"
@@ -518,17 +512,17 @@ catchAllGrammar.initialize()
 
 spare_control    = None
 
-# should we try and turn on vortex for each new window?
+# should we try and turn on Vortex for each new window?
 auto_on = False
 
 
 class VortexGrammar(GrammarBase):
 
     gramSpec = """
-        <start> exported = vortex (on | off);
-        <all>   exported = vortex (on | off) everywhere;
-        <load>  exported = vortex (load | line);
-        <clip>  exported = vortex load clipboard;
+        <start> exported = Vortex (on | off);
+        <all>   exported = Vortex (on | off) everywhere;
+        <load>  exported = Vortex (load | line);
+        <clip>  exported = Vortex load clipboard;
     """
 
     def initialize(self):
@@ -565,11 +559,11 @@ class VortexGrammar(GrammarBase):
                     nonexistent_windows += [window]
 
             if blacklisted(moduleInfo):
-                print "auto turning OFF vortex for new window '%s'" % (
+                print "auto turning OFF Vortex for new window '%s'" % (
                     moduleInfo[1])
                 basic_control[handle] = None
             else:
-                print "auto turning ON vortex for new window:"
+                print "auto turning ON Vortex for new window:"
                 if spare_control:
                     basic_control[handle] = spare_control
                     try:
