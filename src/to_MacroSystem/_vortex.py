@@ -1,10 +1,31 @@
 ###
 ### Vortex: attempt to provide basic text control for nonstandard applications
 ###
-
-#
-# code adapted from windict.py, which is copyright 1999 by Joel Gould
-#
+### Inspired by windict.py, written by Joel Gould.
+###
+###
+### Copyright 2015-2016 by Mark Lillibridge.
+###
+### Permission is hereby granted, free of charge, to any person
+### obtaining a copy of this software and associated documentation files
+### (the "Software"), to deal in the Software without restriction,
+### including without limitation the rights to use, copy, modify, merge,
+### publish, distribute, sublicense, and/or sell copies of the Software,
+### and to permit persons to whom the Software is furnished to do so,
+### subject to the following conditions:
+### 
+### The above copyright notice and this permission notice shall be
+### included in all copies or substantial portions of the Software.
+### 
+### THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+### EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+### MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+### NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+### BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+### ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+### CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+### SOFTWARE.
+###
 
 import os.path
 import re
@@ -22,7 +43,14 @@ import vocola_ext_clipboard
 import vocola_ext_keys
 
 
-#---------------------------------------------------------------------------
+
+###########################################################################
+#                                                                         #
+# Blacklisting                                                            #
+#                                                                         #
+###########################################################################
+
+#
 # What windows should not be automatically enabled when vortex on
 # everywhere is in use.
 #
@@ -67,71 +95,69 @@ def blacklisted(moduleInfo):
 
 
 
-#---------------------------------------------------------------------------
-# VoiceDictation client
-#
-# This class provides a way of encapsulating the voice dictation (DictObj)
-# of NatLink.  We can not derive a class from DictObj because DictObj is an
-# exported C class, not a Python class.  But we can create a class that
-# references a DictObj instance and makes it look like the class was
-# inherited from DictObj.        
+###########################################################################
+#                                                                         #
+# DictationObject: wrapper for NatLink voice dictation object (DictObj)   #
+#                                                                         #
+###########################################################################
 
-class VoiceDictation:
+class DictationObject:
 
-    # Initialization.  Create a DictObj instance associated with the
-    # given dialog box class, dlg.  All callbacks from the DictObj
-    # instance will go directly to the dialog class.
-    # May throw natlink.BadWindow, leaving us unattached.
-    def __init__(self, dlg):
-        self.dlg = dlg
+    # Initially we are not activated for any window.  When we are, the
+    # following methods of handler will be called per the DictObj
+    # documentation:
+    #
+    #    dictation_begin_callback
+    #    dictation_change_callback
+    def __init__(self, handler):
         self.my_handle = None
-        self.dictObj = natlink.DictObj()
-        self.dictObj.setBeginCallback(dlg.onTextBegin)
-        self.dictObj.setChangeCallback(dlg.onTextChange)
+        self.handler   = handler
+        self.underlying_DictObj = natlink.DictObj()
+        self.underlying_DictObj.setBeginCallback (handler.dictation_begin_callback)
+        self.underlying_DictObj.setChangeCallback(handler.dictation_change_callback)
 
-    # Activate the Dictobj instance for window handle (None means
-    # deactivate).  If already activated for another window,
-    # deactivate first.  May throw natlink.BadWindow, leaving us
-    # unactivated.
+    # Activate us for window handle (None means deactivate).  If
+    # already activated for another window, deactivate first.  May
+    # throw natlink.BadWindow, leaving us unactivated.
     def activate(self, handle):
         if self.my_handle:
-            self.dictObj.deactivate()
+            self.underlying_DictObj.deactivate()
             self.my_handle = None
         if handle:
             # this can throw natlink.BadWindow:
-            self.dictObj.activate(handle)
+            self.underlying_DictObj.activate(handle)
             self.my_handle = handle
 
-    # Call this function to cleanup.  We have to reset the callback
-    # functions or the object will not be freed.
+    # This must be called before finishing with us to free underlying
+    # resources.
     def terminate(self):
         self.activate(None)
-        self.dictObj.setBeginCallback(None)
-        self.dictObj.setChangeCallback(None)
-        self.dictObj = None
+        self.underlying_DictObj.setBeginCallback (None)
+        self.underlying_DictObj.setChangeCallback(None)
+        self.underlying_DictObj = None
 
-    # This makes it possible to access the member functions of the DictObj
-    # directly as member functions of this class.
-    def __getattr__(self,attr):
-        try:
-            if attr != '__dict__':
-                dictObj = self.__dict__['dictObj']
-                if dictObj is not None:
-                    return getattr(dictObj,attr)
-        except KeyError:
-            pass
-        raise AttributeError, attr
+    # Forward calls to: 
+    #   setLock, setText, setTextSel, setVisibleText,
+    #   getLength, getText, getTextSel, getVisibleText.
+    def __getattr__(self, attribute):
+        if self.underlying_DictObj:
+            return getattr(self.underlying_DictObj, attribute)
+        raise AttributeError, attribute
 
 
 
-#---------------------------------------------------------------------------
+###########################################################################
+#                                                                         #
+#                                                                         #
+#                                                                         #
+###########################################################################
 
 class BasicTextControl:
     def __init__(self):
         self.my_handle = None
         self.title     = None
         self.set_buffer_unknown()
-        self.dictObj = VoiceDictation(self)
+        self.dictation_object = DictationObject(self)
 
     # Activate us for window handle (None means deactivate).  If
     # already activated for another window, deactivate first.  May
@@ -139,7 +165,7 @@ class BasicTextControl:
     def attach(self, handle):
         if self.my_handle:
             print "unattaching " + self.name()
-            self.dictObj.activate(None)
+            self.dictation_object.activate(None)
             self.my_handle = None
             self.title     = None
         self.set_buffer_unknown()
@@ -148,7 +174,7 @@ class BasicTextControl:
             print "BasicTextControl attaching to window ID 0x%08x" % (handle)
             print "  with title '%s'" % (title)
             try:
-                self.dictObj.activate(handle)
+                self.dictation_object.activate(handle)
                 self.my_handle = handle
                 self.title     = title
             except Exception, e:
@@ -156,12 +182,12 @@ class BasicTextControl:
                     "  ATTACHMENT FAILED: " + repr(e)
                 raise
         if self.my_handle:
-            self.updateState()
+            self.update_dictation_object_state()
 
     def unload(self):
         print "unloading " + self.name()
-        self.dictObj.terminate()
-        self.dictObj = None
+        self.dictation_object.terminate()
+        self.dictation_object = None
 
     def name(self):
         result = "BasicTextControl"
@@ -192,22 +218,22 @@ class BasicTextControl:
         self.app_start, self.app_end = start, end  
         # what we claim is selected to DNS (can differ due to fake
         # prefix):
-        self.selStart,  self.selEnd  = start, end  
+        self.selection_start,  self.selection_end  = start, end  
         self.keys = ""  # any pending keystrokes for application
 
-        self.showState()
+        self.show_state()
 
     def set_buffer_unknown(self):
         self.set_buffer("", True)
 
-    def showState(self):
+    def show_state(self):
         text = self.text
         h = self.my_handle
         if not h: h = 0
-        print "0x%08x: '%s<%s>%s'" % (h, text[:self.selStart], 
-                                      text[self.selStart:self.selEnd],
-                                      text[self.selEnd:])
-        if self.selStart != self.app_start or self.selEnd != self.app_end:
+        print "0x%08x: '%s<%s>%s'" % (h, text[:self.selection_start], 
+                                      text[self.selection_start:self.selection_end],
+                                      text[self.selection_end:])
+        if self.selection_start != self.app_start or self.selection_end != self.app_end:
             print "            '%s[%s]%s'" % (text[:self.app_start], 
                                               text[self.app_start:self.app_end],
                                               text[self.app_end:])
@@ -311,7 +337,7 @@ class BasicTextControl:
     def play_string(self,keys):
         shift = "{" + VocolaUtils.name_for_shift() + "}"
 
-        # the following does not work because it causes onTextChange to be called:
+        # the following does not work because it causes dictation_change_callback to be called:
         #natlink.playString(shift + keys)
 
         keys = keys.replace("\n", "{enter}")
@@ -322,82 +348,72 @@ class BasicTextControl:
     ## Routines for interacting with DNS:
     ##
 
-    # We get this callback just before recognition starts. This is our
-    # chance to update the dictation object just in case we missed a change
-    # made to the edit control.
-    def onTextBegin(self,moduleInfo):
-        self.updateState()
-        pass
+    def dictation_begin_callback(self, module_info):
+        self.update_dictation_object_state()
 
-    # This subroutine transfers the contents and state of the edit control
-    # into the dictation object.  We currently don't bother to indicate
-    # exactly what changed.  The dictation object will compare the text we
-    # write with the contents of its buffer and only make the necessary
-    # changes (as long as only one contigious region has changed).
-    def updateState(self):
+    def update_dictation_object_state(self):
         #print "updating state..."
-        self.dictObj.setLock(1)
-        self.dictObj.setText(self.text, 0, 0x7FFFFFFF)
-        self.dictObj.setTextSel(self.selStart, self.selEnd)
+        self.dictation_object.setLock(1)
+        self.dictation_object.setText(self.text, 0, 0x7FFFFFFF)
+        self.dictation_object.setTextSel(self.selection_start, self.selection_end)
         # assume everything except fake prefix is visible all the time:
-        visStart,visEnd = self.fake_prefix, len(self.text)
-        self.dictObj.setVisibleText(visStart, visEnd)
-        self.dictObj.setLock(0)
+        visible_start, visible_end = self.fake_prefix, len(self.text)
+        self.dictation_object.setVisibleText(visible_start, visible_end)
+        self.dictation_object.setLock(0)
 
 
-    # We get this callback when something in the dictation object changes
-    # like text is added or something is selected by voice.  We then update
-    # the edit control to match the dictation object.
-    def onTextChange(self,delStart,delEnd,newText,selStart,selEnd):
-        print "onTextChange %d,%d, %s, %d,%d" % \
-            (delStart,delEnd,repr(newText),selStart,selEnd)
+    def dictation_change_callback(self, deletion_start, deletion_end, newText, 
+                                  selection_start, selection_end):
+        print "dictation_change_callback %d,%d, %s, %d,%d" % \
+            (deletion_start, deletion_end, repr(newText), selection_start,
+             selection_end)
 
         # corrections can attempt to remove the last space of the fake
         # prefix (e.g., correct Fred to .c); "select all", "scratch
         # that" also tries to do that.  Corrections can also attempt
         # to replace the prefix's trailing space with another space.
-        if delStart+1==self.fake_prefix and delStart<delEnd and \
-           self.text[delStart]==" ":
+        if deletion_start+1==self.fake_prefix and deletion_start<deletion_end and \
+           self.text[deletion_start]==" ":
             # attempting to delete/replace trailing whitespace in fake prefix
             if len(newText)>0 and newText[0]==" ":
                 print "  ignoring nop overwrite to trailing space in fake prefix"
-                delStart += 1
+                deletion_start += 1
                 newText = newText[1:]
             else:
                 print "  ignoring attempt to remove trailing space in fake prefix"
-                delStart += 1
-                selStart += 1
-                selEnd   += 1
+                deletion_start  += 1
+                selection_start += 1
+                selection_end   += 1
 
-        if self.fake_prefix>0 and delStart<delEnd and newText!="":
-            if delStart==self.fake_prefix and \
-               self.text[delStart]==" " and newText[0]!=" ":
+        if self.fake_prefix>0 and deletion_start<deletion_end and newText!="":
+            if deletion_start==self.fake_prefix and \
+               self.text[deletion_start]==" " and newText[0]!=" ":
                 print >> sys.stderr, \
                     "***** SPACE GUARD preserved leading space"
-                delStart += 1
-                selStart += 1
-                selEnd   += 1
-            if delEnd==len(self.text) and self.text[delEnd-1]==" " and \
+                deletion_start  += 1
+                selection_start += 1
+                selection_end   += 1
+            if deletion_end==len(self.text) and self.text[deletion_end-1]==" " and \
                newText[-1]!=" ":
                 print >> sys.stderr, \
                     "***** SPACE GUARD preserved trailing space"
-                delEnd -= 1
-                if selStart==delStart+len(newText) and selStart==selEnd:
-                    selStart += 1
-                    selEnd   += 1
+                deletion_end -= 1
+                if selection_start==deletion_start+len(newText) and selection_start==selection_end:
+                    selection_start += 1
+                    selection_end   += 1
                     
 
-        self.replace(delStart, delEnd, newText)
+        self.replace(deletion_start, deletion_end, newText)
 
         # prevent "select all" from selecting fake prefix:
-        selStart = max(self.fake_prefix, selStart)
-        selEnd   = max(self.fake_prefix, selEnd)
+        selection_start = max(self.fake_prefix, selection_start)
+        selection_end   = max(self.fake_prefix, selection_end)
 
-        self.select(selStart, selEnd)
-        self.selStart = selStart
-        self.selEnd   = selEnd
+        self.select(selection_start, selection_end)
+        self.selection_start = selection_start
+        self.selection_end   = selection_end
 
-        if delStart==delEnd and newText=="":
+        if deletion_start==deletion_end and newText=="":
             # give spelling window time to pop up if it's going to:
             time.sleep(.1)
 
@@ -411,8 +427,8 @@ class BasicTextControl:
             print "  WARNING: delaying keys due to different active window, window ID 0x%08x" % (handle)
 
         self.keys = keys
-        self.showState()
-        print "end onTextChange"
+        self.show_state()
+        print "end dictation_change_callback"
 
 
     ##
@@ -437,9 +453,9 @@ class BasicTextControl:
             if keys.find("{") == -1:
                 print "  assuming typed: " + keys
                 self.replace(self.app_start, self.app_end, keys)
-                self.selStart,  self.selEnd  = self.app_start, self.app_end
+                self.selection_start,  self.selection_end  = self.app_start, self.app_end
                 self.keys = ""
-                self.showState()
+                self.show_state()
             else:
                 self.set_buffer_unknown()
         elif action:
@@ -448,8 +464,11 @@ class BasicTextControl:
 
 
 
-#---------------------------------------------------------------------------
-# Catch all grammar for unloading BasicTextControl's
+###########################################################################
+#                                                                         #
+# Catch all grammar for unloading BasicTextControl's                      #
+#                                                                         #
+###########################################################################
 
 # window ID -> BasicTextControl instance or None
 basic_control    = {}
@@ -464,7 +483,7 @@ class CatchAllGrammar(GrammarBase):
     """
 
     def initialize(self):
-        self.load(self.gramSpec,allResults=1)
+        self.load(self.gramSpec, allResults=1)
         self.activateAll()
 
     def gotResultsObject(self,recogType,resObj):
@@ -491,9 +510,11 @@ catchAllGrammar.initialize()
 
 
 
-
-#---------------------------------------------------------------------------
-# Command grammar
+###########################################################################
+#                                                                         #
+# Vortex command grammar                                                  #
+#                                                                         #
+###########################################################################
 
 spare_control    = None
 
@@ -501,7 +522,7 @@ spare_control    = None
 auto_on = False
 
 
-class CommandGrammar(GrammarBase):
+class VortexGrammar(GrammarBase):
 
     gramSpec = """
         <start> exported = vortex (on | off);
@@ -683,7 +704,7 @@ def pre_action(keys, action):
 VocolaUtils.callback = pre_action
 
 
-command = CommandGrammar()
+command = VortexGrammar()
 command.initialize()
 
 def unload():
