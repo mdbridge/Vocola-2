@@ -168,6 +168,9 @@ class ApplicationControl:
         if self.postponed_keys != "":
             print "  postponed keys: '%s'" % (self.postponed_keys)
 
+    def get_state(self):
+        return (self.text, self.start, self.end)
+    
 
     # precondition: application cursor is at the end of new_text and
     #               selection is either all of new_text (select_all)
@@ -183,7 +186,7 @@ class ApplicationControl:
 
     # precondition: self.postponed_keys == ""
     def assume_selection_replaced(self, new_text):
-        self.text  = self.text[0:start] + new_text + self.text[end:]
+        self.text  = self.text[0:self.start] + new_text + self.text[self.end:]
         self.start = self.end = self.start + len(new_text)
 
 
@@ -225,16 +228,18 @@ class ApplicationControl:
 
 
     def try_flush(self):
-        keys   = self.postponed_keys
+        keys = self.postponed_keys
+        if keys == "":
+            return True
         handle = win32gui.GetForegroundWindow()
         if handle == self.my_handle:
             print "  sending: " + keys
             self.play_string(keys)
-            self.postponed_keys = keys
-            return true
+            self.postponed_keys = ""
+            return True
         print "  WARNING: delaying keys due to different active window, window ID 0x%08x" % (handle)
         self.postponed_keys = keys
-        return false
+        return False
 
 
     # returns end-start except counts each \r\n as 1 character:
@@ -339,38 +344,11 @@ class BasicTextControl:
     #                     any postponed keys have been sent to the application.
 
 
-    #
-    # selection_start,selection_end: The part of text that we told Dragon is 
-    #                                selected.  Can differ from app_*.
-    #
-    # postponed_keys: keys we haven't been able to send the
-    #                 application yet because it is not the active window.
-    #
-    ## Invariant: after sending self.postponed_keys to application, the selection
-    ##            is [self.app_start,self.app_end) with the cursor
-    ##            before self.app_end.
-    ##
-    ## Invariants: self.app_{start,end} >= self.fake_prefix
-    ##             self.app_start <= self.app_end
-
     def show_state(self):
         if self.application_control:
             self.application_control.show_state(self.fake_prefix_text)
         else:
             print "<unattached " + self.name() + ">"
-
-        text = self.text
-        h = self.my_handle
-        if not h: h = 0
-        print "v0x%08x: '%s<%s>%s'" % (h, text[:self.selection_start], 
-                                      text[self.selection_start:self.selection_end],
-                                      text[self.selection_end:])
-        if self.selection_start != self.app_start or self.selection_end != self.app_end:
-            print "            '%s[%s]%s'" % (text[:self.app_start], 
-                                              text[self.app_start:self.app_end],
-                                              text[self.app_end:])
-        if self.postponed_keys != "":
-            print "  postponed keys: '%s'" % (self.postponed_keys)
 
     
     def set_buffer(self, text, unknown_prefix=False, select_all=False):
@@ -384,94 +362,11 @@ class BasicTextControl:
             self.fake_prefix_text = "First, "
         self.fake_prefix = len(self.fake_prefix_text)
 
-        buffer_text = self.fake_prefix_text
-        start = len(buffer_text)
-
-        buffer_text += text
-        end = len(buffer_text)
-        if not select_all:
-            start = end
-
-        # text in application around cursor except for
-        # [0:self.fake_prefix]:
-        self.text = buffer_text
-        # application selection:
-        self.app_start, self.app_end = start, end  
-        # what we claim is selected to DNS (can differ due to fake
-        # prefix):
-        self.selection_start,  self.selection_end  = start, end  
-        self.postponed_keys = ""  # any pending keystrokes for application
-
         self.show_state()
 
     def set_buffer_unknown(self):
         self.set_buffer("", True)
 
-
-
-    ##
-    ## Application control routines
-    ##
-    ## Invariant: after sending self.postponed_keys to application, the selection
-    ##            is [self.app_start,self.app_end) with the cursor
-    ##            before self.app_end.
-    ##
-    ## Invariants: self.app_{start,end} >= self.fake_prefix
-    ##             self.app_start <= self.app_end
-    ##
-
-    # returns end-start except counts each \r\n as 1 character:
-    def distance(self, start, end):
-        sign = 1
-        if end < start:
-            sign = -1
-            start, end = end, start
-        size = len(self.text[start:end].replace("\r", ""))
-        return size * sign
-
-    def unselect(self):
-        size = self.distance(self.app_start, self.app_end) # selection size
-        if size > 0:
-            self.postponed_keys += "{shift+left " + str(size) + "}"
-            self.app_end = self.app_start
-
-    def move_to(self, target):
-        self.unselect()
-        move = self.distance(self.app_end, target)
-        if move > 0:
-            self.postponed_keys += "{right %d}" % (move)
-        elif move < 0:
-            self.postponed_keys += "{left %d}"  % (-move)
-        self.app_start = self.app_end = target
-
-    def select(self, start, end):
-        if start != self.app_start or end != self.app_end:
-            self.move_to(start)
-            size = self.distance(start, end)
-            self.postponed_keys += "{shift+right " + str(size) + "}"
-            self.app_end = end
-
-    def replace(self, start, end, new_text):
-        size = self.distance(start, end)
-        if size != 0:
-            self.move_to(end)
-            self.postponed_keys += "{backspace " + str(size) + "}"
-            self.text = self.text[0:start] + self.text[end:]
-            self.app_start = self.app_end = start
-        if new_text != "":
-            self.move_to(start)
-            self.postponed_keys += new_text.replace("\r", "").replace("{", "{{}")
-            self.text = self.text[0:start] + new_text + self.text[start:]
-            self.app_start = self.app_end = start + len(new_text)
-
-    def play_string(self,keys):
-        shift = "{" + VocolaUtils.name_for_shift() + "}"
-
-        # the following does not work because it causes dictation_change_callback to be called:
-        #natlink.playString(shift + keys)
-
-        keys = keys.replace("\n", "{enter}")
-        vocola_ext_keys.send_input(shift + keys)
 
 
     ##
@@ -484,11 +379,23 @@ class BasicTextControl:
     def update_dictation_object_state(self):
         #print "updating state..."
         self.dictation_object.setLock(1)
+        if not self.application_control:
+            print ">>>>NO APP CONTROL"
+            self.dictation_object.setText("", 0, 0x7FFFFFFF)
+            self.dictation_object.setTextSel(0, 0)
+            self.dictation_object.setVisibleText(0, 0)
+            self.dictation_object.setLock(0)
+            return
+
+        text, start, end = self.application_control.get_state()
+        text = self.fake_prefix_text + text
         fake_prefix = len(self.fake_prefix_text)
-        self.dictation_object.setText(self.text, 0, 0x7FFFFFFF)
-        self.dictation_object.setTextSel(self.selection_start, self.selection_end)
+        start += fake_prefix
+        end   += fake_prefix
+        self.dictation_object.setText(text, 0, 0x7FFFFFFF)
+        self.dictation_object.setTextSel(start, end)
         # assume everything except fake prefix is visible all the time:
-        visible_start, visible_end = fake_prefix, len(self.text)
+        visible_start, visible_end = fake_prefix, len(text)
         self.dictation_object.setVisibleText(visible_start, visible_end)
         self.dictation_object.setLock(0)
 
@@ -500,6 +407,8 @@ class BasicTextControl:
              selection_end)
 
         fake_prefix = len(self.fake_prefix_text)
+        text, start, end = self.application_control.get_state()
+        text = self.fake_prefix_text + text
 
         # corrections can attempt to remove the last space of the fake
         # prefix (e.g., correct Fred to .c); "select all", "scratch
@@ -521,14 +430,14 @@ class BasicTextControl:
         # SPACE GUARD
         if fake_prefix>0 and deletion_start<deletion_end and new_text!="":
             if deletion_start==fake_prefix and \
-               self.text[deletion_start]==" " and new_text[0]!=" ":
+               text[deletion_start]==" " and new_text[0]!=" ":
                 print >> sys.stderr, \
                     "***** SPACE GUARD preserved leading space"
                 deletion_start  += 1
                 selection_start += 1
                 selection_end   += 1
-            if deletion_end==len(self.text) and deletion_start<deletion_end \
-               and self.text[-1]==" " and new_text[-1]!=" ":
+            if deletion_end==len(text) and deletion_start<deletion_end \
+               and text[-1]==" " and new_text[-1]!=" ":
                 print >> sys.stderr, \
                     "***** SPACE GUARD preserved trailing space"
                 deletion_end -= 1
@@ -552,31 +461,23 @@ class BasicTextControl:
             deletion_start = max(fake_prefix, deletion_start)
             deletion_end   = max(fake_prefix, deletion_end)
             
-        self.replace(deletion_start, deletion_end, new_text)
+        self.application_control.replace(deletion_start-fake_prefix, 
+                                         deletion_end-fake_prefix, new_text)
+
 
 
         # prevent "select all" from selecting fake prefix:
         selection_start = max(fake_prefix, selection_start)
         selection_end   = max(fake_prefix, selection_end)
 
-        self.select(selection_start, selection_end)
-        self.selection_start = selection_start
-        self.selection_end   = selection_end
+        self.application_control.select(selection_start-fake_prefix, 
+                                        selection_end-fake_prefix)
 
         if deletion_start==deletion_end and new_text=="":
             # give spelling window time to pop up if it's going to:
             time.sleep(.1)
 
-        keys = self.postponed_keys
-        handle = win32gui.GetForegroundWindow()
-        if handle == self.my_handle:
-            print "  sending: " + keys
-            self.play_string(keys)
-            keys = ""
-        else:
-            print "  WARNING: delaying keys due to different active window, window ID 0x%08x" % (handle)
-
-        self.postponed_keys = keys
+        self.application_control.try_flush()
         self.show_state()
         print "end dictation_change_callback"
 
@@ -594,17 +495,12 @@ class BasicTextControl:
             return
 
         # we are the active window
-        if self.postponed_keys != "":
-            print "  sending: " + keys
-            self.play_string(keys)
-            self.postponed_keys = ""
+        self.application_control.try_flush()
 
         if keys:
             if keys.find("{") == -1:
                 print "  assuming typed: " + keys
-                self.replace(self.app_start, self.app_end, keys)
-                self.selection_start,  self.selection_end  = self.app_start, self.app_end
-                self.postponed_keys = ""
+                self.application_control.assume_selection_replaced(keys)
                 self.show_state()
             else:
                 self.set_buffer_unknown()
