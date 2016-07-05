@@ -155,6 +155,9 @@ class BasicTextControl:
     def __init__(self):
         self.my_handle        = None
         self.title            = None
+        # creation of DictationObject below calls
+        # dictation_begin_callback so need state set:
+        self.set_buffer_unknown()
         self.dictation_object = DictationObject(self)
 
     def name(self):
@@ -171,21 +174,21 @@ class BasicTextControl:
             print "unattaching " + self.name()
             self.dictation_object.activate(None)
             self.my_handle = None
-            self.title     = None
         if handle:
-            title = win32gui.GetWindowText(handle)
+            self.title = win32gui.GetWindowText(handle)
             print "BasicTextControl attaching to window ID 0x%08x" % (handle)
-            print "  with title '%s'" % (title)
+            print "  with title '%s'" % (self.title)
             try:
-                self.dictation_object.activate(handle)
                 self.my_handle = handle
-                self.title     = title
+                # activate below may call dictation_begin_callback so want state set:
+                self.set_buffer_unknown()
+                self.dictation_object.activate(handle)
             except Exception, e:
+                self.my_handle = None
                 print >> sys.stderr, \
                     "  ATTACHMENT FAILED: " + repr(e)
                 raise
         if self.my_handle:
-            self.set_buffer_unknown()
             self.update_dictation_object_state()
 
     def unload(self):
@@ -541,7 +544,7 @@ class VortexGrammar(GrammarBase):
     
     def terminate(self):
         global spare_control, nonexistent_windows
-        print "Exit vortex"
+        print "Exit Vortex"
         self.vortex_off_everywhere()
         if spare_control:
              spare_control.unload()
