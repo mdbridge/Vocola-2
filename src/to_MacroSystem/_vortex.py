@@ -142,16 +142,26 @@ class DictationObject:
 
 ###########################################################################
 #                                                                         #
-#                                                                         #
+# BasicTextControl: provide basic text control for a window               #
 #                                                                         #
 ###########################################################################
 
 class BasicTextControl:
+
+    ##
+    ## Setup and termination
+    ##
+    
     def __init__(self):
-        self.my_handle = None
-        self.title     = None
-        self.set_buffer_unknown()
+        self.my_handle        = None
+        self.title            = None
         self.dictation_object = DictationObject(self)
+
+    def name(self):
+        result = "BasicTextControl"
+        if self.my_handle:
+            result += " @ 0x%08x [%s]" % (self.my_handle, self.title)
+        return result
 
     # Activate us for window handle (None means deactivate).  If
     # already activated for another window, deactivate first.  May
@@ -162,7 +172,6 @@ class BasicTextControl:
             self.dictation_object.activate(None)
             self.my_handle = None
             self.title     = None
-        self.set_buffer_unknown()
         if handle:
             title = win32gui.GetWindowText(handle)
             print "BasicTextControl attaching to window ID 0x%08x" % (handle)
@@ -176,6 +185,7 @@ class BasicTextControl:
                     "  ATTACHMENT FAILED: " + repr(e)
                 raise
         if self.my_handle:
+            self.set_buffer_unknown()
             self.update_dictation_object_state()
 
     def unload(self):
@@ -183,13 +193,11 @@ class BasicTextControl:
         self.dictation_object.terminate()
         self.dictation_object = None
 
-    def name(self):
-        result = "BasicTextControl"
-        if self.my_handle:
-            result += " @ 0x%08x [%s]" % (self.my_handle, self.title)
-        return result
 
-
+    ##
+    ##  
+    ##
+    
     def set_buffer(self, text, unknown_prefix=False, select_all=False):
         buffer_text = ""
         if unknown_prefix:
