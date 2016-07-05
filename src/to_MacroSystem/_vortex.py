@@ -142,6 +142,110 @@ class DictationObject:
 
 ###########################################################################
 #                                                                         #
+# ApplicationControl: control an application (e.g., selection)            #
+#                                                                         #
+###########################################################################
+
+class ApplicationControl:
+
+    ## Invariant: after sending self.postponed_keys to the application
+    ##            window my_handle, the selection is
+    ##
+    ##              self.text[self.start,self.end) with the cursor 
+    ##              before self.end.
+    ##
+    ## Invariant: self.start <= self.end
+
+    def __init__(self, handle):
+        self.my_handle = None
+        self.set_state("")
+
+
+    # precondition: application cursor is at the end of new_text
+    def set_state(self, new_text):
+        self.text = new_text        
+        self.start, self.end = 0, len(new_text)  # selection
+        self.postponed_keys = ""
+
+    # precondition: self.postponed_keys == ""
+    def assume_selection_replaced(self, new_text):
+        self.text  = self.text[0:start] + new_text + self.text[end:]
+        self.start = self.end = self.start + len(new_text)
+
+
+    def unselect(self):
+        size = self.distance(self.start, self.end) # selection size
+        if size > 0:
+            self.postponed_keys += "{shift+left " + str(size) + "}"
+            self.end = self.start
+
+    def move_to(self, target):
+        self.unselect()
+        move = self.distance(self.end, target)
+        if move > 0:
+            self.postponed_keys += "{right %d}" % (move)
+        elif move < 0:
+            self.postponed_keys += "{left %d}"  % (-move)
+        self.start = self.end = target
+
+    def select(self, start, end):
+        if start != self.start or end != self.end:
+            self.move_to(start)
+            size = self.distance(start, end)
+            if size > 0:
+                self.postponed_keys += "{shift+right " + str(size) + "}"
+                self.end = end
+
+    def replace(self, start, end, new_text):
+        size = self.distance(start, end)
+        if size != 0:
+            self.move_to(end)
+            self.postponed_keys += "{backspace " + str(size) + "}"
+            self.text  = self.text[0:start] + self.text[end:]
+            self.start = self.end = start
+        if new_text != "":
+            self.move_to(start)
+            self.postponed_keys += new_text.replace("\r", "").replace("{", "{{}")
+            self.text  = self.text[0:start] + new_text + self.text[start:]
+            self.start = self.end = start + len(new_text)
+
+
+    def try_flush(self):
+        keys   = self.postponed_keys
+        handle = win32gui.GetForegroundWindow()
+        if handle == self.my_handle:
+            print "  sending: " + keys
+            self.play_string(keys)
+            self.postponed_keys = keys
+            return true
+        print "  WARNING: delaying keys due to different active window, window ID 0x%08x" % (handle)
+        self.postponed_keys = keys
+        return false
+
+
+    # returns end-start except counts each \r\n as 1 character:
+    def distance(self, start, end):
+        sign = 1
+        if end < start:
+            sign = -1
+            start, end = end, start
+        size = len(self.text[start:end].replace("\r", ""))
+        return size * sign
+
+    def play_string(self, keys):
+        keys  = keys.replace("\n", "{enter}")
+        shift = "{" + VocolaUtils.name_for_shift() + "}"
+
+        # the following does not work because it causes
+        # dictation_change_callback to be called:
+        #natlink.playString(shift + keys)
+
+        vocola_ext_keys.send_input(shift + keys)
+
+
+
+###########################################################################
+#                                                                         #
 # BasicTextControl: provide basic text control for a window               #
 #                                                                         #
 ###########################################################################
@@ -198,8 +302,53 @@ class BasicTextControl:
 
 
     ##
-    ##  
+    ## Initializing, displaying our state
     ##
+
+    #
+    # my_handle: the handle of the window we are providing basic text
+    #            control for or None if we are not attached
+    # title:     the title the window we are attached to had when we
+    #            attached to it (defined only if we are attached)
+    #
+    # text:      The application text we know of preceded by any fake 
+    #            prefix we are using.  A fake prefix is used to control
+    #            Dragon's assumptions about spacing and capitalization.
+    #
+    # fake_prefix: the fake prefix occupies [0..fake_prefix) of text
+    #
+    # app_start,app_end: The part of text that is actually selected once 
+    #                     any postponed keys have been sent to the application.
+
+
+    #
+    # selection_start,selection_end: The part of text that we told Dragon is 
+    #                                selected.  Can differ from app_*.
+    #
+    # postponed_keys: keys we haven't been able to send the
+    #                 application yet because it is not the active window.
+    #
+    ## Invariant: after sending self.postponed_keys to application, the selection
+    ##            is [self.app_start,self.app_end) with the cursor
+    ##            before self.app_end.
+    ##
+    ## Invariants: self.app_{start,end} >= self.fake_prefix
+    ##             self.app_start <= self.app_end
+
+    def show_state(self):
+        text = self.text
+        h = self.my_handle
+        if not h: h = 0
+        print "0x%08x: '%s<%s>%s'" % (h, text[:self.selection_start], 
+                                      text[self.selection_start:self.selection_end],
+                                      text[self.selection_end:])
+        if self.selection_start != self.app_start or self.selection_end != self.app_end:
+            print "            '%s[%s]%s'" % (text[:self.app_start], 
+                                              text[self.app_start:self.app_end],
+                                              text[self.app_end:])
+        if self.postponed_keys != "":
+            print "  postponed keys: '%s'" % (self.postponed_keys)
+
     
     def set_buffer(self, text, unknown_prefix=False, select_all=False):
         buffer_text = ""
@@ -224,33 +373,19 @@ class BasicTextControl:
         # what we claim is selected to DNS (can differ due to fake
         # prefix):
         self.selection_start,  self.selection_end  = start, end  
-        self.keys = ""  # any pending keystrokes for application
+        self.postponed_keys = ""  # any pending keystrokes for application
 
         self.show_state()
 
     def set_buffer_unknown(self):
         self.set_buffer("", True)
 
-    def show_state(self):
-        text = self.text
-        h = self.my_handle
-        if not h: h = 0
-        print "0x%08x: '%s<%s>%s'" % (h, text[:self.selection_start], 
-                                      text[self.selection_start:self.selection_end],
-                                      text[self.selection_end:])
-        if self.selection_start != self.app_start or self.selection_end != self.app_end:
-            print "            '%s[%s]%s'" % (text[:self.app_start], 
-                                              text[self.app_start:self.app_end],
-                                              text[self.app_end:])
-        if self.keys != "":
-            print "  postponed keys: '%s'" % (self.keys)
-
 
 
     ##
     ## Application control routines
     ##
-    ## Invariant: after sending self.keys to application, the selection
+    ## Invariant: after sending self.postponed_keys to application, the selection
     ##            is [self.app_start,self.app_end) with the cursor
     ##            before self.app_end.
     ##
@@ -270,16 +405,16 @@ class BasicTextControl:
     def unselect(self):
         size = self.distance(self.app_start, self.app_end) # selection size
         if size > 0:
-            self.keys += "{shift+left " + str(size) + "}"
+            self.postponed_keys += "{shift+left " + str(size) + "}"
             self.app_end = self.app_start
 
     def move_to(self, target):
         self.unselect()
         move = self.distance(self.app_end, target)
         if move > 0:
-            self.keys += "{right %d}" % (move)
+            self.postponed_keys += "{right %d}" % (move)
         elif move < 0:
-            self.keys += "{left %d}"  % (-move)
+            self.postponed_keys += "{left %d}"  % (-move)
         self.app_start = self.app_end = target
 
     def select(self, start, end):
@@ -290,7 +425,7 @@ class BasicTextControl:
         if start != self.app_start or end != self.app_end:
             self.move_to(start)
             size = self.distance(start, end)
-            self.keys += "{shift+right " + str(size) + "}"
+            self.postponed_keys += "{shift+right " + str(size) + "}"
             self.app_end = end
 
     def replace(self, start, end, new_text):
@@ -330,12 +465,12 @@ class BasicTextControl:
         size = self.distance(start, end)
         if size != 0:
             self.move_to(end)
-            self.keys += "{backspace " + str(size) + "}"
+            self.postponed_keys += "{backspace " + str(size) + "}"
             self.text = self.text[0:start] + self.text[end:]
             self.app_start = self.app_end = start
         if new_text != "":
             self.move_to(start)
-            self.keys += new_text.replace("\r", "").replace("{", "{{}")
+            self.postponed_keys += new_text.replace("\r", "").replace("{", "{{}")
             self.text = self.text[0:start] + new_text + self.text[start:]
             self.app_start = self.app_end = start + len(new_text)
 
@@ -422,7 +557,7 @@ class BasicTextControl:
             # give spelling window time to pop up if it's going to:
             time.sleep(.1)
 
-        keys = self.keys
+        keys = self.postponed_keys
         handle = win32gui.GetForegroundWindow()
         if handle == self.my_handle:
             print "  sending: " + keys
@@ -431,7 +566,7 @@ class BasicTextControl:
         else:
             print "  WARNING: delaying keys due to different active window, window ID 0x%08x" % (handle)
 
-        self.keys = keys
+        self.postponed_keys = keys
         self.show_state()
         print "end dictation_change_callback"
 
@@ -449,17 +584,17 @@ class BasicTextControl:
             return
 
         # we are the active window
-        if self.keys != "":
+        if self.postponed_keys != "":
             print "  sending: " + keys
             self.play_string(keys)
-            self.keys = ""
+            self.postponed_keys = ""
 
         if keys:
             if keys.find("{") == -1:
                 print "  assuming typed: " + keys
                 self.replace(self.app_start, self.app_end, keys)
                 self.selection_start,  self.selection_end  = self.app_start, self.app_end
-                self.keys = ""
+                self.postponed_keys = ""
                 self.show_state()
             else:
                 self.set_buffer_unknown()
