@@ -163,12 +163,12 @@ class ApplicationControl:
         self.set_state("")
 
     def show_state(self, prefix=""):
-        print "0x%08x: '%s%s<%s>%s'" % (self.my_handle, prefix,
+        print "  0x%08x: '%s%s<%s>%s'" % (self.my_handle, prefix,
                                         self.text[:self.start], 
                                         self.text[self.start:self.end],
                                         self.text[self.end:])
         if self.postponed_keys != "":
-            print "  postponed keys: '%s'" % (self.postponed_keys)
+            print "    postponed keys: '%s'" % (self.postponed_keys)
 
     def get_state(self):
         return (self.text, self.start, self.end)
@@ -235,7 +235,7 @@ class ApplicationControl:
             return True
         handle = win32gui.GetForegroundWindow()
         if handle == self.my_handle:
-            print "  sending: " + keys
+            print "  sending: '" + keys + "'"
             self.play_string(keys)
             self.postponed_keys = ""
             return True
@@ -386,9 +386,9 @@ class BasicTextControl:
             (deletion_start, deletion_end, repr(new_text), selection_start,
              selection_end)
 
-        fake_prefix = len(self.fake_prefix_text)
-        text, start, end = self.application_control.get_state()
-        text = self.fake_prefix_text + text
+        fake_prefix        = len(self.fake_prefix_text)
+        text, _start, _end = self.application_control.get_state()
+        text               = self.fake_prefix_text + text
 
         # corrections can attempt to remove the last space of the fake
         # prefix (e.g., correct Fred to .c); "select all", "scratch
@@ -412,52 +412,52 @@ class BasicTextControl:
             if deletion_start==fake_prefix and \
                text[deletion_start]==" " and new_text[0]!=" ":
                 print >> sys.stderr, \
-                    "***** SPACE GUARD preserved leading space"
+                    "  ***** SPACE GUARD preserved leading space"
                 deletion_start  += 1
                 selection_start += 1
                 selection_end   += 1
             if deletion_end==len(text) and deletion_start<deletion_end \
                and text[-1]==" " and new_text[-1]!=" ":
                 print >> sys.stderr, \
-                    "***** SPACE GUARD preserved trailing space"
+                    "  ***** SPACE GUARD preserved trailing space"
                 deletion_end -= 1
                 if selection_start==deletion_start+len(new_text) \
                    and selection_start==selection_end:
                     selection_start += 1
                     selection_end   += 1
-                    
 
+        # Block other attempts to alter fake prefix:
+        #   (I haven't seen Dragon try any of these yet.)
         if deletion_start < fake_prefix:
             if deletion_start < deletion_end:
                 print >> sys.stderr
                 print >> sys.stderr, \
-                    "***** ATTEMPT TO DELETE (PART OF) FAKE PREFIX DENIED!"
+                    "  ***** ATTEMPT TO DELETE (PART OF) FAKE PREFIX DENIED!"
                 print >> sys.stderr
             if deletion_end<fake_prefix and new_text != "":
                 print >> sys.stderr
                 print >> sys.stderr, \
-                    "***** ATTEMPT TO INSERT IN FAKE PREFIX DENIED!"
+                    "  ***** ATTEMPT TO INSERT IN FAKE PREFIX DENIED!"
                 print >> sys.stderr
             deletion_start = max(fake_prefix, deletion_start)
             deletion_end   = max(fake_prefix, deletion_end)
             
-        self.application_control.replace(deletion_start-fake_prefix, 
-                                         deletion_end-fake_prefix, new_text)
-
-
+        self.application_control.replace(deletion_start - fake_prefix, 
+                                         deletion_end   - fake_prefix, new_text)
 
         # prevent "select all" from selecting fake prefix:
         selection_start = max(fake_prefix, selection_start)
         selection_end   = max(fake_prefix, selection_end)
 
-        self.application_control.select(selection_start-fake_prefix, 
-                                        selection_end-fake_prefix)
+        self.application_control.select(selection_start - fake_prefix, 
+                                        selection_end   - fake_prefix)
 
         if deletion_start==deletion_end and new_text=="":
             # give spelling window time to pop up if it's going to:
             time.sleep(.1)
 
         self.application_control.try_flush()
+        print " ",
         self.show_state()
         print "end dictation_change_callback"
 
@@ -467,10 +467,14 @@ class BasicTextControl:
     ##
 
     def vocola_pre_action(self, keys, action):
+        if not self.application_control:
+            return
+
         if self.my_handle != win32gui.GetForegroundWindow():
             # we are not the active window
             if action and win32gui.IsWindowVisible(self.my_handle):
                 if re.search("ButtonClick|DragToPoint|Unimacro", action):
+                    print " ",
                     self.set_buffer_unknown()
             return
 
