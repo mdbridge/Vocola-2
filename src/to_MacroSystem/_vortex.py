@@ -72,7 +72,9 @@ Blacklisted_applications = [
     "win32pad.exe",
     "wordpad.exe",
 
-    # all controls that can be enabled, Dragon gives FullTextControl:
+    # all controls of normal File Explorer windows that can be
+    # enabled, Dragon gives FullTextControl
+    #   (also includes control panel, settings dialog boxes)
     "explorer.exe"
 ]
 
@@ -456,7 +458,7 @@ class BasicTextControl:
 
         self.application_control.try_flush()
         self.show_state()
-        print "end dictation_change_callback"
+        #print "end dictation_change_callback"
 
 
     ##
@@ -497,7 +499,7 @@ class BasicTextControl:
 ###########################################################################
 
 # window ID -> BasicTextControl instance or None
-basic_control    = {}
+basic_control       = {}
 
 nonexistent_windows = []
 
