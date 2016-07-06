@@ -97,12 +97,14 @@ def blacklisted(moduleInfo):
 
 class DictationObject:
 
-    # Initially we are not activated for any window.  When we are, the
-    # following methods of handler will be called per the DictObj
-    # documentation:
+    # Initially we are not activated for any window.  The following
+    # methods of handler will be called per the DictObj documentation:
     #
     #    dictation_begin_callback
     #    dictation_change_callback
+    #
+    # Note that dictation_begin_callback is called even for
+    # unactivated DictObj's.
     def __init__(self, handler):
         self.my_handle = None
         self.handler   = handler
@@ -277,12 +279,11 @@ class BasicTextControl:
     
     def __init__(self):
         self.my_handle           = None
-        self.title               = None
-        self.application_control = None
+        self.title               = None   # non-None if  self.my_handle
+        self.application_control = None   # non-None iff self.my_handle
         # creation of DictationObject below calls
-        # dictation_begin_callback so need state set:
-        self.set_buffer_unknown()
-        self.dictation_object = DictationObject(self)
+        # dictation_begin_callback so must follow above assignments:
+        self.dictation_object    = DictationObject(self)
 
     def name(self):
         result = "BasicTextControl"
@@ -318,6 +319,10 @@ class BasicTextControl:
         if self.my_handle:
             self.update_dictation_object_state()
 
+    # WARNING: calling this from a gotBegin callback causes Dragon to
+    # hang once in a while.  I could not narrow down what causes this
+    # but even delaying tens of utterances after the window in
+    # question no longer exists does not avoid the hang problem.
     def unload(self):
         print "unloading " + self.name()
         self.dictation_object.terminate()
@@ -328,43 +333,25 @@ class BasicTextControl:
     ## Initializing, displaying our state
     ##
 
-    #
-    # my_handle: the handle of the window we are providing basic text
-    #            control for or None if we are not attached
-    # title:     the title the window we are attached to had when we
-    #            attached to it (defined only if we are attached)
-    #
-    # text:      The application text we know of preceded by any fake 
-    #            prefix we are using.  A fake prefix is used to control
-    #            Dragon's assumptions about spacing and capitalization.
-    #
-    # fake_prefix: the fake prefix occupies [0..fake_prefix) of text
-    #
-    # app_start,app_end: The part of text that is actually selected once 
-    #                     any postponed keys have been sent to the application.
-
-
     def show_state(self):
         if self.application_control:
             self.application_control.show_state(self.fake_prefix_text)
         else:
             print "<unattached " + self.name() + ">"
 
-    
     def set_buffer(self, text, unknown_prefix=False, select_all=False):
-        if self.application_control: # <<<>>>
-            self.application_control.set_state(text, select_all)
+        self.application_control.set_state(text, select_all)
         self.fake_prefix_text = ""
         if unknown_prefix:
             # Effectively set state to no capitalization and no space
             # required before next word, hopefully not affecting
             # language model any:
             self.fake_prefix_text = "First, "
-        self.fake_prefix = len(self.fake_prefix_text)
-
         self.show_state()
 
     def set_buffer_unknown(self):
+        if not self.application_control: 
+            return
         self.set_buffer("", True)
 
 
@@ -374,28 +361,21 @@ class BasicTextControl:
     ##
 
     def dictation_begin_callback(self, module_info):
-        self.update_dictation_object_state()
+        if self.application_control:
+            self.update_dictation_object_state()
 
     def update_dictation_object_state(self):
         #print "updating state..."
         self.dictation_object.setLock(1)
-        if not self.application_control:
-            print ">>>>NO APP CONTROL"
-            self.dictation_object.setText("", 0, 0x7FFFFFFF)
-            self.dictation_object.setTextSel(0, 0)
-            self.dictation_object.setVisibleText(0, 0)
-            self.dictation_object.setLock(0)
-            return
-
         text, start, end = self.application_control.get_state()
-        text = self.fake_prefix_text + text
-        fake_prefix = len(self.fake_prefix_text)
-        start += fake_prefix
-        end   += fake_prefix
-        self.dictation_object.setText(text, 0, 0x7FFFFFFF)
-        self.dictation_object.setTextSel(start, end)
+        fake_prefix      = len(self.fake_prefix_text)
+        shown_text       = self.fake_prefix_text + text
+        start           += fake_prefix
+        end             += fake_prefix
         # assume everything except fake prefix is visible all the time:
-        visible_start, visible_end = fake_prefix, len(text)
+        visible_start, visible_end = fake_prefix, len(shown_text)
+        self.dictation_object.setText(shown_text, 0, 0x7FFFFFFF)
+        self.dictation_object.setTextSel(start, end)
         self.dictation_object.setVisibleText(visible_start, visible_end)
         self.dictation_object.setLock(0)
 
@@ -587,9 +567,6 @@ class VortexGrammar(GrammarBase):
         global spare_control, nonexistent_windows
         print "Exit Vortex"
         self.vortex_off_everywhere()
-        if spare_control:
-             spare_control.unload()
-             spare_control = None
         nonexistent_windows = []
         self.unload()
 
@@ -663,13 +640,16 @@ class VortexGrammar(GrammarBase):
         basic_control[handle] = None
 
     def vortex_off_everywhere(self):
-        global auto_on
+        global auto_on, spare_control
         auto_on = False
         for ID in basic_control:
             control = basic_control[ID]
             if control:
                 control.unload()
         basic_control.clear()
+        if spare_control:
+            spare_control.unload()
+            spare_control = None
 
     def vortex_on(self):
         self.vortex_off()
