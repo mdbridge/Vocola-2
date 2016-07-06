@@ -430,14 +430,12 @@ class BasicTextControl:
         #   (I haven't seen Dragon try any of these yet.)
         if deletion_start < fake_prefix:
             if deletion_start < deletion_end:
-                print >> sys.stderr
                 print >> sys.stderr, \
-                    "  ***** ATTEMPT TO DELETE (PART OF) FAKE PREFIX DENIED!"
+                    "\n  ***** ATTEMPT TO DELETE (PART OF) FAKE PREFIX DENIED!"
                 print >> sys.stderr
             if deletion_end<fake_prefix and new_text != "":
-                print >> sys.stderr
                 print >> sys.stderr, \
-                    "  ***** ATTEMPT TO INSERT IN FAKE PREFIX DENIED!"
+                    "\n  ***** ATTEMPT TO INSERT IN FAKE PREFIX DENIED!"
                 print >> sys.stderr
             deletion_start = max(fake_prefix, deletion_start)
             deletion_end   = max(fake_prefix, deletion_end)
@@ -457,7 +455,6 @@ class BasicTextControl:
             time.sleep(.1)
 
         self.application_control.try_flush()
-        print " ",
         self.show_state()
         print "end dictation_change_callback"
 
@@ -474,7 +471,6 @@ class BasicTextControl:
             # we are not the active window
             if action and win32gui.IsWindowVisible(self.my_handle):
                 if re.search("ButtonClick|DragToPoint|Unimacro", action):
-                    print " ",
                     self.set_buffer_unknown()
             return
 
@@ -562,14 +558,14 @@ class VortexGrammar(GrammarBase):
     """
 
     def initialize(self):
-        print "Init Vortex"
+        print "\nInit Vortex"
         self.visible_spelling_windows = []
         self.load(self.gramSpec)
         self.activateAll()
     
     def terminate(self):
         global spare_control, nonexistent_windows
-        print "Exit Vortex"
+        print "Exiting Vortex"
         self.vortex_off_everywhere()
         nonexistent_windows = []
         self.unload()
