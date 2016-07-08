@@ -1,47 +1,54 @@
 import re
 from vcl2py.ast import *
+from vcl2py.log import *
 
-log_error = None   # temporary kludge
-
-def output(out_file, statements,
-           _VocolaVersion,
-           _Should_emit_dictation_support,
-           _Module_name,
-           _Number_words,
-           _Definitions,
-           _Maximum_commands,
-           _Extension_functions
-           ):
+def output(out_file, module_name, statements, definitions,
+           file_empty, should_emit_dictation_support,
+           extension_functions, params):
     global NestedCallLevel
     global VocolaVersion, Should_emit_dictation_support
     global Module_name, Number_words, Definitions, Maximum_commands
     global Extension_functions
 
-    NestedCallLevel               = 0
+    Module_name                   = module_name
+    Definitions                   = definitions
+    Should_emit_dictation_support = should_emit_dictation_support
+    Extension_functions           = extension_functions
 
-    VocolaVersion = _VocolaVersion
-    Should_emit_dictation_support = _Should_emit_dictation_support
-    Module_name = _Module_name
-    Number_words = _Number_words
-    Definitions = _Definitions
-    Maximum_commands = _Maximum_commands
-    Extension_functions = _Extension_functions
+    VocolaVersion    = params["Vocola_version"]
+    Number_words     = params["number_words"]
+    Maximum_commands = params["maximum_commands"]
 
-    emit_output(out_file, statements)
+    NestedCallLevel = 0
+
+    try:
+        out = open(out_file, "w")
+    except IOError, e:
+        log_error("Unable to open output file '" + out_file + \
+                  "' for writing: " + str(e))
+        return
+        
+    if not file_empty:
+        emit_output(out, statements)
+    else:
+        # note that we write an empty output file for modification time comparisons
+        log_warn("no commands in file.")
+        
+    out.close()
+
+
+def implementation_error(error):
+    log_error(error)
+    raise RuntimeError, error    # <<<>>>
 
 
 
 # ---------------------------------------------------------------------------
 # Emit NatLink output
 
-def emit_output(out_file, statements):
+def emit_output(out, statements):
     global Should_emit_dictation_support, OUT
-    try:
-        OUT = open(out_file, "w")
-    except IOError, e:
-        log_error("Unable to open output file '" + out_file + \
-                  "' for writing: " + str(e))
-        return
+    OUT = out
     emit_file_header()
     if Should_emit_dictation_support: emit_dictation_grammar()
     for statement in statements:
@@ -56,7 +63,6 @@ def emit_output(out_file, statements):
         if    type == "function":   pass
         elif type == "command":     emit_top_command_actions (statement)
     emit_file_trailer()
-    OUT.close()
 
 def emit_sequence_and_context_code(statements):
     # Build a list of context statements, and commands defined in each
