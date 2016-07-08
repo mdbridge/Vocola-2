@@ -547,7 +547,7 @@ catchAllGrammar.initialize()
 spare_control    = None
 
 # should we try and turn on Vortex for each new window?
-auto_on = False
+auto_on = True
 
 
 class VortexGrammar(GrammarBase):
