@@ -1,8 +1,8 @@
+Copyright (c) 2015-16 by Mark Lillibridge.
+
+Copyright (c) 2012-15 by Hewlett-Packard Development Company, L.P.
+
 Copyright (c) 2002-2011 by Rick Mohr.
-
-Portions Copyright (c) 2012-15 by Hewlett-Packard Development Company, L.P.
-
-Portions Copyright (c) 2015-16 by Mark Lillibridge.
 
 
 [MIT license]
