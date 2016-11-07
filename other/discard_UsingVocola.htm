@@ -1,0 +1,36 @@
+<h3>Direct Loading and Discarding</h3>
+
+<p>Sometimes it's useful to reload or discard your command files
+  explicitly. For example, if you modify an <a
+  href="IncludeStatements.html">include file</a>, Vocola doesn't know
+  enough to reload all command files that use that include file.
+  Likewise, if you delete or rename a command file, the old commands
+  from that file will remain until explicitly discarded or Vocola
+  restarts.  You can do loading and discarding yourself using the
+  following commands:</p>
+
+<table border="1" cellpadding="3" cellspacing="0"  bordercolor="#FFEECC">
+  <tr  bgcolor="#FFEECC"> 
+    <td><font color="#660000">When you say</font></td>
+    <td><font color="#660000">Vocola will</font></td>
+  </tr>
+  <tbody>
+    <tr bgcolor="#ffffcc"> 
+      <td>"Load All [Voice] Commands" </td>
+      <td>Reload all commands you have defined.</td>
+    </tr>
+    <tr bgcolor="#ffffcc">
+      <td>"Load [Voice] Commands"<strong> </strong></td>
+      <td>Reload commands for the currently running application.</td>
+    </tr>
+    <tr bgcolor="#ffffcc"> 
+      <td>"Load Global [Voice] Commands"<strong> </strong></td>
+      <td>Reload global commands.</td>
+    </tr>
+    <tr bgcolor="#ffffcc"> 
+      <td>"Discard Old [Voice] Commands" </td>
+      <td>Discard all old commands by discarding all loaded commands
+          then reloading all commands you have defined.</td>
+    </tr>
+  </tbody>
+</table>
