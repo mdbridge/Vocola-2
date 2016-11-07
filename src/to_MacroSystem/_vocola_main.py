@@ -6,9 +6,9 @@
 #    - Autoloading of changed command files
 #
 #
-# Copyright (c) 2002-2012 by Rick Mohr.
+# Copyright (c) 2012-2015 by Hewlett-Packard Development Company, L.P.
 #
-# Portions Copyright (c) 2012-2015 by Hewlett-Packard Development Company, L.P.
+# Copyright (c) 2002-2012 by Rick Mohr.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files

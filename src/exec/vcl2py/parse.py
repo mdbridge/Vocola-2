@@ -17,7 +17,7 @@ def parse_input(in_file, in_folder, extension_functions, debug):
 
     global Included_files, Include_stack_file, Include_stack_line
     global Functions, Function_definitions, Definitions, Statement_count
-    global Forward_references, Last_include_position, Error_count
+    global Forward_references, Last_include_position
     global Should_emit_dictation_support, File_empty
 
     Definitions                   = {}
@@ -29,12 +29,11 @@ def parse_input(in_file, in_folder, extension_functions, debug):
     Include_stack_file            = []  # short names (relative to In_folder)
     Include_stack_line            = []
     Last_include_position         = None
-    Error_count                   = 0
     File_empty                    = True
     Should_emit_dictation_support = False
     Statement_count               = 1
 
-    return parse_file(in_file), Definitions, Function_definitions, Statement_count, Error_count, Should_emit_dictation_support, File_empty
+    return parse_file(in_file), Definitions, Function_definitions, Statement_count, Should_emit_dictation_support, File_empty
 
 
 # ---------------------------------------------------------------------------
@@ -198,8 +197,8 @@ def read_file(in_file):
     try:
         return open(in_file).read()
     except (IOError, OSError), e:
-        log_error("Unable to open or read '" + in_file + "'", # + ": " + str(e),
-                  Last_include_position)
+        log_parse_error("Unable to open or read '" + in_file + "'", # + ": " + str(e),
+                        Last_include_position)
         return ""
 
 # This is the main parsing loop.
@@ -226,7 +225,7 @@ def parse_statements():    # statements = (context | top_command | definition)*
         if statement["TYPE"] == "definition":
             name = statement["NAME"]
             if Definitions.has_key(name):
-                log_error("Redefinition of <"+name+">", starting_position)
+                log_parse_error("Redefinition of <"+name+">", starting_position)
             Definitions[name] = statement
         elif statement["TYPE"] == "command":
             statement["NAME"] = str(Statement_count)
@@ -739,18 +738,16 @@ def parse_word1(bare_word, position):
 
 
 def implementation_error(error):
-    log_error(error)
+    log_parse_error(error)
     raise RuntimeError, error    # <<<>>>
 
 def error(message, position, advice=""):
-    log_error(message, position, advice)
+    log_parse_error(message, position, advice)
     raise RuntimeError, message    # <<<>>>
 
-def log_error(message, position=None, advice=""):
-    global Error_count, Input_name
-    if Error_count==0: print_log("Converting " + Input_name)
-    print_log(format_error_message(message, position, advice), True)
-    Error_count += 1
+def log_parse_error(message, position=None, advice=""):
+    location, message = format_error_message(message, position, advice)
+    log_error(message, location, True)
 
 def format_error_message(message, position=None, advice=""):
     global Include_stack_file, Include_stack_line
@@ -764,7 +761,8 @@ def format_error_message(message, position=None, advice=""):
     of_file = ""
     if len(Include_stack_file) > 1:
         of_file = " of " + Include_stack_file[-1]
-    message = "  Error" + at_line + of_file + ":  " + message + "\n"
+    location = at_line + of_file
+    message = message + "\n"
 
     indent = ""
     i = len(Include_stack_file)-2
@@ -782,7 +780,7 @@ def format_error_message(message, position=None, advice=""):
     if advice != "":
         message += advice + "\n"
 
-    return message
+    return location, message
 
 # Return TRUE if filename was already included in the current .vcl file
 def already_included(filename):
@@ -800,8 +798,8 @@ def expand_variables(actions):
             value = os.environ.get(variable)
             if not value:
                 # Should be a warning not an error.
-                log_error("Reference to unknown environment variable '"
-                          + variable + "'", action["POSITION"])
+                log_parse_error("Reference to unknown environment variable '"
+                                + variable + "'", action["POSITION"])
             else:
                 result += value
         else:
@@ -858,7 +856,6 @@ def verify_menu_terms(terms, has_actions, has_alternatives, other_terms):
                       term["POSITION"])
 
 def add_forward_reference(variable, position):
-    global Forward_references, Include_stack_file, Include_stack_line
     forward_reference = {}
     forward_reference["VARIABLE"]   = variable
     forward_reference["POSITION"]   = position
@@ -867,7 +864,6 @@ def add_forward_reference(variable, position):
     Forward_references.append(forward_reference)
 
 def check_forward_references():
-    global Definitions, Error_count, Forward_references, Input_name
     global Include_stack_file, Include_stack_line
     for forward_reference in Forward_references:
         variable = forward_reference["VARIABLE"]
@@ -878,8 +874,8 @@ def check_forward_references():
             position           = forward_reference["POSITION"]
             Include_stack_file = forward_reference["STACK_FILE"]
             Include_stack_line = forward_reference["STACK_LINE"]
-            log_error("Reference to undefined variable '<" + variable + ">'",
-                      position)
+            log_parse_error("Reference to undefined variable '<" + variable + ">'",
+                            position)
 
             Include_stack_file = stack_file
             Include_stack_line = stack_line
@@ -887,6 +883,4 @@ def check_forward_references():
 
 
 import vcl2py.lex as lex
-lex.log_error = log_error  # temporary kludge
-import vcl2py.emit as emit
-emit.log_error = log_error  # temporary kludge
+lex.log_parse_error = log_parse_error  # temporary kludge

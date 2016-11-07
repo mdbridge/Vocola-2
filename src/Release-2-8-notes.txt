@@ -1,5 +1,11 @@
 New in 2.8.7:
 
+* Vocola 2 is being refactored to be more flexible.  As part of this, it
+  is now possible to choose a backend dynamically at "compile time".
+  This is intended to be used for "cross-compilation" -- e.g., compiling
+  to Dragonfly or Advanced Scripting instead of NatLink directly.
+  Currently only NatLink and trivial echo backends are available.
+
 
 New in 2.8.6:
 

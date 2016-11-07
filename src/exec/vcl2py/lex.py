@@ -1,6 +1,6 @@
 import re
 
-log_error = None   # temporary kludge
+log_parse_error = None   # temporary kludge
 
 
 # ---------------------------------------------------------------------------
@@ -371,8 +371,8 @@ def decode_token_kinds(kind):
 
 def syntax_error(wanted, found, found_text, position):
     if found == TOKEN_ILLEGAL_WORD:
-        log_error("Unterminated quotation: " + found_text[:-1],
-                  get_current_position())
+        log_parse_error("Unterminated quotation: " + found_text[:-1],
+                        get_current_position())
         raise SyntaxError("Unterminated quotation: " + found_text[:-1])
 
     advice = ""
@@ -397,7 +397,7 @@ def syntax_error(wanted, found, found_text, position):
     message = "Wanted " + decode_token_kinds(wanted) + \
         " but found " + decode_token_kinds(found)
 
-    log_error(message, position, advice)
+    log_parse_error(message, position, advice)
     raise SyntaxError(message)
 
 
