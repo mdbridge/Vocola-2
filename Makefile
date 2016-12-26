@@ -13,6 +13,7 @@ prepare:
 	# top level:
 	(cd build/Vocola; mkdir commands exec extensions samples to_core to_MacroSystem)
 	cp src/install.bat	     build/Vocola/
+	cp src/install-user-dir.bat  build/Vocola/
 	cp src/README.html	     build/Vocola/
 	cp src/Release*.txt	     build/Vocola/
 	#
