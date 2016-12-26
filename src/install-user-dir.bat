@@ -1,9 +1,10 @@
 REM  Install version of Vocola in same directory as this script
-REM  to %USERPROFILE% (usually C:\Users\<username>)
+REM  to %USERPROFILE%\NatLink\NatLink\Vocola
+REM  (Assumes NatLink installed to C:\Users\<username>\NatLink)
 
 
 SETLOCAL
-SET target=%USERPROFILE%
+SET target=%USERPROFILE%\NatLink\NatLink
 
 
 CD /d "%~dp0"
