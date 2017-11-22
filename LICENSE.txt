@@ -1,8 +1,13 @@
-Copyright (c) 2015-16 by Mark Lillibridge.
+Copyright (c) 2015-17 by Mark Lillibridge.
 
 Copyright (c) 2012-15 by Hewlett-Packard Development Company, L.P.
 
 Copyright (c) 2002-2011 by Rick Mohr.
+
+Mark says:
+I am providing code in this repository to you under an open source
+license.  Because this is my personal repository, the license you
+receive to my code is from me and not from my employer (Facebook).
 
 
 [MIT license]
