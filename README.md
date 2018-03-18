@@ -86,11 +86,11 @@ Instructions for installing the latest released version can be found at
 http://vocola.net/v2/InstallVocola.asp
 
 To install the version checked out in your git repository rooted at *R*,
-just run *R*/src/install.bat then (re-)start Dragon.  (This assumes you
-have already installed NatLink at the default location, C:\NatLink.  If
-you have instead installed at `%USERPROFILE%\NatLink` (usually,
-`C:\Users\*username*\NatLink`), there is an alternative script called
-install-user-dir.bat)
+just run *R*`/src/install.bat` then (re-)start Dragon.  (This assumes
+you have already installed NatLink at the default location,
+`C:\NatLink`.  If you have instead installed at `%USERPROFILE%\NatLink`
+(usually, `C:\Users\`*username*`\NatLink`), there is an alternative
+script called `install-user-dir.bat`)
 
 
 ## Tests
