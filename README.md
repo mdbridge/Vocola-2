@@ -90,7 +90,7 @@ just run `src/install.bat` in *R* then (re-)start Dragon.  (This assumes
 you have already installed NatLink at the default location,
 `C:\NatLink`.  If you have instead installed at `%USERPROFILE%\NatLink`
 (usually, `C:\Users\`*username*`\NatLink`), there is an alternative
-script called `install-user-dir.bat`)
+script called `install-user-dir.bat`.)
 
 
 ## Tests
