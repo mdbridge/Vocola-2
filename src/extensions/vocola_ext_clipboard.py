@@ -10,19 +10,34 @@ import win32con
 from vocola_ext_variables import *
 
 
+##
+## Code for retrying clipboard access function failures:
+##
+
 # Opening the clipboard can fail if it is in use, so be prepared to retry:
 def open_clipboard():
-    retries = 300
-    while retries > 0:
+    retries = 0
+    while retries < 300:
         try:
             win32clipboard.OpenClipboard()
             return
         except:
-            #print "retrying clipboard... " + str(retries)
-            #time.sleep( random.random()/50 )
-            time.sleep( 50 )
-            retries = retries - 1
+            print "retrying opening clipboard... " + str(retries)
+            time.sleep( 0.050 )
+            retries = retries + 1
     win32clipboard.OpenClipboard()
+
+# GetClipboardData sometimes fails as well; unsure if retrying helps
+def get_clipboard_data(format):
+    retries = 0
+    while retries < 10:
+        try:
+            return win32clipboard.GetClipboardData(format)
+        except:
+            print "retrying getting clipboard data... " + str(retries)
+            time.sleep( 0.100 )
+            retries = retries + 1
+    return win32clipboard.GetClipboardData(format)
 
 
 ## 
@@ -40,7 +55,7 @@ def clipboard_get(default=""):
     open_clipboard()
     result = default
     if win32clipboard.IsClipboardFormatAvailable(win32con.CF_TEXT):
-       result = win32clipboard.GetClipboardData(win32con.CF_TEXT)
+       result = get_clipboard_data(win32con.CF_TEXT)
     win32clipboard.CloseClipboard() 
     null = string.find(result, chr(0))
     if null>0:
@@ -84,7 +99,7 @@ def clipboard_get_UTF8():
     open_clipboard()
     result = ""
     if win32clipboard.IsClipboardFormatAvailable(win32con.CF_UNICODETEXT):
-       result = win32clipboard.GetClipboardData(win32con.CF_UNICODETEXT)
+       result = get_clipboard_data(win32con.CF_UNICODETEXT)
     win32clipboard.CloseClipboard() 
     null = string.find(result, chr(0))
     if null>0:
