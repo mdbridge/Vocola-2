@@ -92,10 +92,10 @@ def subprocess_run(executable, arguments="", separator=" "):
 ## Experiments:
 ## 
 
-# Vocola procedure: Subprocess.System,1
-def subprocess_system(command, require_clean_exit=True):
+# Vocola procedure: Subprocess.System,1-2
+def subprocess_system(command, require_clean_exit="True"):
     exit_code = os.system(command)
-    if exit_code != 0 and require_clean_exit:
+    if exit_code != 0 and require_clean_exit!="False":
         m = "Subprocess.System(%s) returned non-zero exit code %s" % \
             (command, str(exit_code))
         raise SubprocessError, m
