@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import re
+import sys
 from vcl2py.ast import *
 from vcl2py.log import *
 
@@ -24,7 +25,10 @@ def output(out_file, module_name, statements, definitions,
     NestedCallLevel = 0
 
     try:
-        out = open(out_file, "w")
+        if sys.version_info[0] < 3:
+            out = open(out_file, "w")
+        else:
+            out = open(out_file, "w", encoding="latin-1")
     except IOError as e:
         log_error("Unable to open output file '" + out_file + \
                   "' for writing: " + str(e))
@@ -254,7 +258,7 @@ def emit_number_words():
         emit(2, "return word\n\n")
         return
     elif_keyword = "if  "
-    numbers = Number_words.keys()
+    numbers = list(Number_words.keys())
     numbers.sort()
     for number in numbers:
         emit(2, elif_keyword + " word == '" + Number_words[number]+ "':\n")

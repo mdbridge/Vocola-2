@@ -1,5 +1,6 @@
-import re
 import os
+import re
+import sys
 
 from vcl2py.ast import *
 from vcl2py.lex import *
@@ -195,7 +196,10 @@ def canonicalize_in_file(in_file):
 def read_file(in_file):
     global Last_include_position
     try:
-        return open(in_file).read()
+        if  sys.version_info[0] < 3:
+            return open(in_file).read()
+        else:
+            return open(in_file, encoding="latin-1").read()
     except (IOError, OSError) as e:
         log_parse_error("Unable to open or read '" + in_file + "'", # + ": " + str(e),
                         Last_include_position)
