@@ -592,7 +592,8 @@ def inline_a_term(unnamed):
 
     # Find the array index of the first non-optional term
     index = 0
-    while (index < terms) and (terms[index]["OPTIONAL"] or terms[index]["TYPE"] == "dictation"): index += 1
+    while (index < len(terms)) and (terms[index]["OPTIONAL"] or terms[index]["TYPE"] == "dictation"):
+    	  index += 1
 
     type = terms[index]["TYPE"]
     number = terms[index]["NUMBER"]
