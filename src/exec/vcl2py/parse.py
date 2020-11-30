@@ -196,7 +196,7 @@ def read_file(in_file):
     global Last_include_position
     try:
         return open(in_file).read()
-    except (IOError, OSError), e:
+    except (IOError, OSError) as e:
         log_parse_error("Unable to open or read '" + in_file + "'", # + ": " + str(e),
                         Last_include_position)
         return ""
@@ -214,7 +214,7 @@ def parse_statements():    # statements = (context | top_command | definition)*
         starting_position = get_current_position()
         try:
             statement = parse_statement()
-        except (SyntaxError, RuntimeError), e:
+        except (SyntaxError, RuntimeError) as e:
             # panic until after next ";":
             while not peek(TOKEN_EOF) and not peek(TOKEN_SEMICOLON):
                 eat()
@@ -224,7 +224,7 @@ def parse_statements():    # statements = (context | top_command | definition)*
 
         if statement["TYPE"] == "definition":
             name = statement["NAME"]
-            if Definitions.has_key(name):
+            if name in Definitions:
                 log_parse_error("Redefinition of <"+name+">", starting_position)
             Definitions[name] = statement
         elif statement["TYPE"] == "command":
@@ -384,9 +384,9 @@ def parse_function_definition():   # function = prototype ':=' action* ';'
     statement["ACTIONS"] = parse_actions(TOKEN_SEMICOLON)
     eat(TOKEN_SEMICOLON)
 
-    if Functions.has_key(functionName):
+    if functionName in Functions:
         error("Redefinition of " + functionName + "()", position)
-    if Vocola_functions.has_key(functionName):
+    if functionName in Vocola_functions:
         error("Attempted redefinition of built-in function: " + functionName, position)
     Functions[functionName] = len(formals)  # remember number of formals
     Function_definitions[functionName] = statement
@@ -547,7 +547,7 @@ def parse_term():         # <term> ::= <word> | variable | range | <menu>
             term = create_dictation_node()
         else:
             if Debug>=2: print_log("Found variable:  <" + name + ">")
-            if not Definitions.has_key(name):
+            if name not in Definitions:
                 add_forward_reference(name, starting_position)
             term = create_variable_node(name)
 
@@ -669,25 +669,25 @@ def parse_call(callName):    # call = callName '(' arguments ')'
 
     nActuals = len(action["ARGUMENTS"])
     if callName.find(".") != -1:
-        if Extension_functions.has_key(callName):
+        if callName in Extension_functions:
             callFormals = Extension_functions[callName]
             lFormals = callFormals[0]
             uFormals = callFormals[1]
             action["CALLTYPE"] = "extension"
         else:
             error("Call to unknown extension '" + callName + "'", call_position)
-    elif Dragon_functions.has_key(callName):
+    elif callName in Dragon_functions:
         callFormals = Dragon_functions[callName]
         lFormals =     callFormals[0]
         uFormals = len(callFormals[1])
         action["CALLTYPE"] = "dragon"
         action["ARGTYPES"] = callFormals[1]
-    elif Vocola_functions.has_key(callName):
+    elif callName in Vocola_functions:
         callFormals = Vocola_functions[callName]
         lFormals = callFormals[0]
         uFormals = callFormals[1]
         action["CALLTYPE"] = "vocola"
-    elif Functions.has_key(callName):
+    elif callName in Functions:
         lFormals = uFormals = Functions[callName]
         action["CALLTYPE"] = "user"
     else:
@@ -737,13 +737,13 @@ def parse_word1(bare_word, position):
     return node
 
 
-def implementation_error(error):
-    log_parse_error(error)
-    raise RuntimeError, error    # <<<>>>
+def implementation_error(message):
+    log_parse_error(message)
+    raise RuntimeError(message)    # <<<>>>
 
 def error(message, position, advice=""):
     log_parse_error(message, position, advice)
-    raise RuntimeError, message    # <<<>>>
+    raise RuntimeError(message)    # <<<>>>
 
 def log_parse_error(message, position=None, advice=""):
     location, message = format_error_message(message, position, advice)
@@ -815,7 +815,7 @@ def verify_referenced_menu(menu, parent_has_actions=False, parent_has_alternativ
 
     for command in commands:
         has_actions = parent_has_actions
-        if command.has_key("ACTIONS"):
+        if "ACTIONS" in command:
             has_actions = True
             if parent_has_actions:
                 error("Nested in-line lists with associated actions may not themselves contain actions",
@@ -867,7 +867,7 @@ def check_forward_references():
     global Include_stack_file, Include_stack_line
     for forward_reference in Forward_references:
         variable = forward_reference["VARIABLE"]
-        if not Definitions.has_key(variable):
+        if variable not in Definitions:
             stack_file = Include_stack_file
             stack_line = Include_stack_line
 
