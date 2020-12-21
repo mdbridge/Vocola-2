@@ -110,7 +110,10 @@ def parse_command_arguments(argv, default_params):
 def read_INI_file(ini_file, default_params):
     params = default_params
     try:
-        input = open(ini_file)
+        if  sys.version_info[0] < 3:
+            input = open(ini_file)
+        else:
+            input = open(ini_file, encoding="latin-1")
         for line in input:
             match = re.match(r'^(.*?)=(.*)$', line)
             if not match: continue
