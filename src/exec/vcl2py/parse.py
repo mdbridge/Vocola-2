@@ -362,7 +362,7 @@ def parse_variable_definition():    # definition = variable ':=' menu_body ';'
     return statement
 
 def check_variable_name(name, position):
-    if not re.match(r'\w+$', name):
+    if not re.match(r'[a-zA-Z0-9_]+$', name):
         error("Illegal variable name: <" + name + ">", position)
 
 def parse_function_definition():   # function = prototype ':=' action* ';'
@@ -371,7 +371,7 @@ def parse_function_definition():   # function = prototype ':=' action* ';'
     position = get_current_position()
     functionName = eat(TOKEN_BARE_WORD)
     if Debug>=2: print_log("Found user function:  " + functionName + "()")
-    if not re.match(r'[a-zA-Z_]\w*$', functionName):
+    if not re.match(r'[a-zA-Z_][a-zA-Z0-9_]*$', functionName):
         error("Illegal user function name: " + functionName, position)
 
     eat(TOKEN_LPAREN)
@@ -403,7 +403,7 @@ def parse_formals():    # formals = [name (',' name)*]
     if not peek(TOKEN_RPAREN):
         while True:
             formal = eat(TOKEN_BARE_WORD)
-            if not re.match(r'[a-zA-Z_]\w*$', formal):
+            if not re.match(r'[a-zA-Z_][a-zA-Z0-9_]*$', formal):
                 error("Illegal formal name: '" + formal + "'", get_last_position())
             if Debug>=2: print_log("Found formal:  " + formal)
             safe_formals.append("_" + formal)
@@ -533,7 +533,7 @@ def parse_term():         # <term> ::= <word> | variable | range | <menu>
         return parse_word()
 
     word  = eat(TOKEN_BARE_WORD)
-    match = re.match(r'<(.*?)>$|(\d+)\.\.(\d+)$', word)
+    match = re.match(r'<(.*?)>$|([0-9]+)\.\.([0-9]+)$', word)
     if not match:
         term = parse_word1(word, starting_position)
     elif match.group(2):
@@ -612,7 +612,7 @@ def split_out_references(word_node):
     actions = []
 
     # reference = '$' (number | name)
-    for match in re.finditer(r'(.*?)(\Z|(?<!\\)\$(?:(\d+)|([a-zA-Z_]\w*)))',
+    for match in re.finditer(r'(.*?)(\Z|(?<!\\)\$(?:([0-9]+)|([a-zA-Z_][a-zA-Z0-9_]*)))',
                              word):
         normal = match.group(1)
         if normal != "":
