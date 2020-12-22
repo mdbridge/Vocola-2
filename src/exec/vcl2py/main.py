@@ -191,7 +191,10 @@ def main_routine():
         set_log(sys.stdout)
     else:
         try:
-            set_log(open(log_file, "w"))
+            if sys.version_info[0] < 3:
+                set_log(open(log_file, "w"))
+            else:
+                set_log(open(log_file, "w", encoding="latin-1"))
         except IOError as e:
             fatal_error("Unable to open log file '" + log_file +
                         "' for writing: " + str(e))

@@ -661,7 +661,7 @@ def parse_call(callName):    # call = callName '(' arguments ')'
 
     call_position = get_last_position()
     if Debug>=2: print_log("Found call:  " + callName + "()")
-    if not re.match(r'[\w.]+$', callName):
+    if not re.match(r'[a-zA-Z0-9_.]+$', callName):
         error("Illegal function call name: '" + callName + "'", call_position)
 
     action = {}
