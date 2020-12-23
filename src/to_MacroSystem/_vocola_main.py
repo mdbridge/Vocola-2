@@ -32,7 +32,6 @@
 
 from __future__ import print_function
 
-import string
 import sys
 import os               # access to file information
 import os.path          # to parse filenames
@@ -225,7 +224,7 @@ Commands" are activated.
 
     def initialize(self):
         if 'COMPUTERNAME' in os.environ:
-            self.machine = string.lower(os.environ['COMPUTERNAME'])
+            self.machine = os.environ['COMPUTERNAME'].lower()
         else: self.machine = 'local'
 
         self.load_extensions()
@@ -242,8 +241,8 @@ Commands" are activated.
 
     # Get app name by stripping folder and extension from currentModule name
     def getCurrentApplicationName(self):
-        return string.lower(os.path.splitext(
-            os.path.split(self.currentModule[0]) [1]) [0])
+        return os.path.splitext(
+            os.path.split(self.currentModule[0]) [1]) [0].lower()
 
 
 ### Miscellaneous commands
