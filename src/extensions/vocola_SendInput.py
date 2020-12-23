@@ -10,7 +10,7 @@
 ### 
 ### 
 ### Author:  Mark Lillibridge
-### Version: 0.7
+### Version: 0.8
 ### 
 
 from ctypes import *
