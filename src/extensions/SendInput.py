@@ -10,7 +10,7 @@
 ### 
 ### 
 ### Author:  Mark Lillibridge
-### Version: 0.6
+### Version: 0.7
 ### 
 
 from ctypes import *
@@ -492,7 +492,7 @@ def mouse_button_event(button, releasing=False):
 # clicks>0 => wheel rotated forward (if horizontal false) or else rotated right
 def mouse_wheel_event(horizontal, clicks):
     flags = win32con.MOUSEEVENTF_WHEEL
-    if horizontal: flags = win32con.MOUSEEVENTF_HWHEEL
+    if horizontal: flags = 0x1000 # win32con.MOUSEEVENTF_HWHEEL
     amount = int(clicks * win32con.WHEEL_DELTA)
     return MouseInput(0, 0, amount, flags, 0)
 

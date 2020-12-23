@@ -2,6 +2,8 @@
 ### Vocola module:
 ### 
 
+from __future__ import print_function
+
 import sys
 
 from VocolaUtils import VocolaRuntimeError
@@ -23,8 +25,8 @@ def vocola_error(message):
 
 # Vocola procedure: Vocola.Alert
 def vocola_alert(message):
-    print >> sys.stderr, message
+    print(message, file=sys.stderr)
 
 # Vocola procedure: Vocola.Print
 def vocola_print(message):
-    print message
+    print(message)
