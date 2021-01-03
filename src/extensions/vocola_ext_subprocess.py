@@ -55,7 +55,7 @@ def subprocess_sync(executable, *arguments):
     if exit_code != 0 and require_clean_exit:
         m = "subprocess '%s' returned non-zero exit code %s" % (executable, 
                                                                 str(exit_code))
-        raise SubprocessError, m
+        raise SubprocessError(m)
 
 
 # 
@@ -98,5 +98,5 @@ def subprocess_system(command, require_clean_exit="True"):
     if exit_code != 0 and require_clean_exit!="False":
         m = "Subprocess.System(%s) returned non-zero exit code %s" % \
             (command, str(exit_code))
-        raise SubprocessError, m
+        raise SubprocessError(m)
     return ""

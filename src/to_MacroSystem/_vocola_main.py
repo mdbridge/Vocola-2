@@ -30,7 +30,8 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import string
+from __future__ import print_function
+
 import sys
 import os               # access to file information
 import os.path          # to parse filenames
@@ -116,7 +117,7 @@ def get_top_command_folder():
 
 commandFolder = get_command_folder()
 if VocolaEnabled and not commandFolder:
-    print >> sys.stderr, "Warning: no Vocola command folder found!"
+    print("Warning: no Vocola command folder found!", file=sys.stderr)
 
 
 import VocolaUtils
@@ -211,19 +212,19 @@ class ThisGrammar(GrammarBase):
 <discardOld>        exported = Descartar Comandos [de voz] Viejos;
     """
     elif language != 'enx':
-        print >> sys.stderr,  """\n\n
+        print("""\n\n
 Vocola Warning: no language "%s" translations for the built-in Vocola
 commands (e.g., commands to load voice commands) are currently
 available; consider helping translate them -- inquire on
 https://www.knowbrainer.com/forums/forum/categories.cfm?catid=25.  For
 now the English versions, like "Edit Commands" and "Edit Global
 Commands" are activated.
-""" % language
+""" % language, file=sys.stderr)
 
 
     def initialize(self):
-        if os.environ.has_key('COMPUTERNAME'):
-            self.machine = string.lower(os.environ['COMPUTERNAME'])
+        if 'COMPUTERNAME' in os.environ:
+            self.machine = os.environ['COMPUTERNAME'].lower()
         else: self.machine = 'local'
 
         self.load_extensions()
@@ -240,20 +241,20 @@ Commands" are activated.
 
     # Get app name by stripping folder and extension from currentModule name
     def getCurrentApplicationName(self):
-        return string.lower(os.path.splitext(
-            os.path.split(self.currentModule[0]) [1]) [0])
+        return os.path.splitext(
+            os.path.split(self.currentModule[0]) [1]) [0].lower()
 
 
 ### Miscellaneous commands
 
     # "Show NatLink Window" -- print to output window so it appears
     def gotResults_NatLinkWindow(self, words, fullResults):
-        print "This is the NatLink/Vocola output window"
+        print("This is the NatLink/Vocola output window")
 
     # "Load Extensions" -- scan for new/changed extensions:
     def gotResults_loadExtensions(self, words, fullResults):
         self.load_extensions(True)
-        for module in sys.modules.keys():
+        for module in list(sys.modules.keys()):
             if module.startswith("vocola_ext_"):
                 del sys.modules[module]
 
@@ -307,13 +308,12 @@ Commands" are activated.
             for target in targets:
                 self.loadFile(target)
         else:
-            print >> sys.stderr
+            print(file=sys.stderr)
             if module == "":
-                print >> sys.stderr, \
-                    "Found no Vocola global command files [for machine '" + \
-                    self.machine + "']"
+                print("Found no Vocola global command files [for machine '" + \
+                    self.machine + "']", file=sys.stderr)
             else:
-                print >> sys.stderr, "Found no Vocola command files for application '" + module + "' [for machine '" + self.machine + "']"
+                print("Found no Vocola command files for application '" + module + "' [for machine '" + self.machine + "']", file=sys.stderr)
 
     # Load a specific command file, returning false if not present
     def loadFile(self, file):
@@ -364,8 +364,8 @@ Commands" are activated.
     # Open a Vocola command file (using the application associated with ".vcl")
     def openCommandFile(self, file, comment):
         if not commandFolder:
-            print >> sys.stderr, "Error: Unable to create command file " + \
-                "because no Vocola command folder found."
+            print("Error: Unable to create command file " + \
+                "because no Vocola command folder found.", file=sys.stderr)
             return
 
         path = self.FindExistingCommandFile(file)
@@ -430,7 +430,7 @@ def compile_Vocola(inputFileOrFolder, force):
         try:
             log = open(logName, 'r')
             compiler_error = True
-            print >> sys.stderr, log.read()
+            print(log.read(), file=sys.stderr)
             log.close()
             os.remove(logName)
         except IOError:  # no log file means no Vocola errors
@@ -502,7 +502,7 @@ def vocolaGetModTime(file):
 
 
 def deleteOrphanFiles():
-    print "checking for orphans..."
+    print("checking for orphans...")
     for f in os.listdir(NatLinkFolder):
         if not re.search("_vcl.pyc?$", f): continue
 
@@ -511,7 +511,7 @@ def deleteOrphanFiles():
             if vocolaGetModTime(s)>0: continue
 
         f = os.path.join(NatLinkFolder, f)
-        print "Deleting: " + f
+        print("Deleting: " + f)
         os.remove(f)
 
 def getSourceFilename(output_filename):
@@ -635,7 +635,7 @@ thisGrammar = None
 purgeOutput()
 
 if not VocolaEnabled:
-    print "Vocola not active"
+    print("Vocola not active")
 else:
     print "Vocola version 2.8.7ALPHA+Vortex starting..."
     thisGrammar = ThisGrammar()

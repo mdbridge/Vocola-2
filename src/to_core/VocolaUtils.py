@@ -28,11 +28,14 @@
 ### DEALINGS IN THE SOFTWARE.
 ###
 
+from __future__ import print_function
+from builtins import int
+
 import re
 import string
 import sys
 from   types import *
-import traceback  # for debugging traceback code in handle_error
+import traceback       # for debugging traceback code in handle_error
 
 import natlink
 
@@ -71,7 +74,7 @@ def combineDictationWords(fullResults):
             # This word came from a "recognize anything" rule.
             # Convert to written form if necessary, e.g. "@\at-sign" --> "@"
             word = fullResults[i][0]
-            backslashPosition = string.find(word, "\\")
+            backslashPosition = word.find("\\")
             if backslashPosition > 0:
                 word = word[:backslashPosition]
             if inDictation:
@@ -105,23 +108,23 @@ def handle_error(filename, line, command, exception):
     if isinstance(exception, VocolaRuntimeAbort):
         return
 
-    print
-    print >> sys.stderr, "While executing the following Vocola command:"
-    print >> sys.stderr, "    " + command
-    print >> sys.stderr, "defined at line " + str(line) + " of " + filename +","
-    print >> sys.stderr, "the following error occurred:"
-    print >> sys.stderr, "    " + exception.__class__.__name__ + ": " \
-        + str(exception)
+    print()
+    print("While executing the following Vocola command:", file=sys.stderr)
+    print("    " + command, file=sys.stderr)
+    print("defined at line " + str(line) + " of " + filename +",", file=sys.stderr)
+    print("the following error occurred:", file=sys.stderr)
+    print("    " + exception.__class__.__name__ + ": " \
+        + str(exception), file=sys.stderr)
     #traceback.print_exc()
     #raise exception
 
 
-def to_long(string):
+def to_long(aString):
     try:
-        return long(string)
+        return int(aString)
     except ValueError:
         raise VocolaRuntimeError("unable to convert '"
-                                 + string.replace("'", "''")
+                                 + aString.replace("'", "''")
                                  + "' into an integer")
 
 def do_flush(functional_context, buffer):
@@ -183,9 +186,9 @@ def call_Dragon(function_name, argument_types, arguments):
 
     def quoteAsVisualBasicString(argument):
         q = argument
-        q = string.replace(q, '"', '""')
-        q = string.replace(q, "\n", '" + chr$(10) + "')
-        q = string.replace(q, "\r", '" + chr$(13) + "')
+        q = q.replace('"', '""')
+        q = q.replace("\n", '" + chr$(10) + "')
+        q = q.replace("\r", '" + chr$(13) + "')
         return '"' + q + '"'
 
     script = ""
@@ -212,7 +215,7 @@ def call_Dragon(function_name, argument_types, arguments):
 
     script = dragon_prefix + function_name + script
     dragon_prefix = ""
-    #print '[' + script + ']'
+    #print('[' + script + ']')
     try:
         if function_name == "SendDragonKeys":
             do_callback(arguments[0])
@@ -222,12 +225,12 @@ def call_Dragon(function_name, argument_types, arguments):
         else:
             do_callback(None, script)
             natlink.execScript(script)
-    except Exception, e:
+    except Exception as e:
         m = "when Vocola called Dragon to execute:\n" \
             + '        ' + script + '\n' \
             + '    Dragon reported the following error:\n' \
             + '        ' + type(e).__name__ + ": " + str(e)
-        raise VocolaRuntimeError, m
+        raise VocolaRuntimeError(m)
 
 
 
@@ -242,14 +245,18 @@ try:
     unimacro_available = True
 except ImportError:
     pass
+except:
+    print("Unimacro actions module raised the following exception when imported:", file=sys.stderr)
+    traceback.print_exc()
+           
 
 def call_Unimacro(argumentString):
     if unimacro_available:
-        #print '[' + argumentString + ']'
+        #print('[' + argumentString + ']')
         try:
             do_callback(None, "Unimacro " + argumentString)
             actions.doAction(argumentString)
-        except Exception, e:
+        except Exception as e:
             m = "when Vocola called Unimacro to execute:\n" \
                 + '        Unimacro(' + argumentString + ')\n' \
                 + '    Unimacro reported the following error:\n' \
@@ -282,9 +289,9 @@ def eval_template(template, *arguments):
         return name
 
     # is string the canonical representation of a long?
-    def isCanonicalNumber(string):
+    def isCanonicalNumber(aString):
         try:
-            return str(long(string)) == string
+            return str(int(aString)) == aString
         except ValueError:
             return 0
 
@@ -299,7 +306,7 @@ def eval_template(template, *arguments):
         elif descriptor == "%a":
             a = get_argument()
             if isCanonicalNumber(a):
-                return get_variable(long(a))
+                return get_variable(int(a))
             else:
                 return get_variable(str(a))
         else:
@@ -310,14 +317,14 @@ def eval_template(template, *arguments):
         return eval('str(' + expression + ')', variables.copy())
     except VocolaRuntimeAbort:
         raise
-    except Exception, e:
+    except Exception as e:
         m = "when Eval[Template] called Python to evaluate:\n" \
             + '        str(' + expression + ')\n' \
             + '    under the following bindings:\n'
-        names = variables.keys()
+        names = list(variables.keys())
         names.sort()
         for v in names:
             m += '        ' + str(v) + ' -> ' + repr(variables[v]) + '\n'
         m += '    Python reported the following error:\n' \
             + '        ' + type(e).__name__ + ": " + str(e)
-        raise VocolaRuntimeError, m
+        raise VocolaRuntimeError(m)
