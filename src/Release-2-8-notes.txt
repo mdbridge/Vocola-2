@@ -1,5 +1,9 @@
 New in 2.8.7:
 
+! The following unofficial Vocola extensions have been made official,
+  and are now included in the Vocola 2 release:
+    Clipboard, Date, Env, Keys, Subprocess,  Variable, and Vocola
+
 * Vocola 2 is being refactored to be more flexible.  As part of this, it
   is now possible to choose a backend dynamically at "compile time".
   This is intended to be used for "cross-compilation" -- e.g., compiling

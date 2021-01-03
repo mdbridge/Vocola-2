@@ -51,10 +51,10 @@ The third command allows controlling the cursor, by saying for example
 "3 Left" to move left three characters, or "6 Down" to move down six
 lines.  Spoken words match variable terms on the left and are
 substituted into the keystroke sequence on the right.  For example, when
-saying "3 Left" the spoken "3" matches the numeric range 1..40 and the
-spoken "Left" matches the alternative set (Left | Right | Up | Down).
-The keystroke sequence {Left 3} is constructed and sent, and the cursor
-moves left three characters.
+saying "3 Left" the spoken "3" matches the numeric range `1..40` and the
+spoken "Left" matches the alternative set `(Left | Right | Up | Down)`.
+The keystroke sequence `{Left 3}` is constructed and sent, and the
+cursor moves left three characters.
 
 The fourth command allows sorting messages in Mozilla's Thunderbird
 Mailer, by saying "Sort by Date", "Sort by Sender", or "Sort by
@@ -77,7 +77,7 @@ power.
 When I (Rick) switched from the Dragon Macro Language to Vocola I was
 able to convert all but two of my 200+ Dragon macros (achieving a source
 line count reduction of roughly 6:1) and at this writing use well over
-1000 Vocola commands.
+1,000 Vocola commands.
 
 
 ## Installation
@@ -86,8 +86,11 @@ Instructions for installing the latest released version can be found at
 http://vocola.net/v2/InstallVocola.asp
 
 To install the version checked out in your git repository rooted at *R*,
-just run *R*/src/install.bat then (re-)start Dragon.  (This assumes you
-have already installed NatLink at the default location, C:\NatLink.)
+just run `src/install.bat` in *R* then (re-)start Dragon.  (This assumes
+you have already installed NatLink at the default location,
+`C:\NatLink`.  If you have instead installed at `%USERPROFILE%\NatLink`
+(usually, `C:\Users\`*username*`\NatLink`), there is an alternative
+script called `install-user-dir.bat`.)
 
 
 ## Tests
