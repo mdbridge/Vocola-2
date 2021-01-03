@@ -61,23 +61,13 @@ def combineDictationWords(fullResults):
     i = 0
     while i < len(fullResults):
         if fullResults[i][1] == "dgndictation":
-            # This word came from a "recognize anything" rule.
-            # Convert to written form if necessary, e.g. "@\at-sign" --> "@"
-            word = fullResults[i][0]
-            backslashPosition = word.find("\\")
-            if backslashPosition > 0:
-                word = word[:backslashPosition]
-            if inDictation:
-                fullResults[i-1] = [fullResults[i-1][0] + " " + word,
-                                    "converted dgndictation"]
-                del fullResults[i]
-            else:
-                fullResults[i] = [word, "converted dgndictation"]
-                i = i + 1
-            inDictation = 1
-        else:
-            i = i + 1
-            inDictation = 0
+            word_list = [fullResults[i][0]]
+            j = i + 1
+            while j<len(fullResults) and fullResults[j][1] == "dgndictation":
+                word_list = word_list + [fullResults[j][0]]
+                del fullResults[j]
+            fullResults[i] = [format_words(word_list), "converted dgndictation"]
+        i += 1
     return fullResults
 
 def format_words(word_list):
