@@ -68,9 +68,11 @@ short_compare: prepare
 compare: prepare
 	@echo "=========="
 	-diff -r -x .svn -b build/Vocola_for_NatLink ${NATLINK}/Vocola 
-	-diff build/Vocola/to_core/VocolaUtils.py \
+	@echo "=========="
+	-diff -b build/Vocola/to_core/VocolaUtils.py \
                 ${NATLINK}/MacroSystem/core/
-	-diff build/Vocola/to_MacroSystem/_vocola_main.py \
+	@echo "=========="
+	-diff -b build/Vocola/to_MacroSystem/_vocola_main.py \
                 ${NATLINK}/MacroSystem/_vocola_main.py
 	grep "including Vocola" ${NATLINK}/natlinkInstaller/setupnatlinkwithinno.py
 
