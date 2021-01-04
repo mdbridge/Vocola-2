@@ -8,7 +8,7 @@
 ### 
 ### 
 ### Author:  Mark Lillibridge
-### Version: 0.8
+### Version: 0.9
 ### 
 
 from __future__ import print_function
@@ -16,8 +16,8 @@ from __future__ import print_function
 import re
 import win32con
 
-from ctypes    import *
-from SendInput import *
+from ctypes           import *
+from vocola_SendInput import *
 
 
 debug = False
@@ -384,9 +384,9 @@ GetSystemMetrics = windll.user32.GetSystemMetrics
 GetSystemMetrics.argtypes = [c_int]
 GetSystemMetrics.restype  = c_int
 
-# Convert ExtendSendDragonKeys mouse button names to those required
-# by SendInput.py, swapping left & right buttons if user has "Switch
-# primary and secondary buttons" selected:
+# Convert vocola_ExtendSendDragonKeys mouse button names to those
+# required by vocola_SendInput.py, swapping left & right buttons if
+# user has "Switch primary and secondary buttons" selected:
 def get_mouse_button(button_name):
     try:
         button = Button_name[button_name.lower()]
