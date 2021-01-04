@@ -27,6 +27,8 @@
 ### SOFTWARE.
 ###
 
+from __future__ import print_function
+
 import os.path
 import re
 import string
@@ -140,7 +142,7 @@ class DictationObject:
     def __getattr__(self, attribute):
         if self.underlying_DictObj:
             return getattr(self.underlying_DictObj, attribute)
-        raise AttributeError, attribute
+        raise AttributeError(attribute)
 
 
 
@@ -165,12 +167,12 @@ class ApplicationControl:
         self.set_state("")
 
     def show_state(self, prefix=""):
-        print "  0x%08x: '%s%s<%s>%s'" % (self.my_handle, prefix,
+        print("  0x%08x: '%s%s<%s>%s'" % (self.my_handle, prefix,
                                         self.text[:self.start], 
                                         self.text[self.start:self.end],
-                                        self.text[self.end:])
+                                        self.text[self.end:]))
         if self.postponed_keys != "":
-            print "    postponed keys: '%s'" % (self.postponed_keys)
+            print("    postponed keys: '%s'" % (self.postponed_keys))
 
     def get_state(self):
         return (self.text, self.start, self.end)
@@ -237,11 +239,11 @@ class ApplicationControl:
             return True
         handle = win32gui.GetForegroundWindow()
         if handle == self.my_handle:
-            print "  sending: '" + keys + "'"
+            print("  sending: '" + keys + "'")
             self.play_string(keys)
             self.postponed_keys = ""
             return True
-        print "  WARNING: delaying keys due to different active window, window ID 0x%08x" % (handle)
+        print("  WARNING: delaying keys due to different active window, window ID 0x%08x" % (handle))
         self.postponed_keys = keys
         return False
 
@@ -298,25 +300,24 @@ class BasicTextControl:
     # throw natlink.BadWindow, leaving us unactivated.
     def attach(self, handle):
         if self.my_handle:
-            print "unattaching " + self.name()
+            print("unattaching " + self.name())
             self.dictation_object.activate(None)
             self.my_handle           = None
             self.application_control = None
         if handle:
             self.title = win32gui.GetWindowText(handle)
-            print "BasicTextControl attaching to window ID 0x%08x" % (handle)
-            print "  with title '%s'" % (self.title)
+            print("BasicTextControl attaching to window ID 0x%08x" % (handle))
+            print("  with title '%s'" % (self.title))
             try:
                 self.my_handle           = handle
                 self.application_control = ApplicationControl(handle)
                 # activate below may call dictation_begin_callback so want state set:
                 self.set_buffer_unknown()
                 self.dictation_object.activate(handle)
-            except Exception, e:
+            except Exception as e:
                 self.my_handle           = None
                 self.application_control = None
-                print >> sys.stderr, \
-                    "  ATTACHMENT FAILED: " + repr(e)
+                print("  ATTACHMENT FAILED: " + repr(e), file=sys.stderr)
                 raise
         if self.my_handle:
             self.update_dictation_object_state()
@@ -326,7 +327,7 @@ class BasicTextControl:
     # but even delaying tens of utterances after the window in
     # question no longer exists does not avoid the hang problem.
     def unload(self):
-        print "unloading " + self.name()
+        print("unloading " + self.name())
         self.dictation_object.terminate()
         self.dictation_object = None
 
@@ -339,7 +340,7 @@ class BasicTextControl:
         if self.application_control:
             self.application_control.show_state(self.fake_prefix_text)
         else:
-            print "<unattached " + self.name() + ">"
+            print("<unattached " + self.name() + ">")
 
     def set_buffer(self, text, unknown_prefix=False, select_all=False):
         self.application_control.set_state(text, select_all)
@@ -384,9 +385,9 @@ class BasicTextControl:
 
     def dictation_change_callback(self, deletion_start, deletion_end, new_text, 
                                   selection_start, selection_end):
-        print "dictation_change_callback %d,%d, %s, %d,%d" % \
+        print("dictation_change_callback %d,%d, %s, %d,%d" % \
             (deletion_start, deletion_end, repr(new_text), selection_start,
-             selection_end)
+             selection_end))
 
         fake_prefix        = len(self.fake_prefix_text)
         text, _start, _end = self.application_control.get_state()
@@ -400,11 +401,11 @@ class BasicTextControl:
            self.fake_prefix_text[-1]==" ":
             # attempting to delete/replace trailing whitespace in fake prefix
             if len(new_text)>0 and new_text[0]==" ":
-                print "  ignoring nop overwrite to trailing space in fake prefix"
+                print("  ignoring nop overwrite to trailing space in fake prefix")
                 deletion_start += 1
                 new_text = new_text[1:]
             else:
-                print "  ignoring attempt to remove trailing space in fake prefix"
+                print("  ignoring attempt to remove trailing space in fake prefix")
                 deletion_start  += 1
                 selection_start += 1
                 selection_end   += 1
@@ -413,15 +414,13 @@ class BasicTextControl:
         if fake_prefix>0 and deletion_start<deletion_end and new_text!="":
             if deletion_start==fake_prefix and \
                text[deletion_start]==" " and new_text[0]!=" ":
-                print >> sys.stderr, \
-                    "  ***** SPACE GUARD preserved leading space"
+                print("  ***** SPACE GUARD preserved leading space", file=sys.stderr)
                 deletion_start  += 1
                 selection_start += 1
                 selection_end   += 1
             if deletion_end==len(text) and deletion_start<deletion_end \
                and text[-1]==" " and new_text[-1]!=" ":
-                print >> sys.stderr, \
-                    "  ***** SPACE GUARD preserved trailing space"
+                print("  ***** SPACE GUARD preserved trailing space", file=sys.stderr)
                 deletion_end -= 1
                 if selection_start==deletion_start+len(new_text) \
                    and selection_start==selection_end:
@@ -432,13 +431,11 @@ class BasicTextControl:
         #   (I haven't seen Dragon try any of these yet.)
         if deletion_start < fake_prefix:
             if deletion_start < deletion_end:
-                print >> sys.stderr, \
-                    "\n  ***** ATTEMPT TO DELETE (PART OF) FAKE PREFIX DENIED!"
-                print >> sys.stderr
+                print("\n  ***** ATTEMPT TO DELETE (PART OF) FAKE PREFIX DENIED!", file=sys.stderr)
+                print(file=sys.stderr)
             if deletion_end<fake_prefix and new_text != "":
-                print >> sys.stderr, \
-                    "\n  ***** ATTEMPT TO INSERT IN FAKE PREFIX DENIED!"
-                print >> sys.stderr
+                print("\n  ***** ATTEMPT TO INSERT IN FAKE PREFIX DENIED!", file=sys.stderr)
+                print(file=sys.stderr)
             deletion_start = max(fake_prefix, deletion_start)
             deletion_end   = max(fake_prefix, deletion_end)
             
@@ -481,7 +478,7 @@ class BasicTextControl:
 
         if keys:
             if keys.find("{") == -1:
-                print "  assuming typed: " + keys
+                print("  assuming typed: " + keys)
                 self.application_control.assume_selection_replaced(keys)
                 self.show_state()
             else:
@@ -518,7 +515,7 @@ class CatchAllGrammar(GrammarBase):
         global nonexistent_windows
         if recogType == 'reject':
             return
-        print "utterance"
+        print("utterance")
         
         # unload controls for/forget about no longer existing windows:
         # once enough utterances have passed
@@ -560,14 +557,14 @@ class VortexGrammar(GrammarBase):
     """
 
     def initialize(self):
-        print "\nInit Vortex"
+        print("\nInit Vortex")
         self.visible_spelling_windows = []
         self.load(self.gramSpec)
         self.activateAll()
     
     def terminate(self):
         global spare_control, nonexistent_windows
-        print "Exiting Vortex"
+        print("Exiting Vortex")
         self.vortex_off_everywhere()
         nonexistent_windows = []
         self.unload()
@@ -577,8 +574,7 @@ class VortexGrammar(GrammarBase):
         global spare_control, nonexistent_windows
         handle = moduleInfo[2]
         if not handle:
-            print >> sys.stderr, \
-                "***** Dragon passed "+repr(handle)+" as the handle!"
+            print("***** Dragon passed "+repr(handle)+" as the handle!", file=sys.stderr)
             return
 
         control = basic_control.get(handle, -1)
@@ -586,15 +582,15 @@ class VortexGrammar(GrammarBase):
             for window in basic_control:
                 if not win32gui.IsWindow(window):
                     if basic_control[window]:
-                        print "no longer existing: " + basic_control[window].name()
+                        print("no longer existing: " + basic_control[window].name())
                     nonexistent_windows += [window]
 
             if blacklisted(moduleInfo):
-                print "auto turning OFF Vortex for new window '%s'" % (
-                    moduleInfo[1])
+                print("auto turning OFF Vortex for new window '%s'" % (
+                    moduleInfo[1]))
                 basic_control[handle] = None
             else:
-                print "auto turning ON Vortex for new window:"
+                print("auto turning ON Vortex for new window:")
                 if spare_control:
                     basic_control[handle] = spare_control
                     try:
@@ -603,7 +599,7 @@ class VortexGrammar(GrammarBase):
                     except natlink.BadWindow:
                         del basic_control[handle]
                 else:
-                    print "  not using spare control"
+                    print("  not using spare control")
                     self.vortex_on()
                     spare_control = BasicTextControl()
 
@@ -616,7 +612,7 @@ class VortexGrammar(GrammarBase):
                     vocola_ext_keys.send_input("{shift}" + "{ctrl+Ins}")
                     time.sleep(.1)
                     text = vocola_ext_clipboard.clipboard_get()
-                    print "loaded from spelling window: "+ repr(text)
+                    print("loaded from spelling window: "+ repr(text))
                     control.set_buffer(text, True, True)
             self.track_visible_spelling_windows(handle)
         else:
@@ -700,14 +696,14 @@ class VortexGrammar(GrammarBase):
         natlink.playString("{shift}" + selector + "{ctrl+Ins}" + unselect)
         time.sleep(.1)
         text = vocola_ext_clipboard.clipboard_get()
-        print "loaded: "+ repr(text)
+        print("loaded: "+ repr(text))
         control.set_buffer(text)
 
     def gotResults_clip(self,words,fullResults):
         control = self.vortex_on()
         if not control: return
         text    = vocola_ext_clipboard.clipboard_get()
-        print "loaded: "+ repr(text)
+        print("loaded: "+ repr(text))
         control.set_buffer(text)
 
 
@@ -721,9 +717,9 @@ def pre_action(keys, action):
         return
 
     if keys:
-        print "pre-Vocola keys: " + repr(keys)
+        print("pre-Vocola keys: " + repr(keys))
     if action:
-        print "pre-Vocola action: " + repr(action)
+        print("pre-Vocola action: " + repr(action))
 
     for ID in basic_control:
         control = basic_control[ID]
