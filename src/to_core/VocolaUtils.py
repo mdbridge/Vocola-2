@@ -75,7 +75,7 @@ def format_words(word_list):
     import nsformat
     state = [nsformat.flag_no_space_next]
     result, _new_state = nsformat.formatWords(word_list, state)
-    print "format_words: %s -> '%s'"  % (repr(word_list), result)
+    print("format_words: %s -> '%s'"  % (repr(word_list), result))
     return result
 
 def format_words2(word_list):
@@ -88,7 +88,7 @@ def format_words2(word_list):
         if result != "":
             result = result + " "
         result = result + word
-    print "format_words2: %s -> '%s'"  % (repr(word_list), result)
+    print("format_words2: %s -> '%s'"  % (repr(word_list), result))
     return result
 
 
