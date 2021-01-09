@@ -301,7 +301,7 @@ def emit_top_command_actions(command):
     if not has_variable_term(terms):
         emit(3, "if len(words) > " + str(nterms) + ": self." + function + \
                 "(words[" + str(nterms) + ":], fullResults)\n")
-    emit(2, "except Exception, e:\n")
+    emit(2, "except Exception as e:\n")
     file = command["FILE"]
     emit(3, "handle_error('" + make_safe_python_string(file) +
             "', " + str(command["LINE"]) + ", '" +
