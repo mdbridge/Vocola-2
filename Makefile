@@ -44,6 +44,7 @@ prepare:
 	#
 	cp -r build/Vocola build/Vocola_for_NatLink
 	rm     build/Vocola_for_NatLink/install.bat
+	rm     build/Vocola_for_NatLink/install-user-dir.bat
 	rm -rf build/Vocola_for_NatLink/to_MacroSystem
 	rm -rf build/Vocola_for_NatLink/to_core
 
