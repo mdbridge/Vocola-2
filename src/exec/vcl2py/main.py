@@ -198,6 +198,7 @@ def main_routine():
         except IOError as e:
             fatal_error("Unable to open log file '" + log_file +
                         "' for writing: " + str(e))
+    set_error_prologue("Preparing to convert files")
 
     if Debug >= 1: print_log("INI file is '" + params["INI_file"] + "'")
 
@@ -247,6 +248,8 @@ def read_extensions_file(extensions_filename):
             module_name       = match.group(5)
             function_name     = match.group(6)
 
+	    if extension_functions.has_key(extension_name):
+	       log_error("Redefinition of extension function: %s" % (extension_name))
             extension_functions[extension_name] = [minimum_arguments, maximum_arguments, needs_flushing, module_name, function_name]
     except IOError as e:
         pass
