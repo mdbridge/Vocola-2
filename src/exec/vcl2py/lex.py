@@ -1,4 +1,3 @@
-from builtins import chr
 from builtins import range
 import re
 
