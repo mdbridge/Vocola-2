@@ -154,7 +154,8 @@ def convert_keys(keys):
 
 
 def direct_playString(keys):
-    # DNS 11.5 @ bug workaround:
+    # DNS 11.5+ @ bug workaround:
+    # (DNS uses alt_numpad to send @s, but this doesn't work for ctrl+@, etc.)
     keys = re.sub(r"""(?x) 
                       \{ ( (?: [a-zA-Z\x80-\xff]+ \+ )* )
                            @
