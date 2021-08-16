@@ -134,16 +134,20 @@ def do_flush(functional_context, buffer):
             'attempt to call Unimacro, Dragon, or a Vocola extension ' +
             'procedure in a functional context!')
     if buffer != '':
-        natlink.playString(convert_keys(buffer))
+        call_playString(buffer)
     return ''
 
 
 
 ##
-## Dragon built-ins:
+## Dragon natlink.playString (default method of sending keys, what
+##                            SendDragonKeys calls):
 ##
 
-dragon_prefix = ""
+def call_playString(keys):
+    keys = convert_keys(keys)
+    print("playString("+ repr(keys) + ")")
+    direct_playString(keys)
 
 def convert_keys(keys):
     # Roughly, {<keyname>_<count>}'s -> {<keyname> <count>}:
@@ -156,14 +160,20 @@ def convert_keys(keys):
                            (?:[^}]|[-a-zA-Z0-9/*+.\x80-\xff]+) )
                       [ _]
                       (\d+) \}""", r'{\1 \2}', keys)
+    return keys
 
+
+def direct_playString(keys):
     # prefix with current language appropriate version of {shift}
     # to prevent doubling/dropping bug:
+    natlink.playString(shift_prefix() + keys)
+
+def shift_prefix():
     shift = name_for_shift()
     if shift:
-        keys = "{" + shift + "}" + keys
-
-    return keys
+        return "{" + shift + "}"
+    else:
+        return ""
 
 def name_for_shift():
     if Language == "enx":
@@ -181,8 +191,43 @@ def name_for_shift():
     else:
         return None
 
+
+
+##
+## Dragon built-ins:
+##
+
 def call_Dragon(function_name, argument_types, arguments):
+    types = argument_types
+    new_arguments = []
+    for argument in arguments:
+        argument_type = types[0]
+        types = types[1:]
+        if argument_type == 'i':
+            argument = str(to_long(argument))
+        elif argument_type == 's':
+            if function_name == "SendDragonKeys" or function_name == "SendKeys" \
+               or function_name == "SendSystemKeys":
+                argument = convert_keys(argument)
+        else:
+            # there is a vcl2py.pl bug if this happens:
+            raise VocolaRuntimeError("Vocola compiler error: unknown data type "
+                                     + " specifier '" + argument_type +
+                                     "' supplied for a Dragon procedure argument")
+        new_arguments += [argument]
+    print(function_name + "("+
+          ",".join([repr(a) for a in new_arguments]) + ")")
+    direct_Dragon(function_name, argument_types, new_arguments)
+
+
+dragon_prefix = ""
+
+def direct_Dragon(function_name, argument_types, arguments):
     global dragon_prefix
+
+    if function_name == "SendDragonKeys":
+        direct_playString(arguments[0])
+        return
 
     def quoteAsVisualBasicString(argument):
         q = argument
@@ -195,20 +240,8 @@ def call_Dragon(function_name, argument_types, arguments):
     for argument in arguments:
         argument_type = argument_types[0]
         argument_types = argument_types[1:]
-
-        if argument_type == 'i':
-            argument = str(to_long(argument))
-        elif argument_type == 's':
-            if function_name == "SendDragonKeys" or function_name == "SendKeys" \
-                    or function_name == "SendSystemKeys":
-                argument = convert_keys(argument)
+        if argument_type == 's':
             argument = quoteAsVisualBasicString(str(argument))
-        else:
-            # there is a vcl2py.pl bug if this happens:
-            raise VocolaRuntimeError("Vocola compiler error: unknown data type "
-                                     + " specifier '" + argument_type +
-                                     "' supplied for a Dragon procedure argument")
-
         if script != '':
             script += ','
         script += ' ' + argument
@@ -217,9 +250,7 @@ def call_Dragon(function_name, argument_types, arguments):
     dragon_prefix = ""
     #print('[' + script + ']')
     try:
-        if function_name == "SendDragonKeys":
-            natlink.playString(convert_keys(arguments[0]))
-        elif function_name == "ShiftKey":
+        if function_name == "ShiftKey":
             dragon_prefix = script + chr(10)
         else:
             natlink.execScript(script)
