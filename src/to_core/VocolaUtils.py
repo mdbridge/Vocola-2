@@ -3,6 +3,8 @@
 ### VocolaUtils.py - Code used by Vocola's generated Python code
 ###
 ###
+### Copyright (c) 2020-2021 by Mark Lillibridge.
+###
 ### Copyright (c) 2015 by Hewlett-Packard Development Company, L.P.
 ###
 ### Copyright (c) 2002-2011 by Rick Mohr.
@@ -46,6 +48,26 @@ import natlink
 
 # DNS short name of current language being used, set by _vocola_main.py:
 Language = None
+
+
+
+##
+## Dragon proxy detection
+##
+
+def getProxyPlayString():
+    try:
+        from vocola_ext_dragon_proxy import proxy_playString
+        return proxy_playString
+    except ImportError:
+        return direct_playString
+
+def getProxyDragon():
+    try:
+        from vocola_ext_dragon_proxy import proxy_Dragon
+        return proxy_Dragon
+    except ImportError:
+        return direct_Dragon
 
 
 
@@ -146,8 +168,8 @@ def do_flush(functional_context, buffer):
 
 def call_playString(keys):
     keys = convert_keys(keys)
-    print("playString("+ repr(keys) + ")")
-    direct_playString(keys)
+    #print("playString("+ repr(keys) + ")")
+    (getProxyPlayString())(keys)
 
 def convert_keys(keys):
     # Roughly, {<keyname>_<count>}'s -> {<keyname> <count>}:
@@ -217,7 +239,7 @@ def call_Dragon(function_name, argument_types, arguments):
         new_arguments += [argument]
     print(function_name + "("+
           ",".join([repr(a) for a in new_arguments]) + ")")
-    direct_Dragon(function_name, argument_types, new_arguments)
+    (getProxyDragon())(function_name, argument_types, new_arguments)
 
 
 dragon_prefix = ""
