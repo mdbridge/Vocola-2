@@ -20,6 +20,7 @@ def proxy_playString(keys):
     else:
         # Example of what you can do with this proxy:
         # # DNS 11.5 @ bug workaround (change @ to shift+2 including in {ctrl+@}):
+        # # (DNS uses alt_numpad to send @s, but this doesn't work for ctrl+@, etc.)
         # keys = re.sub(r"""(?x) 
         #                   \{ ( (?: [a-zA-Z\x80-\xff]+ \+ )* )
         #                         @
