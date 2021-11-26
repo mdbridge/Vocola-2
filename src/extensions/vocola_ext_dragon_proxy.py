@@ -19,13 +19,13 @@ def proxy_playString(keys):
         vocola_ext_keys.send_input(keys)
     else:
         # Example of what you can do with this proxy:
-        # # DNS 11.5 @ bug workaround (change @ to shift+2 including in {ctrl+@}):
-        # # (DNS uses alt_numpad to send @s, but this doesn't work for ctrl+@, etc.)
-        # keys = re.sub(r"""(?x) 
-        #                   \{ ( (?: [a-zA-Z\x80-\xff]+ \+ )* )
-        #                         @
-        #                   ( (?: [ ] \d+)? ) \}""", r'{\1shift+2\2}', keys)
-        # keys = re.sub(r"""@""", "{shift+2}", keys)
+        # DNS 11.5 @ bug workaround (change @ to shift+2 including in {ctrl+@}):
+        # (DNS uses alt_numpad to send @s, but this doesn't work for ctrl+@, etc.)
+        keys = re.sub(r"""(?x) 
+                          \{ ( (?: [a-zA-Z\x80-\xff]+ \+ )* )
+                                @
+                          ( (?: [ ] \d+)? ) \}""", r'{\1shift+2\2}', keys)
+        keys = re.sub(r"""@""", "{shift+2}", keys)
 
         if verbose:
             print("playString->SDK("+ repr(keys) + ")")
