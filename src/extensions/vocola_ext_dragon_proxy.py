@@ -11,7 +11,15 @@ use_send_input = True
 verbose = True
 
 
+def do_nothing(keys, action):
+    pass
+
+callback = do_nothing
+
+
 def proxy_playString(keys):
+    callback(keys)
+
     if use_send_input:
         if verbose:
             print("playString->SI("+ repr(keys) + ")")
@@ -32,6 +40,12 @@ def proxy_playString(keys):
         VocolaUtils.direct_playString(keys)
 
 def proxy_Dragon(function_name, argument_types, arguments):
+    if function_name == "SendDragonKeys":
+        do_callback(arguments[0])
+    else:
+        script = function_name
+        do_callback(None, script)
+
     if verbose:
         print("Dragon: "+function_name+"("+repr(argument_types)+": "+repr(arguments)+")")
     VocolaUtils.direct_Dragon(function_name, argument_types, arguments)

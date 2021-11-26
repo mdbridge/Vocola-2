@@ -725,7 +725,7 @@ def pre_action(keys, action):
         control = basic_control[ID]
         if control:
             control.vocola_pre_action(keys, action)
-VocolaUtils.callback = pre_action
+DragonProxy.callback = pre_action
 
 
 command = VortexGrammar()
@@ -736,7 +736,7 @@ def unload():
     if command:
         command.terminate()
     command = None
-    VocolaUtils.callback = VocolaUtils.do_nothing
+    DragonProxy.callback = VocolaUtils.do_nothing
     
     global catchAllGrammar
     if catchAllGrammar:
