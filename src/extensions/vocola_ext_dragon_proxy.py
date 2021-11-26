@@ -18,7 +18,7 @@ callback = do_nothing
 
 
 def proxy_playString(keys):
-    callback(keys)
+    callback(keys, None)
 
     if use_send_input:
         if verbose:
@@ -41,10 +41,10 @@ def proxy_playString(keys):
 
 def proxy_Dragon(function_name, argument_types, arguments):
     if function_name == "SendDragonKeys":
-        do_callback(arguments[0])
+        callback(arguments[0], None)
     else:
         script = function_name
-        do_callback(None, script)
+        callback(None, script)
 
     if verbose:
         print("Dragon: "+function_name+"("+repr(argument_types)+": "+repr(arguments)+")")

@@ -43,6 +43,7 @@ import VocolaUtils
 
 import vocola_ext_clipboard
 import vocola_ext_keys
+import vocola_ext_dragon_proxy
 
 
 
@@ -725,7 +726,7 @@ def pre_action(keys, action):
         control = basic_control[ID]
         if control:
             control.vocola_pre_action(keys, action)
-DragonProxy.callback = pre_action
+vocola_ext_dragon_proxy.callback = pre_action
 
 
 command = VortexGrammar()
@@ -736,7 +737,7 @@ def unload():
     if command:
         command.terminate()
     command = None
-    DragonProxy.callback = VocolaUtils.do_nothing
+    vocola_ext_dragon_proxy.callback = vocola_ext_dragon_proxy.do_nothing
     
     global catchAllGrammar
     if catchAllGrammar:
