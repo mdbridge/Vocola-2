@@ -3,6 +3,8 @@
 ### VocolaUtils.py - Code used by Vocola's generated Python code
 ###
 ###
+### Copyright (c) 2020-2021 by Mark Lillibridge.
+###
 ### Copyright (c) 2015 by Hewlett-Packard Development Company, L.P.
 ###
 ### Copyright (c) 2002-2011 by Rick Mohr.
