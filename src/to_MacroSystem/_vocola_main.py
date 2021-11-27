@@ -6,6 +6,8 @@
 #    - Autoloading of changed command files
 #
 #
+# Copyright (c) 2020 by Mark Lillibridge.
+#
 # Copyright (c) 2012-2015 by Hewlett-Packard Development Company, L.P.
 #
 # Copyright (c) 2002-2012 by Rick Mohr.
@@ -637,7 +639,7 @@ purgeOutput()
 if not VocolaEnabled:
     print("Vocola not active")
 else:
-    print("Vocola version 2.8.7ALPHA starting...")
+    print("Vocola version 2.8.7 starting...")
     thisGrammar = ThisGrammar()
     thisGrammar.initialize()
 

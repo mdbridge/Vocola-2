@@ -3,6 +3,8 @@
 ###                      present vocola_ext_*.py files.
 ###
 ###
+### Copyright (c) 2020-21 by Mark Lillibridge.
+###
 ### Copyright (c) 2011, 2015 by Hewlett-Packard Development Company, L.P.
 ###
 ### Permission is hereby granted, free of charge, to any person

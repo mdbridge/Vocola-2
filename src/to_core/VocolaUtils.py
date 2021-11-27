@@ -227,8 +227,6 @@ def call_Dragon(function_name, argument_types, arguments):
                                      + " specifier '" + argument_type +
                                      "' supplied for a Dragon procedure argument")
         new_arguments += [argument]
-    print(function_name + "("+
-          ",".join([repr(a) for a in new_arguments]) + ")")
     (getProxyDragon())(function_name, argument_types, new_arguments)
 
 
