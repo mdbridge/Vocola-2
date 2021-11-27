@@ -4,7 +4,7 @@
 ### Inspired by windict.py, written by Joel Gould.
 ###
 ###
-### Copyright 2015-2016 by Mark Lillibridge.
+### Copyright 2015-2016, 2021 by Mark Lillibridge.
 ###
 ### Permission is hereby granted, free of charge, to any person
 ### obtaining a copy of this software and associated documentation files
@@ -726,7 +726,6 @@ def pre_action(keys, action):
         control = basic_control[ID]
         if control:
             control.vocola_pre_action(keys, action)
-vocola_ext_dragon_proxy.callback = pre_action
 
 
 command = VortexGrammar()
@@ -737,7 +736,6 @@ def unload():
     if command:
         command.terminate()
     command = None
-    vocola_ext_dragon_proxy.callback = vocola_ext_dragon_proxy.do_nothing
     
     global catchAllGrammar
     if catchAllGrammar:

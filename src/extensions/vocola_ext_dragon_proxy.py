@@ -11,14 +11,16 @@ use_send_input = True
 verbose = False
 
 
-def do_nothing(keys, action):
-    pass
-
-callback = do_nothing
+def notify_vortex(keys, action):
+    try:
+        from vortex import pre_action
+        pre_action(keys, action)
+    except ImportError:
+        pass
 
 
 def proxy_playString(keys):
-    callback(keys, None)
+    notify_vortex(keys, None)
 
     if use_send_input:
         if verbose:
@@ -41,10 +43,10 @@ def proxy_playString(keys):
 
 def proxy_Dragon(function_name, argument_types, arguments):
     if function_name == "SendDragonKeys":
-        callback(arguments[0], None)
+        notify_vortex(arguments[0], None)
     else:
         script = function_name
-        callback(None, script)
+        notify_vortex(None, script)
 
     if verbose:
         print("Dragon: " + function_name + "(" +
