@@ -33,7 +33,9 @@ def proxy_playString(keys):
 
 def proxy_Dragon(function_name, argument_types, arguments):
     if verbose:
-        print("Dragon: "+function_name+"("+repr(argument_types)+": "+repr(arguments)+")")
+        print("Dragon: " + function_name + "(" +
+          ",".join([repr(a) for a in new_arguments]) + 
+          ")")
     VocolaUtils.direct_Dragon(function_name, argument_types, arguments)
 
 
