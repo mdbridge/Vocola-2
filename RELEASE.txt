@@ -46,13 +46,16 @@ bump version number:
 
 bump copyright notices?
 
+    find . -type f -exec grep --color=always -H -i 'copyright' {} \; -print | grep -v .git
+
+
 #git log  beta --not HEAD
 #git branch -D beta
 
 make clean
 make
-cp build/Vocola.zip releases/Vocola-2-8-6.zip
-git add releases/Vocola-2-8-6.zip
+cp build/Vocola.zip releases/Vocola-2-8-7.zip
+git add releases/Vocola-2-8-7.zip
 git commit -a
 
 
@@ -67,12 +70,12 @@ make compare
 
 
 
-git tag -a v2.8.6
-Version 2.8.6, released July 2, 2016
+git tag -a v2.8.7
+Version 2.8.7, released ??
 
 <release notes for just this version>
 
-git checkout -b 2.8.6
+git checkout -b 2.8.7
 git checkout master
 git push  
 git push origin --tags
@@ -84,7 +87,7 @@ update Vocola website?
     "upload Vocola" Release-2-8-notes.txt
     cd ..
     cd releases
-    "upload Vocola" Vocola-2-8-6.zip
+    "upload Vocola" Vocola-2-8-7.zip
     
     CD ~/voice/Vocola_development/documentation
     make clean
