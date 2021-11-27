@@ -8,7 +8,7 @@
 import VocolaUtils
 
 use_send_input = True
-verbose = True
+verbose = False
 
 
 def proxy_playString(keys):
