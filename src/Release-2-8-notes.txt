@@ -1,8 +1,38 @@
 New in 2.8.7:
 
+! By default, Vocola now uses SendInput instead of SendDragonKeys to
+  send keystrokes.  This should work better in most cases: SendInput is
+  immune to the character doubling/dropping bug, for example.
+  SendInput, however, does not work with UAC-elevated windows and may
+  have issues with some foreign-language keyboard settings.  
+
+  Accordingly, you may now temporarily switch back to SendDragonKeys via
+  a voice command, add code in the the DragonProxy extension (see below)
+  to further translate keystrokes as needed, or simply delete the
+  DragonProxy extension to permanently switch back to using
+  SendDragonKeys.  
+
+  More information on the different ways of sending keystrokes may be
+  found on the Vocola 2 website (http://vocola.net/v2).
+
 ! The following unofficial Vocola extensions have been made official,
   and are now included in the Vocola 2 release:
-    Clipboard, Date, Env, Keys, Subprocess,  Variable, and Vocola
+    Clipboard, Date, Env, Keys, Subprocess, Variable, and Vocola
+
+! Python version 2.6 is no longer supported
+
+* Vocola now supports a _Dragon proxy_, which is a special Vocola
+  extension that can intercept and change or redirect Vocola's calls to
+  Dragon.  A starter version of the proxy is provided which can switch
+  back and forth between SendDragonKeys and SendInput for default
+  keystrokes as well as print out Dragon actions when verbose mode is
+  turned on.
+
+* Vocola now prints an error if the user redefines an extension function
+
+* A great deal of portability work has been done under the covers to
+  make Vocola 2 work with Python 3.  Hopefully the next version will
+  support Python 3.
 
 * Vocola 2 is being refactored to be more flexible.  As part of this, it
   is now possible to choose a backend dynamically at "compile time".
