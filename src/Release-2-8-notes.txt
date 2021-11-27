@@ -1,11 +1,19 @@
 New in 2.8.7:
 
 ! By default, Vocola now uses SendInput instead of SendDragonKeys to
-  send keystrokes.  This should work better in most cases, but may have
-  issues with some foreign-language keyboard settings.  If so, you can
-  either switch back to using SendDragonKeys by changing the default in
-  the DragonProxy extension (see below) or add code to further translate
-  keystrokes as needed.
+  send keystrokes.  This should work better in most cases: SendInput is
+  immune to the character doubling/dropping bug, for example.
+  SendInput, however, does not work with UAC-elevated windows and may
+  have issues with some foreign-language keyboard settings.  
+
+  Accordingly, you may now temporarily switch back to SendDragonKeys via
+  a voice command, add code in the the DragonProxy extension (see below)
+  to further translate keystrokes as needed, or simply delete the
+  DragonProxy extension to permanently switch back to using
+  SendDragonKeys.  
+
+  More information on the different ways of sending keystrokes may be
+  found on the Vocola 2 website (http://vocola.net/v2).
 
 ! The following unofficial Vocola extensions have been made official,
   and are now included in the Vocola 2 release:
