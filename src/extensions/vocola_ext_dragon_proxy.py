@@ -13,7 +13,7 @@ verbose = False
 
 def notify_vortex(keys, action):
     try:
-        from vortex import pre_action
+        from _vortex import pre_action
         pre_action(keys, action)
     except ImportError:
         pass
