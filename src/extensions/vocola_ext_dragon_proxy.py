@@ -2,9 +2,10 @@
 ### Module DragonProxy
 ### 
 ### Author:  Mark Lillibridge
-### Version: 1.0
+### Version: 1.0+at_patch
 ### 
 
+import re
 import VocolaUtils
 
 use_send_input = True
