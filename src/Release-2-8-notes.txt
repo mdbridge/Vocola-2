@@ -13,7 +13,8 @@ New in 2.8.7:
   SendDragonKeys.  
 
   More information on the different ways of sending keystrokes may be
-  found on the Vocola 2 website (http://vocola.net/v2).
+  found on the Vocola 2 website at
+  http://vocola.net/v2/SendingKeystrokes.asp.
 
 ! The following unofficial Vocola extensions have been made official,
   and are now included in the Vocola 2 release:
