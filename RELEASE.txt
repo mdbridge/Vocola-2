@@ -1,7 +1,7 @@
 ##
 ## Mark's notes on how to release a version of Vocola
 ##
-## Still need work to be comprehensible to others.  :-(
+## Still needs work to be comprehensible to others.  :-(
 ##
 
 
