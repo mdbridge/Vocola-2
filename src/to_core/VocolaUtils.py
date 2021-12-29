@@ -34,7 +34,6 @@ from __future__ import print_function
 from builtins import int
 
 import re
-import string
 import sys
 from   types import *
 import traceback       # for debugging traceback code in handle_error

@@ -177,7 +177,7 @@ def emit_context_activations(contexts):
                 emit(2, "self.activate_rule('" + names[0] + "', moduleInfo[2], True)\n")
         else:
             targets = [make_safe_python_string(target) for target in targets]
-            tests = " or ".join(["string.find(title,'" + target + "') >= 0" for target in targets])
+            tests = " or ".join(["str.find(title,'" + target + "') >= 0" for target in targets])
             emit(2, "status = (" + tests + ")\n")
             emit(2, "self.activate_rule('" + names[0] + "', moduleInfo[2], status)\n")
     emit(0, "\n")
