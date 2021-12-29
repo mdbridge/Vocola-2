@@ -104,7 +104,7 @@ def format_words2(word_list):
     result = ""
     for word in word_list:
         # Convert to written form if necessary, e.g. "@\at-sign" --> "@"
-        backslashPosition = string.find(word, "\\")
+        backslashPosition = str.find(word, "\\")
         if backslashPosition > 0:
             word = word[:backslashPosition]
         if result != "":
