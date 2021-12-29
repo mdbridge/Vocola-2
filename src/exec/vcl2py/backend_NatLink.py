@@ -167,7 +167,7 @@ def emit_context_activations(contexts):
 
     # Emit code to activate the context's commands iff one of the context
     # strings matches the current window
-    emit(2, "title = string.lower(moduleInfo[1])\n")
+    emit(2, "title = str.lower(moduleInfo[1])\n")
     for context in contexts:
         names = context["RULENAMES"]
         if len(names) == 0: continue
