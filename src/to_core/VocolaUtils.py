@@ -49,15 +49,6 @@ import natlink
 Language = None
 
 
-def do_nothing(keys, action):
-    pass
-
-callback = do_nothing
-
-def do_callback(keys=None, action=None):
-    callback(keys, action)
-
-
 
 ##
 ## Dragon proxy detection
@@ -301,7 +292,6 @@ def call_Unimacro(argumentString):
     if unimacro_available:
         #print('[' + argumentString + ']')
         try:
-            do_callback(None, "Unimacro " + argumentString)
             actions.doAction(argumentString)
         except Exception as e:
             m = "when Vocola called Unimacro to execute:\n" \
