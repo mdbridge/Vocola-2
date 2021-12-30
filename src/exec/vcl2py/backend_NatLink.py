@@ -167,7 +167,7 @@ def emit_context_activations(contexts):
 
     # Emit code to activate the context's commands iff one of the context
     # strings matches the current window
-    emit(2, "title = string.lower(moduleInfo[1])\n")
+    emit(2, "title = moduleInfo[1].lower()\n")
     for context in contexts:
         names = context["RULENAMES"]
         if len(names) == 0: continue
@@ -177,7 +177,7 @@ def emit_context_activations(contexts):
                 emit(2, "self.activate_rule('" + names[0] + "', moduleInfo[2], True)\n")
         else:
             targets = [make_safe_python_string(target) for target in targets]
-            tests = " or ".join(["string.find(title,'" + target + "') >= 0" for target in targets])
+            tests = " or ".join(["str.find(title,'" + target + "') >= 0" for target in targets])
             emit(2, "status = (" + tests + ")\n")
             emit(2, "self.activate_rule('" + names[0] + "', moduleInfo[2], status)\n")
     emit(0, "\n")
