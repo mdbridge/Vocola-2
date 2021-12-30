@@ -260,7 +260,7 @@ class ApplicationControl:
 
     def play_string(self, keys):
         keys  = keys.replace("\n", "{enter}")
-        shift = "{" + VocolaUtils.name_for_shift() + "}"
+        shift = VocolaUtils.shift_prefix()
 
         # the following does not work because it causes
         # dictation_change_callback to be called:
