@@ -9,6 +9,9 @@ import os
 import re
 import sys
 
+from vcl2py.ast       import *
+from vcl2py.generate  import generate_grammar
+from vcl2py.iil       import unparse_grammar
 from vcl2py.lex       import initialize_token_properties
 from vcl2py.log       import *
 from vcl2py.parse     import parse_input, check_forward_references
@@ -16,6 +19,7 @@ from vcl2py.transform import transform
 
 
 VocolaVersion = "2.8.8+ALPHA"
+VocolaVersion += "[backend refactoring]"
 
 
 # ---------------------------------------------------------------------------
@@ -32,10 +36,12 @@ def usage(message=""):
 
     print('''
 Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
-  where <option> ::= -debug <n> | -extensions <filename> | -f
-                  |-INI_file <filename> | -log_file <filename> | -log_stdout
-                  | -max_commands <n> | -q | -suffix <s>
+  where <option> ::= -f | -extensions <filename> 
+                  | -INI_file <filename> | -q
+                  | -max_commands <n> | -numbers <number_words_from_zero>
+		  | -log_file <filename> | -log_stdout
                   | -backend <backend>
+		  | -debug <n> | -stage {parse,transform,generate,backend}
 
 ''', file=sys.stderr)
     print("Vocola 2 version: " + VocolaVersion, file=sys.stderr)
@@ -52,6 +58,7 @@ def default_parameters():
     params["Vocola_version"]   = VocolaVersion
     # debug states: 0          = no info, 1 = show statements, 2 = detailed info
     params["debug"]            = 0
+    params["stage"]            = "backend"
 
     params["extensions_file"]  = None
     params["ignore_INI_file"]  = False
@@ -94,6 +101,7 @@ def parse_command_arguments(argv, default_params):
             p["maximum_commands"] = safe_int(argument, 1)
         elif option == "-numbers":
             p["number_words"] = parse_number_words(argument)
+        elif option == "-stage":      p["stage"]           = argument
         elif option == "-suffix":     p["suffix"]          = argument
         else:
             usage("unknown option: " + option)
@@ -103,6 +111,9 @@ def parse_command_arguments(argv, default_params):
         out_folder        = argv[1]
     else:
         usage()
+
+    if not extension_for_stage(p["stage"]):
+        usage("unknown stage: " + p["stage"])
 
     return p, inputFileOrFolder, out_folder
 
@@ -295,7 +306,9 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         module_name = module_name[:module_name.find("@")]
 
     out_file = convert_filename(in_file)
-    out_file = out_folder + os.sep + out_file + params["suffix"] + ".py"
+    stage = params["stage"]
+    extension = extension_for_stage(stage)
+    out_file = out_folder + os.sep + out_file + params["suffix"] + extension
 
     in_path = in_folder + os.sep + input_name
     if os.path.exists(in_path):
@@ -313,6 +326,19 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         = parse_input(input_name, in_folder, extension_functions, Debug)
     if logged_errors() == 0:
         check_forward_references()
+    if stage == "parse":
+        with open(out_file, "w") as out:
+            print("STATEMENTS:", file=out)
+            print(unparse_statements(statements), end="", file=out)
+            print("DEFINITIONS:", file=out)
+            for name, definition in definitions.items():
+                print(unparse_definition(definition), end="", file=out)
+            print("\nFUNCTIONS:", file=out)
+            for name, function_definition in function_definitions.items():
+                print(unparse_function_definition(function_definition), end="", file=out)
+            print("\nSTATEMENT_COUNT: " + str(statement_count), file=out)
+            print("FILE_EMPTY: " + str(file_empty), file=out)
+        return logged_errors()
 
     # Prepend a "global" context statement if necessary
     if len(statements) == 0 or statements[0]["TYPE"] != "context":
@@ -320,6 +346,15 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         context["TYPE"]    = "context"
         context["STRINGS"] = [""]
         statements.insert(0, context)
+
+    if stage == "transform":
+        with open(out_file, "w") as out:
+            print("BEFORE STATEMENTS:", file=out)
+            print(unparse_statements(statements), end="", file=out)
+            statements = transform(statements, function_definitions, statement_count)
+            print("AFTER STATEMENTS:", file=out)
+            print(unparse_statements(statements), end="", file=out)
+        return logged_errors()
     #print_log(unparse_statements(statements), True)
     statements = transform(statements, function_definitions, statement_count)
     #print_log(unparse_statements(statements), True)
@@ -345,11 +380,27 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         print_log("  " + str(error_count) + " error" + s + " -- file not converted.")
         return error_count
 
+    grammar = generate_grammar(statements, definitions, params_per_file)
+    if stage == "generate":
+        with open(out_file, "w") as out:
+            print(unparse_grammar(grammar), end="", file=out)
+        return logged_errors()
+
     Backend.output(out_file, module_name, statements, definitions, 
                    file_empty, should_emit_dictation_support,
                    extension_functions, params_per_file)
 
     return logged_errors()
+
+def extension_for_stage(stage):
+    if stage == "parse":
+       return ".txt"
+    elif stage == "transform":
+       return ".txt"
+    elif stage == "generate":
+       return ".txt"
+    elif stage == "backend":
+       return ".py"
 
 
 #

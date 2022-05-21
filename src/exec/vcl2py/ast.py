@@ -41,6 +41,7 @@
 #       TO       - end number of range
 #    menu:
 #       COMMANDS - list of "command" structures defining the menu
+#    dictation:
 #    optionalterms:
 #       TERMS   - list of "term" structures
 #
