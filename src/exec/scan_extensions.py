@@ -3,6 +3,8 @@
 ###                      present vocola_ext_*.py files.
 ###
 ###
+### Copyright (c) 2020-21 by Mark Lillibridge.
+###
 ### Copyright (c) 2011, 2015 by Hewlett-Packard Development Company, L.P.
 ###
 ### Permission is hereby granted, free of charge, to any person
@@ -25,6 +27,8 @@
 ### OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ### DEALINGS IN THE SOFTWARE.
 ###
+
+from __future__ import print_function
 
 import os
 import sys
@@ -119,11 +123,11 @@ def split_arguments(arguments):
 
 def log(message, verbose):
     if verbose:
-        print message
+        print(message)
         sys.stdout.flush()
 
 def error(message):
-    print >> sys.stderr, message
+    print(message, file=sys.stderr)
     sys.stderr.flush()
 
 
@@ -141,7 +145,7 @@ def main(argv):
         verbose = True
 
     if len(argv) != 1:
-        print "%s: usage: %s [-v] <extensions_folder>" % (program, program)
+        print("%s: usage: %s [-v] <extensions_folder>" % (program, program))
         return
     extensions_folder = argv[0]
 

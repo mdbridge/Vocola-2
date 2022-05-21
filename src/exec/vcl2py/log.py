@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 def set_log(target):
     global LOG, Error_count
     LOG = target
@@ -6,9 +8,9 @@ def set_log(target):
 
 def print_log(message, no_newline=False):
     if no_newline:
-        print >>LOG, message,
+        print(message, end='', file=LOG)
     else:
-        print >>LOG, message
+        print(message, file=LOG)
 
 
 def set_error_prologue(message):

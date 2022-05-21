@@ -1,7 +1,10 @@
+from __future__ import print_function
+
 #
 # Main control flow module
 #
 
+from builtins import str
 import os
 import re
 import sys
@@ -12,30 +15,30 @@ from vcl2py.parse     import parse_input, check_forward_references
 from vcl2py.transform import transform
 
 
-VocolaVersion = "2.8.7ALPHA"
+VocolaVersion = "2.8.8+ALPHA"
 
 
 # ---------------------------------------------------------------------------
 # Messages to standard error
 
 def fatal_error(message):
-    print >>sys.stderr, "vcl2py.py: Error: " + message
+    print("vcl2py.py: Error: " + message, file=sys.stderr)
     sys.exit(99)
 
 
 def usage(message=""):
     if message != "":
-        print >>sys.stderr, "vcl2py.py: Error: " + message
+        print("vcl2py.py: Error: " + message, file=sys.stderr)
 
-    print >>sys.stderr, '''
+    print('''
 Usage: python vcl2py.pl [<option>...] <inputFileOrFolder> <outputFolder>
   where <option> ::= -debug <n> | -extensions <filename> | -f
                   |-INI_file <filename> | -log_file <filename> | -log_stdout
                   | -max_commands <n> | -q | -suffix <s>
                   | -backend <backend>
 
-'''
-    print >>sys.stderr, "Vocola 2 version: " + VocolaVersion
+''', file=sys.stderr)
+    print("Vocola 2 version: " + VocolaVersion, file=sys.stderr)
     sys.exit(99)
 
 
@@ -107,7 +110,10 @@ def parse_command_arguments(argv, default_params):
 def read_INI_file(ini_file, default_params):
     params = default_params
     try:
-        input = open(ini_file)
+        if  sys.version_info[0] < 3:
+            input = open(ini_file)
+        else:
+            input = open(ini_file, encoding="latin-1")
         for line in input:
             match = re.match(r'^(.*?)=(.*)$', line)
             if not match: continue
@@ -115,7 +121,7 @@ def read_INI_file(ini_file, default_params):
             value   = match.group(2)
             if keyword == "MaximumCommands":
                 params["maximum_commands"] = safe_int(value, 1)
-    except IOError, e:
+    except IOError as e:
         pass
     return params
 
@@ -185,10 +191,14 @@ def main_routine():
         set_log(sys.stdout)
     else:
         try:
-            set_log(open(log_file, "w"))
-        except IOError, e:
+            if sys.version_info[0] < 3:
+                set_log(open(log_file, "w"))
+            else:
+                set_log(open(log_file, "w", encoding="latin-1"))
+        except IOError as e:
             fatal_error("Unable to open log file '" + log_file +
                         "' for writing: " + str(e))
+    set_error_prologue("Preparing to convert files")
 
     if Debug >= 1: print_log("INI file is '" + params["INI_file"] + "'")
 
@@ -238,8 +248,10 @@ def read_extensions_file(extensions_filename):
             module_name       = match.group(5)
             function_name     = match.group(6)
 
+	    if extension_functions.has_key(extension_name):
+	       log_error("Redefinition of extension function: %s" % (extension_name))
             extension_functions[extension_name] = [minimum_arguments, maximum_arguments, needs_flushing, module_name, function_name]
-    except IOError, e:
+    except IOError as e:
         pass
     return extension_functions
 
@@ -262,7 +274,7 @@ def expand_in_file(in_file, in_folder):
                 if not (match and match.group(1).lower() != machine):
                     result += [in_file]
         return result
-    except IOError, e:
+    except IOError as e:
         fatal_error("Couldn't open/list folder '" + in_folder + "': " + str(e))
 
 
