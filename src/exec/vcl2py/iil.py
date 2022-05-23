@@ -3,7 +3,7 @@ import re
 # Internal instruction language
 
 # grammar:
-#       EXECUTABLE    - name of executable if restricted to one executable or "" if not
+#       EXECUTABLE    - Python list of names of executables restricted to or [] if not
 #       MAX_COMMANDS  - maximum number of commands per utterance
 #       CONTEXTS      - Python map from contexts (Python tuple of strings) to rule names
 #                       (empty tuple means applies everywhere)
@@ -31,7 +31,7 @@ import re
 
 def unparse_grammar(grammar):
     result = "grammar:\n"
-    result += "  EXECUTABLE: " + grammar["EXECUTABLE"] + "\n"
+    result += "  EXECUTABLE: " + ",".join(grammar["EXECUTABLE"]) + "\n"
     result += "  MAX_COMMANDS: " + str(grammar["MAX_COMMANDS"]) + "\n"
     result += "  CONTEXTS:\n" + unparse_contexts(grammar["CONTEXTS"])
     result += "  RULES:\n"

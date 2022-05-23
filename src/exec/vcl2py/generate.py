@@ -2,18 +2,30 @@ from vcl2py.ast import *
 from vcl2py.iil import *
 from vcl2py.log import *
 
-def generate_grammar(statements, definitions, params_per_file):
+def generate_grammar(statements, definitions, module_name, params_per_file):
     global Number_words
     Number_words = params_per_file["number_words"]
 
     grammar = {}
-    grammar["EXECUTABLE"] = ""
+    grammar["EXECUTABLE"] = generate_executable_list(module_name)
     grammar["MAX_COMMANDS"] = params_per_file["maximum_commands"]
     contexts, rules = generate_rules(definitions, statements)
     grammar["RULES"] = rules
     grammar["CONTEXTS"] = contexts
     # print(unparse_grammar(grammar))
     return grammar
+
+def generate_executable_list(module_name):
+    name = module_name
+    if name.startswith("_"):
+        return []
+    executable_list = [name]
+    while name.find("_") != -1:
+        match = re.match(r'^(.+?)_+[^_]*$', name)
+        if not match: break
+        name = match.group(1)
+        executable_list.append(name)
+    return executable_list
 
 def generate_rules(definitions, statements):
     contexts = {}
