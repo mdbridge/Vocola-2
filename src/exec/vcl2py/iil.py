@@ -5,6 +5,8 @@ import re
 # grammar:
 #       EXECUTABLE    - name of executable if restricted to one executable or "" if not
 #       MAX_COMMANDS  - maximum number of commands per utterance
+#       CONTEXTS      - Python map from contexts (Python tuple of strings) to rule names
+#                       (empty tuple means applies everywhere)
 #       RULES         - Python map from rule names to named rules
 #
 # rule:
@@ -31,6 +33,7 @@ def unparse_grammar(grammar):
     result = "grammar:\n"
     result += "  EXECUTABLE: " + grammar["EXECUTABLE"] + "\n"
     result += "  MAX_COMMANDS: " + str(grammar["MAX_COMMANDS"]) + "\n"
+    result += "  CONTEXTS:\n" + unparse_contexts(grammar["CONTEXTS"])
     result += "  RULES:\n"
     for name, rule in sorted(grammar["RULES"].items(), key=ordering):
     	result += unparse_rule(name, rule)
@@ -41,6 +44,18 @@ def ordering(x):
     if re.match(r'^[0-9]*$', x):
         return "A_" + str(int(x)+100000)
     return "B_" + x
+
+def unparse_contexts(contexts):
+    result = ""
+    for context, rule_names in sorted(contexts.items()):
+        result += unparse_context(context) + ":"
+        for rule_name in rule_names:
+            result += " <" + rule_name + ">"
+        result += "\n"
+    return result
+
+def unparse_context(context):
+    return "|".join(context)
 
 def unparse_rule(name, rule):
     result = ""

@@ -9,19 +9,32 @@ def generate_grammar(statements, definitions, params_per_file):
     grammar = {}
     grammar["EXECUTABLE"] = ""
     grammar["MAX_COMMANDS"] = params_per_file["maximum_commands"]
-    grammar["RULES"] = generate_rules(definitions, statements)
+    contexts, rules = generate_rules(definitions, statements)
+    grammar["RULES"] = rules
+    grammar["CONTEXTS"] = contexts
     # print(unparse_grammar(grammar))
     return grammar
 
 def generate_rules(definitions, statements):
-    result = {}
+    contexts = {}
+    rules = {}
     for name, definition in definitions.items():
-    	rule = generate_from_term(definition["MENU"])
-	result[definition["NAME"]] = rule	
+        rule = generate_from_term(definition["MENU"])
+        rules[definition["NAME"]] = rule       
+    context = ()
     for statement in statements:
         if statement["TYPE"] == "command":
-            result[statement["NAME"]] = generate_from_command(statement)
-    return result
+            rules[statement["NAME"]] = generate_from_command(statement)
+            if context not in contexts.keys():
+                contexts[context] = []
+            contexts[context].append(statement["NAME"])
+        elif statement["TYPE"] == "context":
+            ast_context = statement["STRINGS"]
+            if ast_context ==[""]:
+                context = ()
+            else:
+                context = tuple(ast_context)
+    return contexts, rules
 
 
 def generate_from_terms(terms):
@@ -49,7 +62,7 @@ def generate_from_nonoptional_term(term):
     if type == "word":
         rule = generate_from_word(term["TEXT"])
     elif type == "variable":
-	rule["TYPE"] = "rule_reference"
+        rule["TYPE"] = "rule_reference"
         rule["NAME"] = term["TEXT"]
     elif type == "range":
         rule = generate_from_range(term)
@@ -57,7 +70,7 @@ def generate_from_nonoptional_term(term):
         commands = term["COMMANDS"]
         if len(commands) == 1:
             return generate_from_command(commands[0])
-	rule["TYPE"] = "alternatives"
+        rule["TYPE"] = "alternatives"
         choices = []
         for command in commands:
             choices.append(generate_from_command(command))
@@ -95,4 +108,3 @@ def generate_from_range(term):
 
 def generate_from_command(command):
     return generate_from_terms(command["TERMS"])
-
