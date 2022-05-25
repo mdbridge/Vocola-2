@@ -4,7 +4,6 @@ from __future__ import print_function
 # Main control flow module
 #
 
-from builtins import str
 import os
 import re
 import sys
