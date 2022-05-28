@@ -598,6 +598,8 @@ def inline_a_term(unnamed):
     index = 0
     while (index < len(terms)) and (terms[index]["OPTIONAL"] or terms[index]["TYPE"] == "dictation"):
     	  index += 1
+    if index == len(terms):
+        implementation_error("Attempting to process a command without a concrete term or inline-able term")
 
     type = terms[index]["TYPE"]
     number = terms[index]["NUMBER"]

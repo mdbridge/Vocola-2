@@ -1,5 +1,7 @@
 New in 2.8.8:
 
+* Various portability fixes to make Vocola 2 work with Python 3.
+
 
 New in 2.8.7:
 
