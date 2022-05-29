@@ -35,11 +35,13 @@ def unparse_grammar(grammar):
     result += "  MAX_COMMANDS: " + str(grammar["MAX_COMMANDS"]) + "\n"
     result += "  CONTEXTS:\n" + unparse_contexts(grammar["CONTEXTS"])
     result += "  RULES:\n"
-    for name, rule in sorted(grammar["RULES"].items(), key=ordering):
+    for name, rule in sorted(grammar["RULES"].items(), key=_rule_ordering):
     	result += unparse_rule(name, rule)
     return result 
 
-def ordering(x):
+  # first come all rules that are #s in numerical order 
+  # then everything else lexicographically
+def _rule_ordering(x):
     x = x[0]
     if re.match(r'^[0-9]*$', x):
         return "A_" + str(int(x)+100000)
@@ -66,30 +68,22 @@ def unparse_rule(name, rule):
 def unparse_element(element):
     type = element["TYPE"]
     if type == "empty":
-        return "{EMPTY}"
+        return "&EMPTY"
     elif type == "terminal":
         text = element["TEXT"]
         if re.match(r'^[a-zA-Z0-9_]*$', text):
             return text
         else:
-            return "'" + text + "'"
+            return "'" + text.replace("'", "''") + "'"
     elif type == "dictation":
-        return "{DICTATION}"
+        return "&DICTATION"
     elif type == "rule_reference":
         return "<" +  element["NAME"] + ">"
     elif type == "alternatives":
-        result = ""
-        for choice in element["CHOICES"]:
-            if result != "":
-                result += " | "
-            result +=  unparse_element(choice)
-        return "(" + result + ")"
+        inner = [unparse_element(choice) for choice in element["CHOICES"]]
+        return "(" + " | ".join(inner) + ")"
     elif type == "sequence":
-        result = ""
-        for element in element["ELEMENTS"]:
-            if result != "":
-                result += " "
-            result += unparse_element(element)
-        return result
+        inner = [unparse_element(choice) for choice in element["ELEMENTS"]]
+        return "{" + " ".join(inner) + "}"
     else:
-        return "{UNKNOWN:" + type + "}"
+        return "&UNKNOWN:" + type

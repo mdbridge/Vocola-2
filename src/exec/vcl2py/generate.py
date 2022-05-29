@@ -12,7 +12,6 @@ def generate_grammar(statements, definitions, module_name, params_per_file):
     contexts, rules = generate_rules(definitions, statements)
     grammar["RULES"] = rules
     grammar["CONTEXTS"] = contexts
-    # print(unparse_grammar(grammar))
     return grammar
 
 def generate_executable_list(module_name):
@@ -50,12 +49,11 @@ def generate_rules(definitions, statements):
 
 
 def generate_from_terms(terms):
+    if len(terms) == 1:
+        return generate_from_term(terms[0])
     rule = {}
     rule["TYPE"] = "sequence"
-    elements = []
-    for term in terms:
-        elements.append(generate_from_term(term))
-    rule["ELEMENTS"] = elements
+    rule["ELEMENTS"] = [generate_from_term(term) for term in terms]
     return rule
 
 def generate_from_term(term):
@@ -64,8 +62,8 @@ def generate_from_term(term):
         empty["TYPE"] = "empty"
         rule = {}
         rule["TYPE"] = "alternatives"
-        rule["CHOICES"] = [generate_terms(term["TERMS"]), empty]
-
+        rule["CHOICES"] = [generate_from_terms(term["TERMS"]), empty]
+        return rule
     return generate_from_nonoptional_term(term)
 
 def generate_from_nonoptional_term(term):
@@ -83,14 +81,10 @@ def generate_from_nonoptional_term(term):
         if len(commands) == 1:
             return generate_from_command(commands[0])
         rule["TYPE"] = "alternatives"
-        choices = []
-        for command in commands:
-            choices.append(generate_from_command(command))
-        rule["CHOICES"] = choices
+        rule["CHOICES"] = [generate_from_command(command) for command in commands]
     elif type == "dictation":
         rule["TYPE"] = "dictation"
     elif type == "optionalterms":
-        # print(repr(term))
         rule["TYPE"] = "alternatives"
         empty = {}
         empty["TYPE"] = "empty"

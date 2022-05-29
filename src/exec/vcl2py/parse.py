@@ -856,6 +856,7 @@ def verify_menu_terms(terms, has_actions, has_alternatives, other_terms):
             verify_menu_terms(term["TERMS"], has_actions, has_alternatives,
                               other_terms)
         elif type == "variable" or type == "dictation":
+	    #continue # <<<>>>
             error("Alternative cannot contain a variable", term["POSITION"])
         elif type == "menu":
             if other_terms:
