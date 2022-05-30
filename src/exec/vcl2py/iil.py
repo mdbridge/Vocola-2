@@ -10,20 +10,31 @@ import re
 #       RULES         - Python map from rule names to named rules
 #
 # rule:
-#    TYPE - empty/terminal/dictation/rule_reference/sequence/alternatives
+#    TYPE - empty/terminal/dictation/rule_reference/sequence/alternatives/act
 #    empty:
-#       ACTIONS    - Python list of actions
 #    terminal:
-#       TEXT    - text defining the terminal; can be multiple words
-#       ACTIONS    - Python list of actions
+#       TEXT	 - text defining the terminal; can be multiple words
 #    dictation:
 #    rule_reference:
-#       NAME    - The rule name being referenced; must be defined in the grammar's RULES field
+#       NAME	 - The rule name being referenced; must be defined in the grammar's RULES field
 #    alternatives:
-#       CHOICES    - Python list of alternatives, each a rule (need not be named)
+#       CHOICES  - Python list of alternatives, each a rule (need not be named)
 #    sequence:
-#       ELEMENTS    - Python list of elements making up the sequence, each a rule (need not be named)
-#       ACTIONS    - Python list of actions
+#       ELEMENTS - Python list of elements making up the sequence, each a rule (need not be named)
+#    act:
+#       ELEMENT  - the single element that may provide slot(s)
+#       ACTIONS  - Python list of actions
+#
+# action:
+#    TYPE - text/reference/call
+#    text:
+#       TEXT	 - the string value of the action
+#    reference:
+#       SLOT	 - the number of the slot being referenced
+#    call:
+#       NAME	 - the string name of the function being called
+#       CALLTYPE  - dragon/vocola/extension
+#       ARGUMENTS - list of lists of actions, to be passed in call
 
 
 # ---------------------------------------------------------------------------
@@ -59,6 +70,7 @@ def unparse_contexts(contexts):
 def unparse_context(context):
     return "|".join(context)
 
+
 def unparse_rule(name, rule):
     result = ""
     if name:
@@ -85,5 +97,23 @@ def unparse_element(element):
     elif type == "sequence":
         inner = [unparse_element(choice) for choice in element["ELEMENTS"]]
         return "{" + " ".join(inner) + "}"
+    elif type == "act":
+        return unparse_element(element["ELEMENT"]) + "=" + unparse_actions(element["ACTIONS"])
+    else:
+        return "&UNKNOWN:" + type
+
+
+def unparse_actions(actions):
+     return ";".join([unparse_action(action) for action in actions])
+
+def unparse_action(action):
+    type = action["TYPE"]
+    if type == "text":
+        text = action["TEXT"]
+        return '"' + text.replace('"', '""') + '"'
+    elif type == "reference":
+        return "$" + str(action["SLOT"])
+    elif type == "call":
+        return action["NAME"] + "(" +  ",".join([unparse_actions(a) for a in action["ARGUMENTS"]]) + ")"
     else:
         return "&UNKNOWN:" + type

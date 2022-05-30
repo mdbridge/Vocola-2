@@ -48,6 +48,17 @@ def generate_rules(definitions, statements):
     return contexts, rules
 
 
+def generate_from_command(command):
+    element = generate_from_terms(command["TERMS"])
+    if "ACTIONS" not in command.keys():
+        return element
+    ast_actions = command["ACTIONS"]
+    rule = {}
+    rule["TYPE"] = "act"
+    rule["ELEMENT"] = element
+    rule["ACTIONS"] = generate_from_actions(ast_actions)
+    return rule
+    
 def generate_from_terms(terms):
     if len(terms) == 1:
         return generate_from_term(terms[0])
@@ -104,13 +115,45 @@ def generate_from_range(term):
     rule["TYPE"] = "alternatives"
     choices = []
     for number in range(term["FROM"], term["TO"]):
-        if number in Number_words.keys():
-            number_text = Number_words[number]
-        else:
-            number_text = str(number)
-        choices.append(generate_from_word(number_text))
+        choices.append(generate_from_number(number))
     rule["CHOICES"] = choices
     return rule
 
-def generate_from_command(command):
-    return generate_from_terms(command["TERMS"])
+def generate_from_number(number):
+    if number not in Number_words.keys():
+        return generate_from_word(str(number))
+    number_text = Number_words[number]
+    element = generate_from_word(number_text)
+    rule = {}
+    rule["TYPE"] = "act"
+    rule["ELEMENT"] = element
+    rule["ACTIONS"] = [generate_text_action(str(number))]
+    return rule
+
+    
+def generate_from_actions(ast_actions):
+    return [generate_from_action(ast_action) for ast_action in ast_actions]
+
+def generate_from_action(ast_action):
+    action = {}
+    type = ast_action["TYPE"]
+    if type == "word":
+        return generate_text_action(ast_action["TEXT"])
+    elif type == "reference":
+        action["TYPE"] = "reference"
+        action["SLOT"] = ast_action["TEXT"]
+    elif type == "call":
+        action["TYPE"] = "call"
+        action["NAME"] = ast_action["TEXT"]
+        action["CALLTYPE"] = ast_action["CALLTYPE"]
+        action["ARGUMENTS"] = [generate_from_actions(a) for a in ast_action["ARGUMENTS"]]
+    else:
+        action["TYPE"] = "unknown:" + ast_action["TYPE"]
+    return action
+
+def generate_text_action(text):
+    action = {}
+    action["TYPE"] = "text"
+    action["TEXT"] = text
+    return action
+

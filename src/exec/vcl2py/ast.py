@@ -6,7 +6,7 @@
 #    command:
 #       NAME    - unique number
 #       TERMS   - list of "term" structures
-#       ACTIONS - list of "action" structures
+#       ACTIONS - list of "action" structures (optional unless a top-level command)
 #       LINE    - last line number of command if it is a top-level command
 #       FILE    - filename of file containing command
 #    definition:
