@@ -66,8 +66,28 @@ def code_for_element(element):
     elif type == "sequence":
         elements = ", ".join([code_for_element(e) for e in element["ELEMENTS"]])
         return "VocolaSequence([" + elements + "])"
+    elif type == "act":
+        element_code = code_for_element(element["ELEMENT"])
+        actions_code = code_for_actions(element["ACTIONS"])
+        return "VocolaAct(" + element_code + "," + actions_code + ")"
     else:
         implementation_error("code_for_element: unknown element type: " + type)
+
+def code_for_actions(actions):
+    return "["+ ",".join([code_for_action(action) for action in actions]) + "]"
+
+def code_for_action(action):
+    type = action["TYPE"]
+    if type == "text":
+        text = action["TEXT"]
+        return '"' + make_safe_python_string(text) + '"'
+    elif type == "reference":
+        return "\"$" + str(action["SLOT"]) + "\""
+    elif type == "call":
+        return '"' + action["NAME"] + "(" +  ",".join([code_for_actions(a) for a in action["ARGUMENTS"]]) + ")" + '"'
+        return action["NAME"] + "(" +  ",".join([unparse_actions(a) for a in action["ARGUMENTS"]]) + ")"
+    else:
+        return "&UNKNOWN:" + type
 
 
 # ---------------------------------------------------------------------------
@@ -172,9 +192,16 @@ class VocolaSequence:
          self.elements = elements
 
     def to_dragonfly(self):
-         # return Modifier(Sequence(children=[element.to_dragonfly() for element in self.elements]), 
-         #                 lambda values: self.value_function(values))
          return dragonfly.Sequence(children=[element.to_dragonfly() for element in self.elements])
+
+class VocolaAct:
+    def __init__(self, element, actions):
+         self.element = element
+         self.actions = actions
+
+    def to_dragonfly(self):
+         return dragonfly.Modifier(self.element.to_dragonfly(), 
+                                   lambda values: self.actions)
 
 
 #
