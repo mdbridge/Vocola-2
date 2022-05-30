@@ -21,8 +21,11 @@ import re
 #       CHOICES  - Python list of alternatives, each a rule (need not be named)
 #    sequence:
 #       ELEMENTS - Python list of elements making up the sequence, each a rule (need not be named)
+#    slot:
+#       ELEMENT  - A single element that defines the slot's grammar
+#       NUMBER   - The number of the slot
 #    act:
-#       ELEMENT  - the single element that may provide slot(s)
+#       ELEMENT  - The single element that may provide slot(s)
 #       ACTIONS  - Python list of actions
 #
 # action:
@@ -97,6 +100,8 @@ def unparse_element(element):
     elif type == "sequence":
         inner = [unparse_element(choice) for choice in element["ELEMENTS"]]
         return "{" + " ".join(inner) + "}"
+    elif type == "slot":
+        return "$" + str(element["NUMBER"]) + ":" + unparse_element(element["ELEMENT"])
     elif type == "act":
         return unparse_element(element["ELEMENT"]) + "=" + unparse_actions(element["ACTIONS"])
     else:

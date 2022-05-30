@@ -30,7 +30,7 @@ def generate_rules(definitions, statements):
     contexts = {}
     rules = {}
     for name, definition in definitions.items():
-        rule = generate_from_term(definition["MENU"])
+        rule, _slots = generate_from_term(definition["MENU"], -1)
         rules[definition["NAME"]] = rule       
     context = ()
     for statement in statements:
@@ -49,60 +49,80 @@ def generate_rules(definitions, statements):
 
 
 def generate_from_command(command):
-    element = generate_from_terms(command["TERMS"])
     if "ACTIONS" not in command.keys():
+        element, _slots = generate_from_terms(command["TERMS"], -1)
         return element
+    element, _slots = generate_from_terms(command["TERMS"], 0)
     ast_actions = command["ACTIONS"]
     rule = {}
     rule["TYPE"] = "act"
     rule["ELEMENT"] = element
     rule["ACTIONS"] = generate_from_actions(ast_actions)
     return rule
-    
-def generate_from_terms(terms):
+
+def generate_from_terms(terms, slots):
     if len(terms) == 1:
-        return generate_from_term(terms[0])
+        return generate_from_term(terms[0], slots)
     rule = {}
     rule["TYPE"] = "sequence"
-    rule["ELEMENTS"] = [generate_from_term(term) for term in terms]
-    return rule
+    elements = []
+    for term in terms:
+    	element, slots = generate_from_term(term, slots)
+        elements.append(element)
+    rule["ELEMENTS"] = elements
+    return rule, slots
 
-def generate_from_term(term):
+def generate_from_term(term, slots):
     if "OPTIONAL" in term.keys() and term["OPTIONAL"] and term["TYPE"] != "optionalterms":
         empty = {}
         empty["TYPE"] = "empty"
         rule = {}
         rule["TYPE"] = "alternatives"
-        rule["CHOICES"] = [generate_from_terms(term["TERMS"]), empty]
-        return rule
-    return generate_from_nonoptional_term(term)
+    	element, slots = generate_from_nonoptional_term(term, slots)
+        rule["CHOICES"] = [element, empty]
+        return rule, slots
+    return generate_from_nonoptional_term(term, slots)
 
-def generate_from_nonoptional_term(term):
+def generate_from_nonoptional_term(term, slots):
     rule = {}
     type = term["TYPE"]
+    maybe_slotted = False
     if type == "word":
         rule = generate_from_word(term["TEXT"])
     elif type == "variable":
         rule["TYPE"] = "rule_reference"
         rule["NAME"] = term["TEXT"]
+        maybe_slotted = True
     elif type == "range":
         rule = generate_from_range(term)
+        maybe_slotted = True
     elif type == "menu":
         commands = term["COMMANDS"]
         if len(commands) == 1:
-            return generate_from_command(commands[0])
-        rule["TYPE"] = "alternatives"
-        rule["CHOICES"] = [generate_from_command(command) for command in commands]
+            rule = generate_from_command(commands[0])
+        else:
+            rule["TYPE"] = "alternatives"
+            rule["CHOICES"] = [generate_from_command(command) for command in commands]
+        maybe_slotted = True
     elif type == "dictation":
         rule["TYPE"] = "dictation"
+        maybe_slotted = True
     elif type == "optionalterms":
         rule["TYPE"] = "alternatives"
         empty = {}
         empty["TYPE"] = "empty"
-        rule["CHOICES"] = [generate_from_terms(term["TERMS"]), empty]
+        element, slots = generate_from_terms(term["TERMS"], slots)
+        rule["CHOICES"] = [element, empty]
     else:
         rule["TYPE"] = "unknown:" + term["TYPE"]
-    return rule
+    if not maybe_slotted or slots<0:
+        return rule, slots
+    slots += 1
+    outer_rule = {}
+    outer_rule["TYPE"] = "slot"
+    outer_rule["NUMBER"] = slots
+    outer_rule["ELEMENT"] = rule
+    return outer_rule, slots
 
 def generate_from_word(text):
     rule = {}
