@@ -66,6 +66,9 @@ def code_for_element(element):
     elif type == "sequence":
         elements = ", ".join([code_for_element(e) for e in element["ELEMENTS"]])
         return "VocolaSequence([" + elements + "])"
+    elif type == "slot":
+        element_code = code_for_element(element["ELEMENT"])
+        return "VocolaSlot(" + element_code + "," + str(element["NUMBER"]) + ")"
     elif type == "act":
         element_code = code_for_element(element["ELEMENT"])
         actions_code = code_for_actions(element["ACTIONS"])
@@ -82,7 +85,7 @@ def code_for_action(action):
         text = action["TEXT"]
         return '"' + make_safe_python_string(text) + '"'
     elif type == "reference":
-        return "\"$" + str(action["SLOT"]) + "\""
+        return "VocolaRef(" + str(action["SLOT"]) + ")"
     elif type == "call":
         return '"' + action["NAME"] + "(" +  ",".join([code_for_actions(a) for a in action["ARGUMENTS"]]) + ")" + '"'
         return action["NAME"] + "(" +  ",".join([unparse_actions(a) for a in action["ARGUMENTS"]]) + ")"
@@ -194,15 +197,61 @@ class VocolaSequence:
     def to_dragonfly(self):
          return dragonfly.Sequence(children=[element.to_dragonfly() for element in self.elements])
 
-class VocolaAct:
-    def __init__(self, element, actions):
+class VocolaSlot:
+    def __init__(self, element, number):
          self.element = element
-         self.actions = actions
+         self.number = number
 
     def to_dragonfly(self):
          return dragonfly.Modifier(self.element.to_dragonfly(), 
-                                   lambda values: self.actions)
+                                   lambda values: (self.number, reduce_function(values)))
 
+class VocolaAct:
+    def __init__(self, element, actions):
+         self.element = element
+         self.action = VocolaProg(actions)
+
+    def get_bindings(self, value):
+        bindings = {}
+        if isinstance(value, tuple):
+            bindings[value[0]] = value[1]
+        if isinstance(value, list):
+            for v in value:
+                b = self.get_bindings(v)
+                bindings.update(b)
+        return bindings
+
+    def to_dragonfly(self):
+         return dragonfly.Modifier(self.element.to_dragonfly(), 
+                                   lambda value: self.action.run(self.get_bindings(value)))
+
+
+#
+# Actions
+#
+
+class VocolaProg:
+    def __init__(self, actions):
+        self.actions = actions
+
+    def run(self, bindings):
+        result = ""
+        for action in self.actions:
+            if isinstance(action, str):
+                result += action
+            else:
+                result += action.run(bindings)
+        return result
+
+class VocolaRef:
+    def __init__(self, slot):
+         self.slot = slot
+
+    def run(self, bindings):
+        if self.slot in bindings.keys():
+            return bindings[self.slot]
+        return ""
+    
 
 #
 # Rules
