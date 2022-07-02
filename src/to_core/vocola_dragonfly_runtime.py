@@ -273,7 +273,6 @@ class Rule(dragonfly.Rule):
     def process_recognition(self, node):
         try:
             action = node.value()
-            print(self.name + " got raw result " + repr(action))
             text = action.eval(True, {}, "")
             print("resulting text is <" + text + ">")
         except Exception as e:

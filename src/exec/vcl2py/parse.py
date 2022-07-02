@@ -859,22 +859,25 @@ def verify_menu_terms(terms, has_actions, has_alternatives, other_terms):
 	    continue # <<<>>>
             error("Alternative cannot contain a variable", term["POSITION"])
         elif type == "menu":
-            if other_terms:
-                error("An inline list cannot be combined with anything else to make up an alternative",
-                      term["POSITION"])
+            # <<<>>>
+            # if other_terms:
+            #     error("An inline list cannot be combined with anything else to make up an alternative",
+            #           term["POSITION"])
             verify_referenced_menu(term, has_actions, has_alternatives)
         elif type == "range":
-            # allow a single range with no actions if it is the only
-            # alternative in the (nested) set:
-            if other_terms:
-                error("A range cannot be combined with anything else to make up an alternative",
-                      term["POSITION"])
-            if has_actions:
-                error("A range alternative may not have associated actions",
-                      term["POSITION"])
-            if has_alternatives:
-                error("A range alternative must be the only alternative in an alternative set",
-                      term["POSITION"])
+            # <<<>>>
+            # # allow a single range with no actions if it is the only
+            # # alternative in the (nested) set:
+            # if other_terms:
+            #     error("A range cannot be combined with anything else to make up an alternative",
+            #           term["POSITION"])
+            # if has_actions:
+            #     error("A range alternative may not have associated actions",
+            #           term["POSITION"])
+            # if has_alternatives:
+            #     error("A range alternative must be the only alternative in an alternative set",
+            #           term["POSITION"])
+            pass
 
 def add_forward_reference(variable, position):
     forward_reference = {}
