@@ -263,7 +263,34 @@ Dragon_functions = {
 
 class VocolaCall(ActionCall):
     def eval(self, is_top_level, bindings, preceding_text):
-        return preceding_text + "VocolaCall"
+        name = self.name
+        if   name == "EvalTemplate":
+            return ""
+        elif name == "If":
+            condition = self.arguments[0].eval(False, bindings, "")
+            if condition.lower() == "true":
+                return self.arguments[1].eval(is_top_level, bindings, preceding_text)
+            elif len(self.arguments) > 2:
+                return self.arguments[2].eval(is_top_level, bindings, preceding_text)
+            else:
+                return preceding_text
+        elif name == "When":
+            value = self.arguments[0].eval(False, bindings, "")
+            if value != "":
+                return self.arguments[1].eval(is_top_level, bindings, preceding_text)
+            elif len(self.arguments) > 2:
+                return self.arguments[2].eval(is_top_level, bindings, preceding_text)
+            else:
+                return preceding_text
+        elif name == "Repeat":
+            return ""
+        elif name == "Unimacro":
+            return ""
+        else: 
+            raise VocolaRuntimeError("Implementation error: " +
+                                     "VocolaCall passed unknown Vocola function: " +
+                                     name)
+
 
 class ExtensionCall(ActionCall):
     def eval(self, is_top_level, bindings, preceding_text):
