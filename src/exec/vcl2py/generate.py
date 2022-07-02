@@ -167,8 +167,10 @@ def generate_from_action(ast_action):
         action["NAME"] = ast_action["TEXT"]
         action["CALLTYPE"] = ast_action["CALLTYPE"]
         action["ARGUMENTS"] = [generate_from_actions(a) for a in ast_action["ARGUMENTS"]]
+    elif type == "formalref":
+        implementation_error("Not all formal references transformed away")
     else:
-        action["TYPE"] = "unknown:" + ast_action["TYPE"]
+        implementation_error("Unknown action type: '" + type + "'")
     return action
 
 def generate_text_action(text):
@@ -177,3 +179,6 @@ def generate_text_action(text):
     action["TEXT"] = text
     return action
 
+def implementation_error(message):
+    log_error(message)
+    raise RuntimeError(message)    # <<<>>>

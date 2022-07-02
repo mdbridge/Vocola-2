@@ -72,12 +72,12 @@ def code_for_element(element):
     elif type == "act":
         element_code = code_for_element(element["ELEMENT"])
         actions_code = code_for_actions(element["ACTIONS"])
-        return "VocolaAct(" + element_code + "," + actions_code + ")"
+        return "VocolaAct(" + element_code + ",\n    " + actions_code + ")"
     else:
         implementation_error("code_for_element: unknown element type: " + type)
 
 def code_for_actions(actions):
-    return "["+ ",".join([code_for_action(action) for action in actions]) + "]"
+    return "["+ ", ".join([code_for_action(action) for action in actions]) + "]"
 
 def code_for_action(action):
     type = action["TYPE"]
@@ -87,11 +87,25 @@ def code_for_action(action):
     elif type == "reference":
         return "VocolaRef(" + str(action["SLOT"]) + ")"
     elif type == "call":
-        return '"' + action["NAME"] + "(" +  ",".join([code_for_actions(a) for a in action["ARGUMENTS"]]) + ")" + '"'
-        return action["NAME"] + "(" +  ",".join([unparse_actions(a) for a in action["ARGUMENTS"]]) + ")"
+        return code_for_call(action)
     else:
-        return "&UNKNOWN:" + type
+        implementation_error("Unknown action type: '" + type + "'")
 
+def code_for_call(call):
+    call_type = call["CALLTYPE"]
+    return call_type_name(call_type) + '(' + \
+        '"' + make_safe_python_string(call["NAME"]) + '",' + \
+        '[' + ",".join([code_for_actions(a) for a in call["ARGUMENTS"]]) + "])"
+
+def call_type_name(call_type):
+    if call_type == "dragon":
+        return "DragonCall"
+    elif call_type == "vocola":
+        return "VocolaCall"
+    elif call_type == "extension":
+        return "ExtensionCall"
+    else:
+        implementation_error("Unknown call type: '" + call_type + "'")
 
 # ---------------------------------------------------------------------------
 # Utilities used by "emit" methods
@@ -123,6 +137,7 @@ def emit_file_header():
 from __future__ import print_function
 
 import dragonfly
+from VocolaUtils import *
 
 
 #
@@ -251,6 +266,68 @@ class VocolaRef:
         if self.slot in bindings.keys():
             return bindings[self.slot]
         return ""
+
+# Built in Dragon functions with (minimum number of arguments,
+# template of types of all possible arguments); template has one
+# letter per argument with s denoting string and i denoting integer:
+
+Dragon_functions = {
+                     "ActiveControlPick" : [1,"s"],
+                     "ActiveMenuPick"    : [1,"s"],
+                     "AppBringUp"        : [1,"ssis"],
+                     "AppSwapWith"       : [1,"s"],
+                     "Beep"              : [0,""],
+                     "ButtonClick"       : [0,"ii"],
+                     "ClearDesktop"      : [0,""],
+                     "ControlPick"       : [1,"s"],
+                     "DdeExecute"        : [3,"sssi"],
+                     "DdePoke"           : [4,"ssss"],
+                     "DllCall"           : [3,"sss"],
+                     "DragToPoint"       : [0,"i"],
+                     "GoToSleep"         : [0,""],
+                     "HeardWord"         : [1,"ssssssss"],  # max 8 words
+                     "HTMLHelp"          : [2,"sss"],
+                     "MenuCancel"        : [0,""],
+                     "MenuPick"          : [1,"s"],
+                     "MouseGrid"         : [0,"ii"],
+                     "MsgBoxConfirm"     : [3,"sis"],
+                     "PlaySound"         : [1,"s"],
+                     "RememberPoint"     : [0,""],
+                     "RunScriptFile"     : [1,"s"],
+                     "SendKeys"          : [1,"s"],
+                     "SendDragonKeys"    : [1,"s"],
+                     "SendSystemKeys"    : [1,"si"],
+                     "SetMicrophone"     : [0,"i"],
+                     "SetMousePosition"  : [2,"iii"],
+                     "SetNaturalText"    : [1,"i"],
+                     "ShellExecute"      : [1,"siss"],
+                     "ShiftKey"          : [0,"ii"],
+                     "TTSPlayString"     : [0,"ss"],
+                     "Wait"              : [1,"i"],
+                     "WaitForWindow"     : [1,"ssi"],
+                     "WakeUp"            : [0,""],
+                     "WinHelp"           : [2,"sii"],
+                    }
+
+class ActionCall:
+    def __init__(self, name, arguments):
+        self.name = name
+        self.arguments = [VocolaProg(actions) for actions in arguments]
+
+class DragonCall(ActionCall):
+    def run(self, bindings):
+        dragon_info = Dragon_functions[self.name][1]
+        values = [argument.run(bindings) for argument in self.arguments]
+        call_Dragon(self.name, dragon_info, values)
+        return ""
+
+class VocolaCall(ActionCall):
+    def run(self, bindings):
+        return "called"
+
+class ExtensionCall(ActionCall):
+    def run(self, bindings):
+        return "called"
     
 
 #
