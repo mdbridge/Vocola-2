@@ -51,28 +51,28 @@ def emit_rule(rule_name, rule):
 def code_for_element(element):
     type = element["TYPE"]
     if type == "empty":
-        return "VocolaEmpty()"
+        return "Empty()"
     elif type == "terminal":
-        return "VocolaTerminal(\"" + make_safe_python_string(element["TEXT"]) + "\")"
+        return "Term(\"" + make_safe_python_string(element["TEXT"]) + "\")"
     elif type == "dictation":
-        return "VocolaDictation()"
+        return "Dictation()"
     elif type == "rule_reference":
         referenced = element["NAME"]
         emit_rule(referenced, Grammar["RULES"][referenced])
-        return "VocolaRuleRef(rule_" + referenced + ")"
+        return "RuleRef(rule_" + referenced + ")"
     elif type == "alternatives":
         elements = ", ".join([code_for_element(e) for e in element["CHOICES"]])
-        return "VocolaAlternative([" + elements + "])"
+        return "Alt([" + elements + "])"
     elif type == "sequence":
         elements = ", ".join([code_for_element(e) for e in element["ELEMENTS"]])
-        return "VocolaSequence([" + elements + "])"
+        return "Seq([" + elements + "])"
     elif type == "slot":
         element_code = code_for_element(element["ELEMENT"])
-        return "VocolaSlot(" + element_code + "," + str(element["NUMBER"]) + ")"
-    elif type == "act":
+        return "Slot(" + element_code + "," + str(element["NUMBER"]) + ")"
+    elif type == "with":
         element_code = code_for_element(element["ELEMENT"])
         actions_code = code_for_actions(element["ACTIONS"])
-        return "VocolaAct(" + element_code + ",\n    " + actions_code + ")"
+        return "With(" + element_code + ",\n    " + actions_code + ")"
     else:
         implementation_error("code_for_element: unknown element type: " + type)
 
@@ -137,6 +137,14 @@ def emit_file_header():
 from __future__ import print_function
 
 import dragonfly
+
+# <<<>>>
+import sys
+try:
+    del sys.modules["vocola_dragonfly_runtime"]
+except:
+    pass
+
 from vocola_dragonfly_runtime import *
 
 

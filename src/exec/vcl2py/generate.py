@@ -55,7 +55,7 @@ def generate_from_command(command):
     element, _slots = generate_from_terms(command["TERMS"], 0)
     ast_actions = command["ACTIONS"]
     rule = {}
-    rule["TYPE"] = "act"
+    rule["TYPE"] = "with"
     rule["ELEMENT"] = element
     rule["ACTIONS"] = generate_from_actions(ast_actions)
     return rule
@@ -145,7 +145,7 @@ def generate_from_number(number):
     number_text = Number_words[number]
     element = generate_from_word(number_text)
     rule = {}
-    rule["TYPE"] = "act"
+    rule["TYPE"] = "with"
     rule["ELEMENT"] = element
     rule["ACTIONS"] = [generate_text_action(str(number))]
     return rule

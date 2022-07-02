@@ -1,11 +1,104 @@
+###
+### vocola_dragonfly_runtime.py - Code used by Vocola's generated
+###                               Python code produced by the dragonfly backend
+###
+
 from __future__ import print_function
 
 import dragonfly
-from VocolaUtils import *
+
+from VocolaUtils import (VocolaRuntimeError, call_Dragon)
+
+
+##
+## Element implementation using dragonfly
+##
+
+class Empty:
+    def to_dragonfly(self):
+        #         return Empty(value=self.value)
+        #         return Optional(Impossible(), default=self.value)
+        return dragonfly.Modifier(dragonfly.Optional(dragonfly.Impossible(), default=None),
+                                  lambda value: None)
+
+class Term:
+    def __init__(self, terminal_text):
+         self.terminal_text = terminal_text
+
+    def to_dragonfly(self):
+         return dragonfly.Literal(text=self.terminal_text, value=self.terminal_text)
+
+class Dictation:
+    def to_dragonfly(self):
+         return dragonfly.Modifier(dragonfly.Dictation(format=False),
+                                   lambda words: format_words(words))
+
+class RuleRef:
+    def __init__(self, rule):
+         self.rule = rule
+
+    def to_dragonfly(self):
+         return dragonfly.RuleRef(rule=self.rule)
+
+class Alt:
+    def __init__(self, alternatives):
+         self.alternatives = alternatives
+
+    def to_dragonfly(self):
+         return dragonfly.Alternative(children=[alternative.to_dragonfly() 
+                                                for alternative in self.alternatives])
+
+class Seq:
+    def __init__(self, elements):
+         self.elements = elements
+
+    def to_dragonfly(self):
+         return dragonfly.Sequence(children=[element.to_dragonfly() for element in self.elements])
+
+class Slot:
+    def __init__(self, element, number):
+         self.element = element
+         self.number = number
+
+    def reduce(self, value):
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            return value
+        if isinstance(value, list):
+            reduced = [self.reduce(v) for v in value]
+            words = [w for w in reduced if w != ""]
+            return " ".join(words)
+        raise VocolaRuntimeError("Implementation error: " +
+                                 "Slot element received unexpected value from sub element: " +
+                                 repr(value))
+        
+    def to_dragonfly(self):
+         return dragonfly.Modifier(self.element.to_dragonfly(), 
+                                   lambda values: (self.number, self.reduce(values)))
+
+class With:
+    def __init__(self, element, actions):
+         self.element = element
+         self.action = VocolaProg(actions)
+
+    def get_bindings(self, value):
+        bindings = {}
+        if isinstance(value, tuple):
+            bindings[value[0]] = value[1]
+        if isinstance(value, list):
+            for v in value:
+                b = self.get_bindings(v)
+                bindings.update(b)
+        return bindings
+
+    def to_dragonfly(self):
+         return dragonfly.Modifier(self.element.to_dragonfly(), 
+                                   lambda value: self.action.run(self.get_bindings(value)))
 
 
 #
-# Dealing with formatting dictation:
+# Dealing with formatting dictation:  <<<>>>
 #
 
 def format_words(word_list):
@@ -31,83 +124,12 @@ def format_words2(word_list):
     return result
 
 
-#
-# Elements
-#
 
-class VocolaEmpty:
-    def to_dragonfly(self):
-        #         return Empty(value=self.value)
-        #         return Optional(Impossible(), default=self.value)
-        return dragonfly.Modifier(dragonfly.Optional(dragonfly.Impossible(), default=None),
-                                  lambda value: None)
-
-class VocolaTerminal:
-    def __init__(self, terminal_text):
-         self.terminal_text = terminal_text
-
-    def to_dragonfly(self):
-         return dragonfly.Literal(text=self.terminal_text, value=self.terminal_text)
-
-class VocolaDictation:
-    def to_dragonfly(self):
-         return dragonfly.Modifier(dragonfly.Dictation(format=False),
-                                   lambda words: format_words(words))
-
-class VocolaRuleRef:
-    def __init__(self, rule):
-         self.rule = rule
-
-    def to_dragonfly(self):
-         return dragonfly.RuleRef(rule=self.rule)
-
-class VocolaAlternative:
-    def __init__(self, alternatives):
-         self.alternatives = alternatives
-
-    def to_dragonfly(self):
-         return dragonfly.Alternative(children=[alternative.to_dragonfly() 
-                                                for alternative in self.alternatives])
-
-class VocolaSequence:
-    def __init__(self, elements):
-         self.elements = elements
-
-    def to_dragonfly(self):
-         return dragonfly.Sequence(children=[element.to_dragonfly() for element in self.elements])
-
-class VocolaSlot:
-    def __init__(self, element, number):
-         self.element = element
-         self.number = number
-
-    def to_dragonfly(self):
-         return dragonfly.Modifier(self.element.to_dragonfly(), 
-                                   lambda values: (self.number, reduce_function(values)))
-
-class VocolaAct:
-    def __init__(self, element, actions):
-         self.element = element
-         self.action = VocolaProg(actions)
-
-    def get_bindings(self, value):
-        bindings = {}
-        if isinstance(value, tuple):
-            bindings[value[0]] = value[1]
-        if isinstance(value, list):
-            for v in value:
-                b = self.get_bindings(v)
-                bindings.update(b)
-        return bindings
-
-    def to_dragonfly(self):
-         return dragonfly.Modifier(self.element.to_dragonfly(), 
-                                   lambda value: self.action.run(self.get_bindings(value)))
+##
+## Actions
+##
 
 
-#
-# Actions
-#
 
 class VocolaProg:
     def __init__(self, actions):

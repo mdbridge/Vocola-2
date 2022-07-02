@@ -10,7 +10,7 @@ import re
 #       RULES         - Python map from rule names to named rules
 #
 # rule:
-#    TYPE - empty/terminal/dictation/rule_reference/sequence/alternatives/act
+#    TYPE - empty/terminal/dictation/rule_reference/sequence/alternatives/slot/with
 #    empty:
 #    terminal:
 #       TEXT	 - text defining the terminal; can be multiple words
@@ -24,7 +24,7 @@ import re
 #    slot:
 #       ELEMENT  - A single element that defines the slot's grammar
 #       NUMBER   - The number of the slot
-#    act:
+#    with:
 #       ELEMENT  - The single element that may provide slot(s)
 #       ACTIONS  - Python list of actions
 #
@@ -102,7 +102,7 @@ def unparse_element(element):
         return "{" + " ".join(inner) + "}"
     elif type == "slot":
         return "$" + str(element["NUMBER"]) + ":" + unparse_element(element["ELEMENT"])
-    elif type == "act":
+    elif type == "with":
         return unparse_element(element["ELEMENT"]) + "=" + unparse_actions(element["ACTIONS"])
     else:
         return "&UNKNOWN:" + type
