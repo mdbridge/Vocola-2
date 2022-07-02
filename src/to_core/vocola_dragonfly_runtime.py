@@ -7,7 +7,7 @@ from __future__ import print_function
 
 import dragonfly
 
-from VocolaUtils import (VocolaRuntimeError, do_flush, to_long, call_Dragon)
+from VocolaUtils import (VocolaRuntimeError, do_flush, to_long, call_Dragon, eval_template)
 
 
 
@@ -265,7 +265,8 @@ class VocolaCall(ActionCall):
     def eval(self, is_top_level, bindings, preceding_text):
         name = self.name
         if   name == "EvalTemplate":
-            return ""
+            values = [argument.eval(False, bindings, "") for argument in self.arguments]
+            return preceding_text + eval_template(*values)
         elif name == "If":
             condition = self.arguments[0].eval(False, bindings, "")
             if condition.lower() == "true":
