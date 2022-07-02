@@ -134,7 +134,7 @@ def generate_from_range(term):
     rule = {}
     rule["TYPE"] = "alternatives"
     choices = []
-    for number in range(term["FROM"], term["TO"]):
+    for number in range(term["FROM"], term["TO"]+1):
         choices.append(generate_from_number(number))
     rule["CHOICES"] = choices
     return rule

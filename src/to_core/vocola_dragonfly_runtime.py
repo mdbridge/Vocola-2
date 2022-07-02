@@ -70,7 +70,7 @@ class Slot:
         if isinstance(value, list):
             result = []
             for v in value:
-                result += reduce_to_actions(v)
+                result += self.reduce_to_actions(v)
             return result
         raise VocolaRuntimeError("Implementation error: " +
                                  "Slot element received unexpected value from sub element: " +
