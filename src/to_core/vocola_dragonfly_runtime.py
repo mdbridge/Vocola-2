@@ -7,7 +7,8 @@ from __future__ import print_function
 
 import dragonfly
 
-from VocolaUtils import (VocolaRuntimeError, call_Dragon)
+from VocolaUtils import (VocolaRuntimeError, do_flush, call_Dragon)
+
 
 
 ##
@@ -129,7 +130,7 @@ def format_words2(word_list):
 
 
 ##
-## Actions
+## Actions except calls
 ##
 
 # note that the type of bindings is Dict of int => Action
@@ -198,6 +199,25 @@ class Join(Action):
         return result
 
 
+
+##
+## Actions that call
+##
+
+class ActionCall(Action):
+    def __init__(self, name, arguments):
+        self.name = name
+        self.arguments = [Prog(actions) for actions in arguments]
+
+
+class DragonCall(ActionCall):
+    def eval(self, is_top_level, bindings, preceding_text):
+        do_flush(not is_top_level, preceding_text)
+        dragon_info = Dragon_functions[self.name][1]
+        values = [argument.eval(False, bindings, "") for argument in self.arguments]
+        call_Dragon(self.name, dragon_info, values)
+        return ""
+
 # Built in Dragon functions with (minimum number of arguments,
 # template of types of all possible arguments); template has one
 # letter per argument with s denoting string and i denoting integer:
@@ -240,17 +260,6 @@ Dragon_functions = {
                      "WinHelp"           : [2,"sii"],
                     }
 
-class ActionCall(Action):
-    def __init__(self, name, arguments):
-        self.name = name
-        self.arguments = [Prog(actions) for actions in arguments]
-
-class DragonCall(ActionCall):
-    def eval(self, is_top_level, bindings, preceding_text):
-        dragon_info = Dragon_functions[self.name][1]
-        values = [argument.eval(False, bindings, "") for argument in self.arguments]
-        call_Dragon(self.name, dragon_info, values)
-        return ""
 
 class VocolaCall(ActionCall):
     def eval(self, is_top_level, bindings, preceding_text):
@@ -275,6 +284,7 @@ class Rule(dragonfly.Rule):
             action = node.value()
             text = action.eval(True, {}, "")
             print("resulting text is <" + text + ">")
+            do_flush(False, text)
         except Exception as e:
             print(self.name + " threw exception: " + repr(e))
 
