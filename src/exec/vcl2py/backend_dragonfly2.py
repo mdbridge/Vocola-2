@@ -93,17 +93,22 @@ def code_for_action(action):
 
 def code_for_call(call):
     call_type = call["CALLTYPE"]
-    return call_type_name(call_type) + '(' + \
-        '"' + make_safe_python_string(call["NAME"]) + '",' + \
+    result = call_type_name(call_type) + "("
+    if "MODULE" in call.keys():
+        result = result + '"' + make_safe_python_string(call["MODULE"]) + '",'
+    result = result + '"' + make_safe_python_string(call["NAME"]) + '",' + \
         '[' + ",".join([code_for_actions(a) for a in call["ARGUMENTS"]]) + "])"
+    return result
 
 def call_type_name(call_type):
     if call_type == "dragon":
         return "DragonCall"
     elif call_type == "vocola":
         return "VocolaCall"
-    elif call_type == "extension":
-        return "ExtensionCall"
+    elif call_type == "extension_routine":
+        return "ExtensionRoutine"
+    elif call_type == "extension_procedure":
+        return "ExtensionProcedure"
     else:
         implementation_error("Unknown call type: '" + call_type + "'")
 

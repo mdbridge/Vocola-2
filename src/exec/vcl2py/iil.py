@@ -31,14 +31,14 @@ import re
 # action:
 #    TYPE - text/reference/call
 #    text:
-#       TEXT	 - the string value of the action
+#       TEXT      - the string value of the action
 #    reference:
-#       SLOT	 - the number of the slot being referenced
+#       SLOT      - the number of the slot being referenced
 #    call:
-#       NAME	 - the string name of the function being called
-#       CALLTYPE  - dragon/vocola/extension
+#       NAME      - the string name of the function being called
+#       CALLTYPE  - dragon/vocola/extension_routine/extension_procedure
 #       ARGUMENTS - list of lists of actions, to be passed in call
-
+#       MODULE    - for extension types, the Python extension name
 
 # ---------------------------------------------------------------------------
 # Unparsing (for debugging and generating error messages)
@@ -119,6 +119,15 @@ def unparse_action(action):
     elif type == "reference":
         return "$" + str(action["SLOT"])
     elif type == "call":
-        return action["NAME"] + "(" +  ",".join([unparse_actions(a) for a in action["ARGUMENTS"]]) + ")"
+        module_prefix = ""
+        if "MODULE" in action.keys():
+            call_type = action["CALLTYPE"]
+            module_prefix = action["MODULE"]
+            if call_type == "extension_procedure":
+                module_prefix = module_prefix + "!"
+            else:
+                module_prefix = module_prefix + ":"
+        return module_prefix + action["NAME"] + \
+            "(" +  ",".join([unparse_actions(a) for a in action["ARGUMENTS"]]) + ")"
     else:
         return "&UNKNOWN:" + type

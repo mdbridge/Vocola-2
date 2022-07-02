@@ -2,8 +2,9 @@ from vcl2py.ast import *
 from vcl2py.iil import *
 from vcl2py.log import *
 
-def generate_grammar(statements, definitions, module_name, params_per_file):
-    global Number_words
+def generate_grammar(statements, definitions, module_name, params_per_file, extension_functions):
+    global Number_words, Extension_functions
+    Extension_functions = extension_functions
     Number_words = params_per_file["number_words"]
 
     grammar = {}
@@ -163,10 +164,22 @@ def generate_from_action(ast_action):
         action["TYPE"] = "reference"
         action["SLOT"] = ast_action["TEXT"]
     elif type == "call":
+        call_name = ast_action["TEXT"]
+        call_type = ast_action["CALLTYPE"]
         action["TYPE"] = "call"
-        action["NAME"] = ast_action["TEXT"]
-        action["CALLTYPE"] = ast_action["CALLTYPE"]
         action["ARGUMENTS"] = [generate_from_actions(a) for a in ast_action["ARGUMENTS"]]
+        if call_type == "extension":
+            callFormals   = Extension_functions[call_name]
+            needsFlushing = callFormals[2]
+            import_name   = callFormals[3]
+            # <<<>>>
+            function_name = callFormals[4].split(".")[-1]
+            action["NAME"] = function_name
+            action["CALLTYPE"] = "extension_procedure" if needsFlushing else "extension_routine"
+            action["MODULE"] = import_name
+        else:
+            action["NAME"] = call_name
+            action["CALLTYPE"] = call_type
     elif type == "formalref":
         implementation_error("Not all formal references transformed away")
     else:

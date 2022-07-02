@@ -379,7 +379,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         print_log("  " + str(error_count) + " error" + s + " -- file not converted.")
         return error_count
 
-    grammar = generate_grammar(statements, definitions, module_name, params_per_file)
+    grammar = generate_grammar(statements, definitions, module_name, params_per_file, extension_functions)
     if stage == "generate":
         with open(out_file, "w") as out:
             print(unparse_grammar(grammar), end="", file=out)

@@ -4,6 +4,7 @@
 ###
 
 from __future__ import print_function
+import sys
 
 import dragonfly
 
@@ -290,7 +291,8 @@ class VocolaCall(ActionCall):
                 preceding_text = self.arguments[1].eval(is_top_level, bindings, preceding_text)
             return preceding_text
         elif name == "Unimacro":
-            return ""
+            # <<<>>>
+            raise VocolaRuntimeError("Unimacro gateway not yet implemented")
         else: 
             raise VocolaRuntimeError("Implementation error: " +
                                      "VocolaCall passed unknown Vocola function: " +
@@ -298,8 +300,35 @@ class VocolaCall(ActionCall):
 
 
 class ExtensionCall(ActionCall):
+    def __init__(self, module_name, name, arguments):
+        self.module_name = module_name
+        ActionCall.__init__(self, name, arguments)
+
+class ExtensionRoutine(ExtensionCall):
     def eval(self, is_top_level, bindings, preceding_text):
-        return preceding_text + "ExtensionCall"
+        values = [argument.eval(False, bindings, "") for argument in self.arguments]
+        extension_module = sys.modules[self.module_name]
+        print(repr(extension_module))
+        extension_routine = getattr(extension_module, self.name)
+        print(repr(extension_routine))
+        print(repr(values))
+        result = extension_routine(*values)
+        print(repr(result))
+        return preceding_text + result
+
+class ExtensionProcedure(ExtensionCall):
+    def eval(self, is_top_level, bindings, preceding_text):
+        do_flush(not is_top_level, preceding_text)
+        values = [argument.eval(False, bindings, "") for argument in self.arguments]
+        extension_module = sys.modules[self.module_name]
+        print(repr(extension_module))
+        extension_routine = getattr(extension_module, self.name)
+        print(repr(extension_routine))
+        print(repr(values))
+        result = extension_routine(*values)
+        print(repr(result))
+        return ""
+
     
 
 ##
