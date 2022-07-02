@@ -44,7 +44,7 @@ def emit_rule(rule_name, rule):
     Emitted_Rules.add(rule_name)
     # the next line emits as a side effect any rules we are dependent on:
     element_code = code_for_element(rule)
-    emit(0, "rule_" + rule_name + " = VocolaRule(\"" + rule_name + "\", " + element_code + ")\n")
+    emit(0, "rule_" + rule_name + " = Rule(\"" + rule_name + "\", " + element_code + ")\n")
     if re.match(r'^[0-9]*$', rule_name):
         emit(0, "grammar.add_rule(rule_" + rule_name + ")\n")
 
@@ -85,7 +85,7 @@ def code_for_action(action):
         text = action["TEXT"]
         return '"' + make_safe_python_string(text) + '"'
     elif type == "reference":
-        return "VocolaRef(" + str(action["SLOT"]) + ")"
+        return "Ref(" + str(action["SLOT"]) + ")"
     elif type == "call":
         return code_for_call(action)
     else:

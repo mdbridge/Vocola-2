@@ -60,27 +60,30 @@ class Slot:
          self.element = element
          self.number = number
 
-    def reduce(self, value):
+    def reduce_to_actions(self, value):
         if value is None:
-            return ""
+            return []
         if isinstance(value, str):
-            return value
+            return [Text(value)]
+        if isinstance(value, Action):
+            return [value]
         if isinstance(value, list):
-            reduced = [self.reduce(v) for v in value]
-            words = [w for w in reduced if w != ""]
-            return " ".join(words)
+            result = []
+            for v in value:
+                result += reduce_to_actions(v)
+            return result
         raise VocolaRuntimeError("Implementation error: " +
                                  "Slot element received unexpected value from sub element: " +
                                  repr(value))
         
     def to_dragonfly(self):
          return dragonfly.Modifier(self.element.to_dragonfly(), 
-                                   lambda values: (self.number, self.reduce(values)))
+                                   lambda values: (self.number, Join(self.reduce_to_actions(values))))
 
 class With:
     def __init__(self, element, actions):
          self.element = element
-         self.action = VocolaProg(actions)
+         self.action = Prog(actions)
 
     def get_bindings(self, value):
         bindings = {}
@@ -94,7 +97,7 @@ class With:
 
     def to_dragonfly(self):
          return dragonfly.Modifier(self.element.to_dragonfly(), 
-                                   lambda value: self.action.run(self.get_bindings(value)))
+                                   lambda value: self.action.bind(self.get_bindings(value)))
 
 
 #
@@ -129,29 +132,71 @@ def format_words2(word_list):
 ## Actions
 ##
 
+# note that the type of bindings is Dict of int => Action
+
+class Action:
+    def bind(self, bindings):
+        return BoundAction(bindings, self)
+
+    def eval(self, is_top_level, bindings, preceding_text):
+        return preceding_text
+
+class BoundAction(Action):
+    def __init__(self, bindings, action):
+        self.bindings = bindings
+        self.action = action
+
+    def eval(self, is_top_level, bindings, preceding_text):
+        return self.action.eval(is_top_level, self.bindings, preceding_text)
 
 
-class VocolaProg:
-    def __init__(self, actions):
-        self.actions = actions
+class Text(Action):
+    def __init__(self, text):
+        self.text = text
 
-    def run(self, bindings):
-        result = ""
-        for action in self.actions:
-            if isinstance(action, str):
-                result += action
-            else:
-                result += action.run(bindings)
-        return result
+    def eval(self, is_top_level, bindings, preceding_text):
+        return preceding_text + self.text
 
-class VocolaRef:
+class Ref(Action):
     def __init__(self, slot):
          self.slot = slot
 
-    def run(self, bindings):
+    def eval(self, is_top_level, bindings, preceding_text):
         if self.slot in bindings.keys():
-            return bindings[self.slot]
-        return ""
+            action = bindings[self.slot]
+        else:
+            action = Text("")
+        return action.eval(is_top_level, bindings, preceding_text)
+
+class Prog(Action):
+    def __init__(self, actions):
+        self.actions = actions
+
+    def eval(self, is_top_level, bindings, preceding_text):
+        for action in self.actions:
+            # For conciseness, Prog allows passing strings instead of Text actions
+            if isinstance(action, str):
+                action = Text(action)
+            preceding_text = action.eval(is_top_level, bindings, preceding_text)
+        return preceding_text
+
+class Join(Action):
+    def __init__(self, actions):
+        self.actions = actions
+
+    def eval(self, is_top_level, bindings, preceding_text):
+        result = preceding_text
+        seen_new_text = False
+        for action in self.actions:
+            new_text = action.eval(False, bindings, "")
+            if new_text != "":
+                if seen_new_text:
+                    result = result + " "
+                else:
+                    seen_new_text = True
+                result = result + new_text
+        return result
+
 
 # Built in Dragon functions with (minimum number of arguments,
 # template of types of all possible arguments); template has one
@@ -195,54 +240,42 @@ Dragon_functions = {
                      "WinHelp"           : [2,"sii"],
                     }
 
-class ActionCall:
+class ActionCall(Action):
     def __init__(self, name, arguments):
         self.name = name
-        self.arguments = [VocolaProg(actions) for actions in arguments]
+        self.arguments = [Prog(actions) for actions in arguments]
 
 class DragonCall(ActionCall):
-    def run(self, bindings):
+    def eval(self, is_top_level, bindings, preceding_text):
         dragon_info = Dragon_functions[self.name][1]
-        values = [argument.run(bindings) for argument in self.arguments]
+        values = [argument.eval(False, bindings, "") for argument in self.arguments]
         call_Dragon(self.name, dragon_info, values)
         return ""
 
 class VocolaCall(ActionCall):
-    def run(self, bindings):
-        return "called"
+    def eval(self, is_top_level, bindings, preceding_text):
+        return preceding_text + "VocolaCall"
 
 class ExtensionCall(ActionCall):
-    def run(self, bindings):
-        return "called"
+    def eval(self, is_top_level, bindings, preceding_text):
+        return preceding_text + "ExtensionCall"
     
 
-#
-# Rules
-#
+##
+## Rule implementation using dragonfly
+##
 
-class VocolaRule(dragonfly.Rule):
+class Rule(dragonfly.Rule):
     def __init__(self, name_, element_):
         dragonfly.Rule.__init__(self, name=name_, element=element_.to_dragonfly())
         print(repr(element_.to_dragonfly().gstring()))
 
     def process_recognition(self, node):
         try:
-            result_value = node.value()
-            print(self.name + " got raw result " + repr(result_value))
-            result = reduce_function(result_value)
-            print(self.name + " got reduced result `" + result + "`")
+            action = node.value()
+            print(self.name + " got raw result " + repr(action))
+            text = action.eval(True, {}, "")
+            print("resulting text is <" + text + ">")
         except Exception as e:
             print(self.name + " threw exception: " + repr(e))
-
-def reduce_function(value):
-    if value is None:
-        return ""
-    if isinstance(value, str):
-        return value
-    if isinstance(value, list):
-        reduced = [reduce_function(v) for v in value]
-        words = [w for w in reduced if w != ""]
-        return " ".join(words)
-    return "UNKNOWN"
-
 
