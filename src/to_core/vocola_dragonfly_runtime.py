@@ -7,7 +7,7 @@ from __future__ import print_function
 
 import dragonfly
 
-from VocolaUtils import (VocolaRuntimeError, do_flush, call_Dragon)
+from VocolaUtils import (VocolaRuntimeError, do_flush, to_long, call_Dragon)
 
 
 
@@ -283,7 +283,11 @@ class VocolaCall(ActionCall):
             else:
                 return preceding_text
         elif name == "Repeat":
-            return ""
+            count = self.arguments[0].eval(False, bindings, "")
+            count = to_long(count)
+            for i in range(count):
+                preceding_text = self.arguments[1].eval(is_top_level, bindings, preceding_text)
+            return preceding_text
         elif name == "Unimacro":
             return ""
         else: 
