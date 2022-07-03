@@ -28,7 +28,8 @@ class Term:
          self.terminal_text = terminal_text
 
     def to_dragonfly(self):
-         return dragonfly.Literal(text=self.terminal_text, value=self.terminal_text)
+         return dragonfly.Literal(text=self.terminal_text.decode("latin-1"), 
+                                  value=self.terminal_text)
 
 class Dictation:
     def to_dragonfly(self):
