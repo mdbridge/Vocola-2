@@ -18,6 +18,19 @@ def output(out_file, grammar, params):
 
     emit_file_header()
 
+    executables = grammar["EXECUTABLE"]
+    if len(executables) == 0:
+        emit(0, "context = dragonfly.AppContext()\n")
+    else:
+        # <<<>>>
+        executable = executables[-1]
+        emit(0, "context = dragonfly.AppContext(executable='" + executable + "')\n")
+    # emit(0, 'context = dragonfly.AppContext(executable="emacs", title="yellow emacs")'+ "\n")
+
+
+    emit(0, "grammar = dragonfly.Grammar('Test grammar', context=context)\n\n\n")
+
+
     global Emitted_Rules
     Emitted_Rules = set()
 
@@ -222,10 +235,6 @@ from vocola_dragonfly_runtime import *
 #
 # Our grammar's rules:
 #
-
-context = dragonfly.AppContext(executable="emacs", title="yellow emacs")
-grammar = dragonfly.Grammar("Test grammar", context=context)
-
 
 ''',
 
