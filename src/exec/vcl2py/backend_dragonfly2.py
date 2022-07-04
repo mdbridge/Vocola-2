@@ -6,6 +6,7 @@ def output(out_file, grammar, params):
     global Grammar, VocolaVersion
     Grammar = grammar
     VocolaVersion = params["Vocola_version"]
+    maximum_commands = params["maximum_commands"]
 
     global OUT
     try:
@@ -20,11 +21,21 @@ def output(out_file, grammar, params):
     global Emitted_Rules
     Emitted_Rules = set()
 
+    # <<<>>>
+    if () in grammar["CONTEXTS"].keys():
+        rule_names = grammar["CONTEXTS"][()]
+        grammar["RULES"]["0_all"] = one_of(rule_names)
+        if maximum_commands == 1:
+            grammar["CONTEXTS"][()] = ["0_all"]
+        else:
+            grammar["RULES"]["1_all"] = magic_with(repeated_element(rule_ref("0_all"), maximum_commands), maximum_commands)
+            grammar["CONTEXTS"][()] = ["1_all"]
+
     # don't do title-specific contexts yet:
     if () in grammar["CONTEXTS"].keys():
         rule_names = grammar["CONTEXTS"][()]
         for rule_name in rule_names:
-            emit_rule(rule_name, grammar["RULES"][rule_name]) 
+            emit_rule(rule_name, grammar["RULES"][rule_name], True) 
 
     emit_file_trailer()
     OUT.close()
@@ -33,11 +44,63 @@ def implementation_error(error):
     log_error(error)
     raise RuntimeError, error    # <<<>>>
 
+def magic_with(element, count):
+    rule = {}
+    rule["TYPE"] = "with"
+    rule["ELEMENT"] = element
+    rule["ACTIONS"] = [reference_action(i) for i in range(count,0, -1)]
+    return rule
+
+def reference_action(i):
+    action = {}
+    action["TYPE"] = "reference"
+    action["SLOT"] = i
+    return action
+
+def one_of(rule_names):
+    rule = {}
+    rule["TYPE"] = "alternatives"
+    rule["CHOICES"] = [rule_ref(rule_name) for rule_name in rule_names]
+    return rule
+
+def rule_ref(rule_name):
+    rule = {}
+    rule["TYPE"] = "rule_reference"
+    rule["NAME"] = rule_name
+    return rule
+
+def repeated_element(element, count):
+    if count == 1:
+        return slotted_element(element, count)
+    rule = {}
+    rule["TYPE"] = "sequence"
+    rule["ELEMENTS"] = [slotted_element(element, count), 
+                        optional_element(repeated_element(element, count - 1))]
+    return rule
+
+def slotted_element(element, slot):
+    rule = {}
+    rule["TYPE"] = "slot"
+    rule["NUMBER"] = slot
+    rule["ELEMENT"] = element
+    return rule
+
+def optional_element(element):
+    rule = {}
+    rule["TYPE"] = "alternatives"
+    rule["CHOICES"] = [element, empty_element()]
+    return rule
+
+def empty_element():
+    empty = {}
+    empty["TYPE"] = "empty"
+    return empty
+
 
 # ---------------------------------------------------------------------------
 # Emit dragonfly output
 
-def emit_rule(rule_name, rule):
+def emit_rule(rule_name, rule, top_level):
     global Emitted_Rules
     if rule_name in Emitted_Rules:
         return
@@ -45,7 +108,7 @@ def emit_rule(rule_name, rule):
     # the next line emits as a side effect any rules we are dependent on:
     element_code = code_for_element(rule)
     emit(0, "rule_" + rule_name + " = Rule(\"" + rule_name + "\", " + element_code + ")\n")
-    if re.match(r'^[0-9]*$', rule_name):
+    if top_level:
         emit(0, "grammar.add_rule(rule_" + rule_name + ")\n")
 
 def code_for_element(element):
@@ -58,7 +121,7 @@ def code_for_element(element):
         return "Dictation()"
     elif type == "rule_reference":
         referenced = element["NAME"]
-        emit_rule(referenced, Grammar["RULES"][referenced])
+        emit_rule(referenced, Grammar["RULES"][referenced], False)
         return "RuleRef(rule_" + referenced + ")"
     elif type == "alternatives":
         elements = ", ".join([code_for_element(e) for e in element["CHOICES"]])
@@ -73,6 +136,9 @@ def code_for_element(element):
         element_code = code_for_element(element["ELEMENT"])
         actions_code = code_for_actions(element["ACTIONS"])
         return "With(" + element_code + ",\n    " + actions_code + ")"
+    elif type == "without":
+        element_code = code_for_element(element["ELEMENT"])
+        return "Without(" + element_code + ")"
     else:
         implementation_error("code_for_element: unknown element type: " + type)
 

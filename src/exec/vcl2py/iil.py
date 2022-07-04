@@ -27,6 +27,8 @@ import re
 #    with:
 #       ELEMENT  - The single element that may provide slot(s)
 #       ACTIONS  - Python list of actions
+#    without:
+#       ELEMENT  - a single element
 #
 # action:
 #    TYPE - text/reference/call
@@ -104,6 +106,8 @@ def unparse_element(element):
         return "$" + str(element["NUMBER"]) + ":" + unparse_element(element["ELEMENT"])
     elif type == "with":
         return unparse_element(element["ELEMENT"]) + "=" + unparse_actions(element["ACTIONS"])
+    elif type == "without":
+        return unparse_element(element["ELEMENT"]) + "@"
     else:
         return "&UNKNOWN:" + type
 

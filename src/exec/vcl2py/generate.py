@@ -51,8 +51,11 @@ def generate_rules(definitions, statements):
 
 def generate_from_command(command):
     if "ACTIONS" not in command.keys():
+        rule = {}
+        rule["TYPE"] = "without"
         element, _slots = generate_from_terms(command["TERMS"], -1)
-        return element
+        rule["ELEMENT"] = element
+        return rule
     element, _slots = generate_from_terms(command["TERMS"], 0)
     ast_actions = command["ACTIONS"]
     rule = {}
@@ -142,7 +145,10 @@ def generate_from_range(term):
 
 def generate_from_number(number):
     if number not in Number_words.keys():
-        return generate_from_word(str(number))
+        rule = {}
+        rule["TYPE"] = "without"
+        rule["ELEMENT"] = generate_from_word(str(number))
+        return rule
     number_text = Number_words[number]
     element = generate_from_word(number_text)
     rule = {}
