@@ -366,6 +366,12 @@ class ExtensionProcedure(ExtensionCall):
 
 class Rule(dragonfly.Rule):
     def __init__(self, name_, element_):
+        dragonfly.Rule.__init__(self, name=name_, element=element_.to_dragonfly(), 
+                                exported=False)
+        print("inner : " + repr(element_.to_dragonfly().gstring()))
+
+class ExportedRule(dragonfly.Rule):
+    def __init__(self, name_, element_):
         dragonfly.Rule.__init__(self, name=name_, element=element_.to_dragonfly())
         print(repr(element_.to_dragonfly().gstring()))
 
