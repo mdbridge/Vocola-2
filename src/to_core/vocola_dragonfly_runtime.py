@@ -387,7 +387,7 @@ class ExportedRule(dragonfly.Rule):
 
     def process_recognition(self, node):
         try:
-            print(self.file + " processing " + repr(node))
+            print("ExportedRule " + self.name + " from "+ self.file + " recognized: " + repr(node))
             action = node.value()
             text = action.eval(True, {}, "")
             print("resulting text is <" + text + ">")

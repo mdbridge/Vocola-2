@@ -31,7 +31,7 @@ def generate_rules(definitions, statements):
     contexts = {}
     rules = {}
     for name, definition in definitions.items():
-        rule, _slots = generate_from_term(definition["MENU"], -1)
+        rule, _slots = generate_from_term(flatten_definition(definition), -1)
         rules[definition["NAME"]] = rule       
     context = ()
     for statement in statements:
@@ -48,6 +48,20 @@ def generate_rules(definitions, statements):
                 context = tuple(ast_context)
     return contexts, rules
 
+# <<<>>>
+def flatten_definition(definition):
+    menu = definition["MENU"]
+    commands = menu["COMMANDS"]
+    if len(commands) == 1 and "ACTIONS" not in commands[0].keys():
+        command = commands[0]
+        terms = command["TERMS"]
+        if len(terms)==1:
+            term = terms[0]
+            if term["TYPE"] == "menu":
+                 #print("flattened: " +  unparse_term(menu, False) + " -> " + unparse_term(term, False))
+                return term
+    return menu
+          
 
 def generate_from_command(command):
     if "ACTIONS" not in command.keys():
