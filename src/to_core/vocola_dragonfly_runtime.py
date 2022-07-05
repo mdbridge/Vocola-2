@@ -4,6 +4,8 @@
 ###
 
 from __future__ import print_function
+
+import importlib
 import sys
 
 import dragonfly
@@ -333,28 +335,35 @@ class ExtensionCall(ActionCall):
         self.module_name = module_name
         ActionCall.__init__(self, name, arguments)
 
-class ExtensionRoutine(ExtensionCall):
-    def eval(self, is_top_level, bindings, preceding_text):
-        values = [argument.eval(False, bindings, "") for argument in self.arguments]
-        extension_module = sys.modules[self.module_name]
+    def get_extension_implementation(self):
+        if self.module_name in sys.modules:
+            extension_module = sys.modules[self.module_name]
+        else:
+            print("automatically importing: " + self.module_name)
+            extension_module = importlib.import_module(self.module_name)
         print(repr(extension_module))
         extension_routine = getattr(extension_module, self.name)
         print(repr(extension_routine))
-        print(repr(values))
-        result = extension_routine(*values)
+        return extension_routine
+
+class ExtensionRoutine(ExtensionCall):
+    def eval(self, is_top_level, bindings, preceding_text):
+        values = [argument.eval(False, bindings, "") for argument in self.arguments]
+        implementation = self.get_extension_implementation()
+        result = implementation(*values)
         print(repr(result))
         return preceding_text + result
 
 class ExtensionProcedure(ExtensionCall):
     def eval(self, is_top_level, bindings, preceding_text):
+        if not is_top_level:
+            raise VocolaRuntimeError(
+                'attempt to call Vocola extension ' +
+                'procedure ' +  self.name + ' in a functional context!')
         do_flush(not is_top_level, preceding_text)
         values = [argument.eval(False, bindings, "") for argument in self.arguments]
-        extension_module = sys.modules[self.module_name]
-        print(repr(extension_module))
-        extension_routine = getattr(extension_module, self.name)
-        print(repr(extension_routine))
-        print(repr(values))
-        result = extension_routine(*values)
+        implementation = self.get_extension_implementation()
+        result = implementation(*values)
         print(repr(result))
         return ""
 
@@ -368,19 +377,22 @@ class Rule(dragonfly.Rule):
     def __init__(self, name_, element_):
         dragonfly.Rule.__init__(self, name=name_, element=element_.to_dragonfly(), 
                                 exported=False)
-        print("inner : " + repr(element_.to_dragonfly().gstring()))
+        #print("inner : " + repr(element_.to_dragonfly().gstring()))
 
 class ExportedRule(dragonfly.Rule):
-    def __init__(self, name_, element_):
+    def __init__(self, file_, name_, element_):
         dragonfly.Rule.__init__(self, name=name_, element=element_.to_dragonfly())
-        print(repr(element_.to_dragonfly().gstring()))
+        self.file = file_
+        print("loaded from " + file_ + " : " + repr(element_.to_dragonfly().gstring()))
 
     def process_recognition(self, node):
         try:
+            print(self.file + " processing " + repr(node))
             action = node.value()
             text = action.eval(True, {}, "")
             print("resulting text is <" + text + ">")
             do_flush(False, text)
         except Exception as e:
             print(self.name + " threw exception: " + repr(e))
-
+            import traceback
+            traceback.print_exc(e)

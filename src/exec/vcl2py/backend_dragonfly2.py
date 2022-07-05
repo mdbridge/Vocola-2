@@ -122,8 +122,8 @@ def emit_rule(rule_name, rule, top_level):
     Emitted_Rules.add(rule_name)
     # the next line emits as a side effect any rules we are dependent on:
     element_code = code_for_element(rule)
-    class_name = "ExportedRule" if top_level else "Rule"
-    emit(0, "rule_" + rule_name + " = " + class_name + "(\"" + rule_name + "\", " + element_code + ")\n")
+    class_ = "ExportedRule(__file__," if top_level else "Rule("
+    emit(0, "rule_" + rule_name + " = " + class_ + '"' + rule_name + "\", " + element_code + ")\n")
     if top_level:
         emit(0, "grammar.add_rule(rule_" + rule_name + ")\n")
 
