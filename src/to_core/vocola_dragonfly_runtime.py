@@ -341,9 +341,7 @@ class ExtensionCall(ActionCall):
         else:
             print("automatically importing: " + self.module_name)
             extension_module = importlib.import_module(self.module_name)
-        print(repr(extension_module))
         extension_routine = getattr(extension_module, self.name)
-        print(repr(extension_routine))
         return extension_routine
 
 class ExtensionRoutine(ExtensionCall):
@@ -351,7 +349,8 @@ class ExtensionRoutine(ExtensionCall):
         values = [argument.eval(False, bindings, "") for argument in self.arguments]
         implementation = self.get_extension_implementation()
         result = implementation(*values)
-        print(repr(result))
+        print(self.module_name + ":" + self.name + "(" +
+              ", ".join([repr(v) in values]) + ") -> " + repr( result))
         return preceding_text + result
 
 class ExtensionProcedure(ExtensionCall):
@@ -364,7 +363,6 @@ class ExtensionProcedure(ExtensionCall):
         values = [argument.eval(False, bindings, "") for argument in self.arguments]
         implementation = self.get_extension_implementation()
         result = implementation(*values)
-        print(repr(result))
         return ""
 
     
@@ -387,7 +385,7 @@ class ExportedRule(dragonfly.Rule):
 
     def process_recognition(self, node):
         try:
-            print("ExportedRule " + self.name + " from "+ self.file + " recognized: " + repr(node))
+            print("\nExportedRule " + self.name + " from "+ self.file + " recognized: " + repr(node))
             action = node.value()
             text = action.eval(True, {}, "")
             print("resulting text is <" + text + ">")
