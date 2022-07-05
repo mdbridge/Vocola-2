@@ -416,7 +416,8 @@ def compile_Vocola(inputFileOrFolder, force):
     executable = sys.prefix + r'\python.exe'
     arguments  = [VocolaFolder + r'\exec\vcl2py.py']
 
-    arguments += ['-extensions', ExtensionsFolder + r'\extensions.csv']
+    # <<<>>>
+    arguments += ['-extensions', ExtensionsFolder + r'\extensions.csv', '-backend', 'dragonfly2']
     if language == "enx":
         arguments += ['-numbers',
                       'zero,one,two,three,four,five,six,seven,eight,nine']

@@ -50,7 +50,9 @@ def output(out_file, grammar, params):
         for rule_name in rule_names:
             emit_rule(rule_name, grammar["RULES"][rule_name], True) 
 
-    emit_file_trailer()
+    # <<<>>>
+    if len(Emitted_Rules) > 0:
+        emit_file_trailer()
     OUT.close()
 
 def implementation_error(error):
@@ -221,13 +223,6 @@ def emit_file_header():
 from __future__ import print_function
 
 import dragonfly
-
-# <<<>>>
-import sys
-try:
-    del sys.modules["vocola_dragonfly_runtime"]
-except:
-    pass
 
 from vocola_dragonfly_runtime import *
 
