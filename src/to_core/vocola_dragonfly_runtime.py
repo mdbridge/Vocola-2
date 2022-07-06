@@ -350,7 +350,7 @@ class ExtensionRoutine(ExtensionCall):
         implementation = self.get_extension_implementation()
         result = implementation(*values)
         print(self.module_name + ":" + self.name + "(" +
-              ", ".join([repr(v) in values]) + ") -> " + repr( result))
+              ", ".join([repr(v) for v in values]) + ") -> " + repr( result))
         return preceding_text + result
 
 class ExtensionProcedure(ExtensionCall):
