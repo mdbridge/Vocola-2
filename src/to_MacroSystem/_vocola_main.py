@@ -640,7 +640,7 @@ purgeOutput()
 if not VocolaEnabled:
     print("Vocola not active")
 else:
-    print("Vocola version 2.8.8+ALPHA starting...")
+    print("Vocola version 2.8.8+ALPHA+Vortex starting...")
     thisGrammar = ThisGrammar()
     thisGrammar.initialize()
 

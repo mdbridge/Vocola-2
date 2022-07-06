@@ -1,0 +1,49 @@
+scratch that  # provide some measure of undo
+
+select that
+select XYZ
+select XYZ through ABC
+select again, next, previous
+
+select {all,document}
+select next character
+select forward 1..20 characters
+select previous word
+select back 1..20 words
+select last
+
+unselect that
+
+insert before XYZ
+insert before that
+insert after XYZ
+insert after that
+go back
+
+correct that
+correct XYZ
+correct XYZ through ABC
+
+compound that, XYZ, XYZ through ABC
+hyphenate that
+cap that
+all caps that
+no caps that
+
+resume with XYZ    # deletes *after* XYZ
+
+{bold,italicized,underline} that, XYZ, XYZ through ABC
+
+capitalize XYZ
+capitalize XYZ through ABC
+
+spell that
+spell that <letters>
+spell <letters>
+
+[I disable]
+{delete,cut,copy} that, XYZ, XYZ through ABC
+
+
+
+spell

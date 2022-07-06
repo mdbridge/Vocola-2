@@ -1,0 +1,39 @@
+Blacklisting:
+  * what to do about browsers?
+  * are there any other applications with full text control?
+
+ApplicationControl:
+  * postponed keys...
+  * avoid shifted arrow keys for some applications in future?
+  * attempt to use peek to handle tricky applications?
+  * limitations of Keys.SendInput
+    * no elevated applications, some keys can't be sent with German etc.
+  * use of "shift": do we need Vocola enabled for vortex to work?
+
+BasicTextControl:
+  * mystery why Dragon calls back unattached DictObj's
+  * does Dragon try any other ways to alter fake prefix?
+  * maintaining state in the presence of Vocola commands:
+    * handle {space}? {space_10}?  Any other control codes?
+    * what about trailing normal keys after control codes?
+    * Extensions, like Keys.SendInput or Mouse.Click()
+    * limit the effect of a mouse press to the window receiving the click?
+  * correctly maintaining state in the presence of physical keys or
+    mouse presses
+  * handle commands from KnowBrainer or dragonfly?
+  * is it worth the trouble to maintain state when we switch away from a
+    window to something other than a spelling window?
+  * cleanup entire Vocola pre-action mechanism
+    * add to standard Vocola
+
+CatchAllGrammar:
+  * hanging problem gone?
+  * do we need to wait 10 utterances before unloading?
+
+
+
+
+cleanup debug information, allow disabling
+
+should vortex be standalone from Vocola 2?
+
