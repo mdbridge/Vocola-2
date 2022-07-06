@@ -20,7 +20,11 @@ def output(out_file, grammar, params):
 
     executables = grammar["EXECUTABLE"]
     if len(executables) == 0:
-        emit(0, "context = dragonfly.AppContext()\n")
+         # <<<>>>
+        if re.match(r'.*(short|range).*', out_file):
+            emit(0, "context = (~dragonfly.AppContext(executable='emacs')) & ~dragonfly.AppContext(executable='xwin')\n")
+        else:
+            emit(0, "context = dragonfly.AppContext()\n")
     else:
         # <<<>>>
         executable = executables[-1]
