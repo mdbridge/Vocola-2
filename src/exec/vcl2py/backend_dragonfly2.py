@@ -241,11 +241,11 @@ from vocola_dragonfly_runtime import *
 def emit_file_trailer():
     print >>OUT, '''
 
-print("***** loading" + __file__ + "...")
+print("***** loading " + __file__ + "...")
 grammar.load()
 def unload():
     global grammar
-    print("***** unloading" + __file__ + "...")
+    print("***** unloading " + __file__ + "...")
     if grammar: grammar.unload()
     grammar = None
 ''',
