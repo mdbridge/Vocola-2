@@ -185,7 +185,7 @@ def code_for_call(call):
     name_code = [make_string(call["NAME"])]
     module_code = []
     if "MODULE" in call.keys():
-        module_codes = [make_string(call["MODULE"])]
+        module_code = [make_string(call["MODULE"])]
     argument_code = [code_for_actions(a) for a in call["ARGUMENTS"]]
     codes = module_code + name_code + argument_code
     return make_call(call_type_name(call_type), codes)
