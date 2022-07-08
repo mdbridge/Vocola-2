@@ -127,6 +127,7 @@ def emit_rule(rule_name, rule, top_level):
     # the next line emits as a side effect any rules we are dependent on:
     element_code = [code_for_element(rule)]
     rule_class = "ExportedRule" if top_level else "Rule"
+    element_code = [make_string(rule_name)] + element_code
     if top_level:
         element_code = [make_variable("__file__")] + element_code
     rule_variable = "rule_" + rule_name
