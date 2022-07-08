@@ -125,53 +125,56 @@ def emit_rule(rule_name, rule, top_level):
         return
     Emitted_Rules.add(rule_name)
     # the next line emits as a side effect any rules we are dependent on:
-    element_code = code_for_element(rule)
-    class_ = "ExportedRule(__file__," if top_level else "Rule("
-    emit(0, "rule_" + rule_name + " = " + class_ + '"' + rule_name + "\", " + element_code + ")\n")
+    element_code = [code_for_element(rule)]
+    rule_class = "ExportedRule" if top_level else "Rule"
     if top_level:
-        emit(0, "grammar.add_rule(rule_" + rule_name + ")\n")
+        element_code = [make_variable("__file__")] + element_code
+    rule_variable = "rule_" + rule_name
+    rule_code = make_assignment(rule_variable, make_call(rule_class, element_code))
+    emit_code(rule_code)
+    if top_level:
+        emit(0, "grammar.add_rule(" + rule_variable + ")\n")
 
 def code_for_element(element):
     type = element["TYPE"]
     if type == "empty":
-        return "Empty()"
+        return make_call("Empty", [])
     elif type == "terminal":
-        return "Term(\"" + make_safe_python_string(element["TEXT"]) + "\")"
+        return make_call("Term", [make_string(element["TEXT"])])
     elif type == "dictation":
-        return "Dictation()"
+        return make_call("Dictation", [])
     elif type == "rule_reference":
         referenced = element["NAME"]
         emit_rule(referenced, Grammar["RULES"][referenced], False)
-        return "RuleRef(rule_" + referenced + ")"
+        return make_call("RuleRef", [make_variable("rule_" + referenced)])
     elif type == "alternatives":
-        elements = ", ".join([code_for_element(e) for e in element["CHOICES"]])
-        return "Alt([" + elements + "])"
+        codes = [code_for_element(e) for e in element["CHOICES"]]
+        return make_call("Alt", codes)
     elif type == "sequence":
-        elements = ", ".join([code_for_element(e) for e in element["ELEMENTS"]])
-        return "Seq([" + elements + "])"
+        codes = [code_for_element(e) for e in element["ELEMENTS"]]
+        return make_call("Seq", codes)
     elif type == "slot":
         element_code = code_for_element(element["ELEMENT"])
-        return "Slot(" + element_code + "," + str(element["NUMBER"]) + ")"
+        return make_call("Slot", [element_code, make_integer(element["NUMBER"])])
     elif type == "with":
         element_code = code_for_element(element["ELEMENT"])
         actions_code = code_for_actions(element["ACTIONS"])
-        return "With(" + element_code + ",\n    " + actions_code + ")"
+        return make_call("With", [element_code, actions_code])
     elif type == "without":
         element_code = code_for_element(element["ELEMENT"])
-        return "Without(" + element_code + ")"
+        return make_call("Without", [element_code])
     else:
         implementation_error("code_for_element: unknown element type: " + type)
 
 def code_for_actions(actions):
-    return "["+ ", ".join([code_for_action(action) for action in actions]) + "]"
+    return make_list([code_for_action(action) for action in actions])
 
 def code_for_action(action):
     type = action["TYPE"]
     if type == "text":
-        text = action["TEXT"]
-        return '"' + make_safe_python_string(text) + '"'
+        return make_string(action["TEXT"])
     elif type == "reference":
-        return "Ref(" + str(action["SLOT"]) + ")"
+        return make_call("Ref", [make_integer(action["SLOT"])])
     elif type == "call":
         return code_for_call(action)
     else:
@@ -179,12 +182,13 @@ def code_for_action(action):
 
 def code_for_call(call):
     call_type = call["CALLTYPE"]
-    result = call_type_name(call_type) + "("
+    name_code = [make_string(call["NAME"])]
+    module_code = []
     if "MODULE" in call.keys():
-        result = result + '"' + make_safe_python_string(call["MODULE"]) + '",'
-    result = result + '"' + make_safe_python_string(call["NAME"]) + '",' + \
-        '[' + ",".join([code_for_actions(a) for a in call["ARGUMENTS"]]) + "])"
-    return result
+        module_codes = [make_string(call["MODULE"])]
+    argument_code = [code_for_actions(a) for a in call["ARGUMENTS"]]
+    codes = module_code + name_code + argument_code
+    return make_call(call_type_name(call_type), codes)
 
 def call_type_name(call_type):
     if call_type == "dragon":
@@ -192,18 +196,64 @@ def call_type_name(call_type):
     elif call_type == "vocola":
         return "VocolaCall"
     elif call_type == "extension_routine":
-        return "ExtensionRoutine"
+        return "ExtRoutine"
     elif call_type == "extension_procedure":
-        return "ExtensionProcedure"
+        return "ExtProc"
     else:
         implementation_error("Unknown call type: '" + call_type + "'")
 
-# ---------------------------------------------------------------------------
-# Utilities used by "emit" methods
 
-def emit(indent, text):
-    global OUT
-    OUT.write(' ' * (4 * indent) + text)
+# ---------------------------------------------------------------------------
+# Code for emitting pretty printed Python code
+
+#
+# These are used to generate *code*, which can be later pretty printed:
+#
+
+def make_variable(variable):
+    return make_leaf(variable)
+
+def make_integer(number):
+    return make_leaf(str(number))
+
+def make_string(text):
+    return make_leaf('"' + make_safe_python_string(text) + '"')
+    
+def make_list(codes):
+    return make_branch("[", "]", codes)
+
+def make_call(name, codes):
+    return make_branch(name + "(", ")", codes)
+
+def make_assignment(variable, code):
+    return add_prefix(variable + " = ", code)
+
+
+#
+# These are the underlying primitives used by the above
+#
+
+Indent = 2
+Separator = ", "
+
+def make_leaf(text):
+    return (text, len(text), 0)
+
+def make_branch(head_text, tail_text, codes):
+    size = len(head_text) + len(tail_text)
+    depth = 1
+    if len(codes) > 0:
+        depth = max(c[2] for c in codes) + 1
+        size = size + len(Separator)*(len(codes)-1) + \
+            sum(c[1] for c in codes)
+    return ([head_text, tail_text, codes], size, depth)
+
+def add_prefix(text, code):
+    info, size, depth = code
+    if isinstance(info, str):
+        return (text + info, size + len(text), depth)
+    head_text, tail_text, codes = info
+    return ([text + head_text, tail_text, codes], size + len(text), depth)
 
 def make_safe_python_string(text):
     text = text.replace("\\", "\\\\")
@@ -211,6 +261,38 @@ def make_safe_python_string(text):
     text = text.replace("\"", "\\\"")
     text = text.replace("\n", "\\n")
     return text
+
+
+#
+# Actual code for emitting
+#
+
+Wrap_column = 100
+
+def emit_code(code, indent=0, trailer=""):
+    #emit(0, flatten_code(code) + "\n")
+    #return
+    info, size, depth = code
+    if isinstance(info, str) or indent*Indent + size < Wrap_column:
+        emit(indent, flatten_code(code) +  trailer + "\n")
+        return
+    head_text, tail_text, codes = info
+    emit(indent, head_text + "\n")
+    for code in codes:
+        emit_code(code, indent + 1, ",")
+    emit(indent, tail_text +  trailer + "\n")
+
+def flatten_code(code):
+    info = code[0]
+    if isinstance(info, str):
+        return info
+    head_text, tail_text, codes = info
+    return head_text + Separator.join([flatten_code(c) for c in codes]) + tail_text
+
+def emit(indent, text):
+    global OUT
+    OUT.write(' ' * (Indent * indent) + text)
+
 
 
 # ---------------------------------------------------------------------------
