@@ -46,7 +46,7 @@ class RuleRef:
          return dragonfly.RuleRef(rule=self.rule)
 
 class Alt:
-    def __init__(self, alternatives):
+    def __init__(self, *alternatives):
          self.alternatives = alternatives
 
     def to_dragonfly(self):
@@ -54,7 +54,7 @@ class Alt:
                                                 for alternative in self.alternatives])
 
 class Seq:
-    def __init__(self, elements):
+    def __init__(self, *elements):
          self.elements = elements
 
     def to_dragonfly(self):
@@ -237,7 +237,7 @@ class Join(Action):
 ##
 
 class ActionCall(Action):
-    def __init__(self, name, arguments):
+    def __init__(self, name, *arguments):
         self.name = name
         self.arguments = [Prog(actions) for actions in arguments]
 
@@ -331,9 +331,9 @@ class VocolaCall(ActionCall):
 
 
 class ExtensionCall(ActionCall):
-    def __init__(self, module_name, name, arguments):
+    def __init__(self, module_name, name, *arguments):
         self.module_name = module_name
-        ActionCall.__init__(self, name, arguments)
+        ActionCall.__init__(self, name, *arguments)
 
     def get_extension_implementation(self):
         if self.module_name in sys.modules:
@@ -344,7 +344,7 @@ class ExtensionCall(ActionCall):
         extension_routine = getattr(extension_module, self.name)
         return extension_routine
 
-class ExtensionRoutine(ExtensionCall):
+class ExtRoutine(ExtensionCall):
     def eval(self, is_top_level, bindings, preceding_text):
         values = [argument.eval(False, bindings, "") for argument in self.arguments]
         implementation = self.get_extension_implementation()
@@ -353,7 +353,7 @@ class ExtensionRoutine(ExtensionCall):
               ", ".join([repr(v) for v in values]) + ") -> " + repr( result))
         return preceding_text + result
 
-class ExtensionProcedure(ExtensionCall):
+class ExtProc(ExtensionCall):
     def eval(self, is_top_level, bindings, preceding_text):
         if not is_top_level:
             raise VocolaRuntimeError(
