@@ -148,10 +148,10 @@ def code_for_element(element):
         emit_rule(referenced, Grammar["RULES"][referenced], False)
         return make_call("RuleRef", [make_variable("rule_" + referenced)])
     elif type == "alternatives":
-        codes = [code_for_element(e) for e in element["CHOICES"]]
+        codes = [make_list([code_for_element(e) for e in element["CHOICES"]])]
         return make_call("Alt", codes)
     elif type == "sequence":
-        codes = [code_for_element(e) for e in element["ELEMENTS"]]
+        codes = [make_list([code_for_element(e) for e in element["ELEMENTS"]])]
         return make_call("Seq", codes)
     elif type == "slot":
         element_code = code_for_element(element["ELEMENT"])

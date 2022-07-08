@@ -46,7 +46,7 @@ class RuleRef:
          return dragonfly.RuleRef(rule=self.rule)
 
 class Alt:
-    def __init__(self, *alternatives):
+    def __init__(self, alternatives):
          self.alternatives = alternatives
 
     def to_dragonfly(self):
@@ -54,7 +54,7 @@ class Alt:
                                                 for alternative in self.alternatives])
 
 class Seq:
-    def __init__(self, *elements):
+    def __init__(self, elements):
          self.elements = elements
 
     def to_dragonfly(self):
