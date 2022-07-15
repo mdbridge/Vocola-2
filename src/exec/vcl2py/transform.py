@@ -49,7 +49,7 @@ def transform_command(command):  # -> commands !
     i = offset_of_first_optional(terms)
     if i < 0:
         return [command]
-    return [command] # <<<>>>
+    #return [command] # <<<>>>
 
     without         = copy.deepcopy(command)
     without["NAME"] = str(Statement_count)
