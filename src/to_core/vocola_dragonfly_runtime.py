@@ -51,7 +51,7 @@ class Opt:
          self.element = element
 
     def to_dragonfly(self):
-         return dragonfly.Optional(element=self.child.to_dragonfly(),
+         return dragonfly.Optional(child=self.element.to_dragonfly(),
                                    default=None)
 
 class Alt:
