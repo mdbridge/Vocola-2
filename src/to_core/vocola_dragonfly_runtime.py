@@ -45,6 +45,15 @@ class RuleRef:
     def to_dragonfly(self):
          return dragonfly.RuleRef(rule=self.rule)
 
+
+class Opt:
+    def __init__(self, element):
+         self.element = element
+
+    def to_dragonfly(self):
+         return dragonfly.Optional(child=self.child.to_dragonfly(),
+                                   default=None)
+
 class Alt:
     def __init__(self, alternatives):
          self.alternatives = alternatives

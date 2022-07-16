@@ -92,12 +92,10 @@ def generate_from_terms(terms, slots):
 
 def generate_from_term(term, slots):
     if "OPTIONAL" in term.keys() and term["OPTIONAL"] and term["TYPE"] != "optionalterms":
-        empty = {}
-        empty["TYPE"] = "empty"
         rule = {}
-        rule["TYPE"] = "alternatives"
+        rule["TYPE"] = "optional"
     	element, slots = generate_from_nonoptional_term(term, slots)
-        rule["CHOICES"] = [element, empty]
+        rule["ELEMENT"] = element
         return rule, slots
     return generate_from_nonoptional_term(term, slots)
 
@@ -126,11 +124,9 @@ def generate_from_nonoptional_term(term, slots):
         rule["TYPE"] = "dictation"
         maybe_slotted = True
     elif type == "optionalterms":
-        rule["TYPE"] = "alternatives"
-        empty = {}
-        empty["TYPE"] = "empty"
+        rule["TYPE"] = "optional"
         element, slots = generate_from_terms(term["TERMS"], slots)
-        rule["CHOICES"] = [element, empty]
+        rule["ELEMENT"] = element
     else:
         rule["TYPE"] = "unknown:" + term["TYPE"]
     if not maybe_slotted or slots<0:
