@@ -19,16 +19,19 @@ from VocolaUtils import (VocolaRuntimeError, do_flush, to_long, call_Dragon, eva
 ## Element implementation using NatLink
 ##
 
-class Empty:
-    def to_NatLink_grammar_element(self):
-        raise undefined
+# class Empty:
+#     def to_NatLink_grammar_element(self):
+#         raise undefined
 
 class Term:
     def __init__(self, terminal_text):
          self.terminal_text = terminal_text
 
+    def get_dependent_rules(self):
+        return []
+
     def to_NatLink_grammar_element(self):
-        return make_safe_python_string(self.terminal_text)
+        return "'" + make_safe_python_string(self.terminal_text) + "'"
 
 def make_safe_python_string(text):
     text = text.replace("\\", "\\\\")
@@ -41,9 +44,15 @@ class Dictation:
     def to_NatLink_grammar_element(self):
         return "<dgndictation>"
 
+    def get_dependent_rules(self):
+        return []
+
 class RuleRef:
     def __init__(self, rule):
          self.rule = rule
+
+    def get_dependent_rules(self):
+        return [self.rule]
 
     def to_NatLink_grammar_element(self):
         return "<" + self.rule.get_name() + ">"
@@ -53,6 +62,9 @@ class Opt:
     def __init__(self, element):
          self.element = element
 
+    def get_dependent_rules(self):
+        return self.element.get_dependent_rules()
+
     def to_NatLink_grammar_element(self):
         return "[" + self.element.to_NatLink_grammar_element() + "]"
 
@@ -60,12 +72,24 @@ class Alt:
     def __init__(self, alternatives):
          self.alternatives = alternatives
 
+    def get_dependent_rules(self):
+        result = []
+        for alternative in self.alternatives:
+            result += alternative.get_dependent_rules()
+        return result
+
     def to_NatLink_grammar_element(self):
         return "(" + " | ".join(c.to_NatLink_grammar_element() for c in self.alternatives) + ")"
 
 class Seq:
     def __init__(self, elements):
          self.elements = elements
+
+    def get_dependent_rules(self):
+        result = []
+        for element in self.elements:
+            result += element.get_dependent_rules()
+        return result
 
     def to_NatLink_grammar_element(self):
         return " ".join(c.to_NatLink_grammar_element() for c in self.elements)
@@ -95,6 +119,9 @@ class Slot:
         actions = self.reduce_to_actions(value)
         return actions[0] if len(actions) > 0 else Text("")
 
+    def get_dependent_rules(self):
+        return self.element.get_dependent_rules()
+
     def to_NatLink_grammar_element(self):
         return self.element.to_NatLink_grammar_element()
     # def to_dragonfly(self):
@@ -115,6 +142,9 @@ class With:
                 b = self.get_bindings(v)
                 bindings.update(b)
         return bindings
+
+    def get_dependent_rules(self):
+        return self.element.get_dependent_rules()
 
     def to_NatLink_grammar_element(self):
         return self.element.to_NatLink_grammar_element()
@@ -142,6 +172,9 @@ class Without:
                                  "Without element received unexpected value from sub element: " +
                                  repr(value))
         
+    def get_dependent_rules(self):
+        return self.element.get_dependent_rules()
+
     def to_NatLink_grammar_element(self):
         return self.element.to_NatLink_grammar_element()
     # def to_dragonfly(self):
@@ -398,6 +431,12 @@ class Rule():
     def get_name(self):
         return self.name
 
+    def get_element(self):
+        return self.element
+
+    def get_dependent_rules(self):
+        return self.element.get_dependent_rules()
+
 class ExportedRule():
     def __init__(self, file_, name_, element_):
         self.name = name_
@@ -424,6 +463,12 @@ class ExportedRule():
     def get_name(self):
         return self.name
 
+    def get_element(self):
+        return self.element
+
+    def get_dependent_rules(self):
+        return self.element.get_dependent_rules()
+
 
 ##
 ## 
@@ -441,11 +486,28 @@ testing
         self.currentModule = ("","",0)
         self.rule_state = {}
 
-        pass
-
     def unload_grammar(self):
-        unload()
+        #self.unload()
+        pass
 
     def add_rule(self, rule):
         print("adding rule with: ")
-        print(rule.to_NatLink_grammar_element())
+        done, before = self.generate_grammar_spec(rule)
+        # print(repr(done))
+        print(before)
+        #print(repr(before))
+
+    def generate_grammar_spec(self, rule, done=set(), before=""):
+        rule_name = rule.get_name()
+        if rule_name in done:
+            return done, before
+        done.add(rule_name)
+        dependencies = rule.get_dependent_rules()
+        # print(rule.get_name(), repr(dependencies))
+        for r in dependencies:
+            if not r.get_name() in done:
+                done, before = self.generate_grammar_spec(r, done, before)
+        added_spec = "<" + rule_name + "> = " + \
+            rule.get_element().to_NatLink_grammar_element() + ";\n"
+        return done, before + added_spec
+        
