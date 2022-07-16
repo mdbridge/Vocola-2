@@ -33,6 +33,12 @@ class Term:
         else:
             return '"' + word + '"'
 
+    def parse(self, words, offset_):
+        if offset_ >= len(words):
+            return
+        if words[offset_] == self.terminal_text:
+            yield offset_ + 1, self.terminal_text
+
 def make_safe_python_string(text):
     text = text.replace("\\", "\\\\")
     text = text.replace("'", "\\'")
@@ -57,6 +63,10 @@ class RuleRef:
     def to_NatLink_grammar_element(self):
         return "<" + self.rule.get_name() + ">"
 
+    def parse(self, words, offset_):
+        for offset, value in self.rule.parse(words, offset_):
+            yield offset, value
+        
 
 class Opt:
     def __init__(self, element):
@@ -67,6 +77,12 @@ class Opt:
 
     def to_NatLink_grammar_element(self):
         return "[" + self.element.to_NatLink_grammar_element() + "]"
+
+    def parse(self, words, offset_):
+        for offset, value in self.element.parse(words, offset_):
+            yield offset, value
+        if offset_ == len(words):
+            yield offset_, None
 
 class Alt:
     def __init__(self, alternatives):
@@ -81,6 +97,11 @@ class Alt:
     def to_NatLink_grammar_element(self):
         return "(" + " | ".join(c.to_NatLink_grammar_element() for c in self.alternatives) + ")"
 
+    def parse(self, words, offset_):
+        for alternative in self.alternatives:
+            for offset, value in alternative.parse(words, offset_):
+                yield offset, value
+
 class Seq:
     def __init__(self, elements):
          self.elements = elements
@@ -93,6 +114,20 @@ class Seq:
 
     def to_NatLink_grammar_element(self):
         return " ".join(c.to_NatLink_grammar_element() for c in self.elements)
+
+    def inner_parse(self, remaining_elements, words, offset_):
+        if len(remaining_elements) == 0:
+            yield offset_, []
+            return
+        first_element = remaining_elements[0]
+        remaining_elements = remaining_elements[1:]
+        for offset, value in first_element.parse(words, offset_):
+            for offset2, remaining_values in self.inner_parse(remaining_elements, words, offset):
+                yield offset2, [value] + remaining_values
+
+    def parse(self, words, offset_):
+        for offset, value in self.inner_parse(self.elements, words, offset_):
+                yield offset, value
 
 class Slot:
     def __init__(self, element, number):
@@ -124,9 +159,10 @@ class Slot:
 
     def to_NatLink_grammar_element(self):
         return self.element.to_NatLink_grammar_element()
-    # def to_dragonfly(self):
-    #      return dragonfly.Modifier(self.element.to_dragonfly(), 
-    #                                lambda values: (self.number, self.reduce_to_action(values)))
+
+    def parse(self, words, offset_):
+        for offset, value in self.element.parse(words, offset_):
+            yield offset, (self.number, self.reduce_to_action(value))
 
 class With:
     def __init__(self, element, actions):
@@ -148,9 +184,10 @@ class With:
 
     def to_NatLink_grammar_element(self):
         return self.element.to_NatLink_grammar_element()
-    # def to_dragonfly(self):
-    #      return dragonfly.Modifier(self.element.to_dragonfly(), 
-    #                                lambda value: self.action.bind(self.get_bindings(value)))
+
+    def parse(self, words, offset_):
+        for offset, value in self.element.parse(words, offset_):
+            yield offset, self.action.bind(self.get_bindings(value))
 
 class Without:
     def __init__(self, element):
@@ -177,9 +214,10 @@ class Without:
 
     def to_NatLink_grammar_element(self):
         return self.element.to_NatLink_grammar_element()
-    # def to_dragonfly(self):
-    #      return dragonfly.Modifier(self.element.to_dragonfly(), 
-    #                                lambda values: Join(self.reduce_to_actions(values)))
+
+    def parse(self, words, offset_):
+        for offset, value in self.element.parse(words, offset_):
+            yield offset, Join(self.reduce_to_actions(value))
 
 
 #
@@ -440,6 +478,10 @@ class Rule():
     def is_exported(self):
         return False
 
+    def parse(self, words, offset_):
+        for offset, value in self.element.parse(words, offset_):
+            yield offset, value
+
 class ExportedRule():
     def __init__(self, file_, name_, element_):
         self.name = name_
@@ -474,6 +516,11 @@ class ExportedRule():
 
     def is_exported(self):
         return True
+
+    def parse(self, words, offset_):
+        for offset, value in self.element.parse(words, offset_):
+            yield offset, value
+
 
 ##
 ## 
@@ -522,3 +569,16 @@ class Grammar(natlinkutils.GrammarBase):
         
     def gotResultsInit(self, words, fullResults):
         print(repr(words), repr(fullResults))
+        for offset, value in self.rules[0].parse(words, 0):
+            print("found offset = " + str(offset) +" value = " + repr(value))
+            if offset == len(words):
+                action = value
+            try:
+                text = action.eval(True, {}, "")
+                print("resulting text is <" + text + ">")
+                do_flush(False, text)
+            except Exception as e:
+                print(" threw exception: " + repr(e))
+                import traceback
+                traceback.print_exc(e)
+        print("no more parsing left")
