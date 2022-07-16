@@ -106,14 +106,9 @@ def slotted_element(element, slot):
 
 def optional_element(element):
     rule = {}
-    rule["TYPE"] = "alternatives"
-    rule["CHOICES"] = [element, empty_element()]
+    rule["TYPE"] = "optional"
+    rule["ELEMENT"] = element
     return rule
-
-def empty_element():
-    empty = {}
-    empty["TYPE"] = "empty"
-    return empty
 
 
 # ---------------------------------------------------------------------------
@@ -138,9 +133,7 @@ def emit_rule(rule_name, rule, top_level):
 
 def code_for_element(element):
     type = element["TYPE"]
-    if type == "empty":
-        return make_call("Empty", [])
-    elif type == "terminal":
+    if type == "terminal":
         return make_call("Term", [make_string(element["TEXT"])])
     elif type == "dictation":
         return make_call("Dictation", [])
@@ -148,6 +141,9 @@ def code_for_element(element):
         referenced = element["NAME"]
         emit_rule(referenced, Grammar["RULES"][referenced], False)
         return make_call("RuleRef", [make_variable("rule_" + referenced)])
+    elif type == "optional":
+        element_code = code_for_element(element["ELEMENT"])
+        return make_call("Opt", [element_code])
     elif type == "alternatives":
         codes = [make_list([code_for_element(e) for e in element["CHOICES"]])]
         return make_call("Alt", codes)

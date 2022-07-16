@@ -10,13 +10,16 @@ import re
 #       RULES         - Python map from rule names to named rules
 #
 # rule:
-#    TYPE - empty/terminal/dictation/rule_reference/sequence/alternatives/slot/with
-#    empty:
+#    TYPE        - terminal/dictation/rule_reference/optional/
+#                  sequence/alternatives/slot/with/without
 #    terminal:
 #       TEXT	 - text defining the terminal; can be multiple words
 #    dictation:
 #    rule_reference:
-#       NAME	 - The rule name being referenced; must be defined in the grammar's RULES field
+#       NAME	 - The rule name being referenced; must be defined in the grammar's 
+#                  RULES field
+#    optional:
+#       ELEMENT  - A single element that may be omitted
 #    alternatives:
 #       CHOICES  - Python list of alternatives, each a rule (need not be named)
 #    sequence:
@@ -84,9 +87,7 @@ def unparse_rule(name, rule):
 
 def unparse_element(element):
     type = element["TYPE"]
-    if type == "empty":
-        return "&EMPTY"
-    elif type == "terminal":
+    if type == "terminal":
         text = element["TEXT"]
         if re.match(r'^[a-zA-Z0-9_]*$', text):
             return text
@@ -99,6 +100,8 @@ def unparse_element(element):
     elif type == "alternatives":
         inner = [unparse_element(choice) for choice in element["CHOICES"]]
         return "(" + " | ".join(inner) + ")"
+    elif type == "optional":
+        return "[" + unparse_element(element["ELEMENT"]) + "]"
     elif type == "sequence":
         inner = [unparse_element(choice) for choice in element["ELEMENTS"]]
         return "{" + " ".join(inner) + "}"
