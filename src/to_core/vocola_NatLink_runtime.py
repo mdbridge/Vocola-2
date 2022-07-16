@@ -19,10 +19,6 @@ from VocolaUtils import (VocolaRuntimeError, do_flush, to_long, call_Dragon, eva
 ## Element implementation using NatLink
 ##
 
-# class Empty:
-#     def to_NatLink_grammar_element(self):
-#         raise undefined
-
 class Term:
     def __init__(self, terminal_text):
          self.terminal_text = terminal_text
@@ -31,7 +27,11 @@ class Term:
         return []
 
     def to_NatLink_grammar_element(self):
-        return "'" + make_safe_python_string(self.terminal_text) + "'"
+        word = self.terminal_text
+        if not "'" in word:
+            return "'" + word + "'"
+        else:
+            return '"' + word + '"'
 
 def make_safe_python_string(text):
     text = text.replace("\\", "\\\\")
@@ -437,6 +437,9 @@ class Rule():
     def get_dependent_rules(self):
         return self.element.get_dependent_rules()
 
+    def is_exported(self):
+        return False
+
 class ExportedRule():
     def __init__(self, file_, name_, element_):
         self.name = name_
@@ -469,6 +472,8 @@ class ExportedRule():
     def get_dependent_rules(self):
         return self.element.get_dependent_rules()
 
+    def is_exported(self):
+        return True
 
 ##
 ## 
@@ -476,26 +481,31 @@ class ExportedRule():
 
 class Grammar(natlinkutils.GrammarBase):
     def __init__(self):
-        pass
+        natlinkutils.GrammarBase.__init__(self)
+        self.rules = []
 
     def load_grammar(self):
-        self.gramSpec = """
-testing
-"""
-        #self.load(self.gramSpec)
+        self.gramSpec = self.get_grammar_spec()
+        print("loading grammar specification of:")
+        print(self.gramSpec)
+        self.load(self.gramSpec)
         self.currentModule = ("","",0)
         self.rule_state = {}
+        self.activateAll()
 
     def unload_grammar(self):
-        #self.unload()
+        self.unload()
         pass
 
     def add_rule(self, rule):
-        print("adding rule with: ")
-        done, before = self.generate_grammar_spec(rule)
-        # print(repr(done))
-        print(before)
-        #print(repr(before))
+        self.rules += [rule]
+
+    def get_grammar_spec(self):
+        done = set()
+        spec = ""
+        for rule in self.rules:
+            done, spec = self.generate_grammar_spec(rule, done, spec)
+        return spec
 
     def generate_grammar_spec(self, rule, done=set(), before=""):
         rule_name = rule.get_name()
@@ -503,11 +513,12 @@ testing
             return done, before
         done.add(rule_name)
         dependencies = rule.get_dependent_rules()
-        # print(rule.get_name(), repr(dependencies))
         for r in dependencies:
             if not r.get_name() in done:
                 done, before = self.generate_grammar_spec(r, done, before)
-        added_spec = "<" + rule_name + "> = " + \
+        added_spec = "<" + rule_name + ">" + (" exported" if rule.is_exported() else "") + " = " + \
             rule.get_element().to_NatLink_grammar_element() + ";\n"
         return done, before + added_spec
         
+    def gotResultsInit(self, words, fullResults):
+        print(repr(words), repr(fullResults))
