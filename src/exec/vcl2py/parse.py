@@ -488,8 +488,9 @@ def check_can_get_concrete_term(terms):
     for term in terms:
         if term_is_concrete_or_inlineable(term):
             return True
-    error("At least one term must not be optional or <_anything>",
-          terms[0]["POSITION"])
+    return True # <<<>>>
+    # error("At least one term must not be optional or <_anything>",
+    #       terms[0]["POSITION"])
 
 def term_is_concrete_or_inlineable(term):
     type = term["TYPE"]
