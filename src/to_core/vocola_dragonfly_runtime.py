@@ -201,7 +201,7 @@ class ExportedRule(BasicRule):
     def process_recognition(self, node):
         print("\nRule " + self.name + " from " + self.file + ":")
         try:
-            print("  recognized: " + repr(note))
+            print("  recognized: " + repr(node))
             action = node.value()
             print("  ->  " + repr(action))
             text = action.eval(True, {}, "")
@@ -221,6 +221,9 @@ class Grammar:
     def __init__(self, file, context):
         self.file = file
         self.dragonfly_grammar = dragonfly.Grammar(file, context=context)
+
+    def get_file(self):
+        return self.file
 
     def load_grammar(self):
         print("***** loading " + self.file + "...")
