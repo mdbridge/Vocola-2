@@ -25,7 +25,7 @@ class Element:
 
     def parse(self, words, offset_):
         for offset, value in self.inner_parse(words, offset_):
-            print("    ", self.to_NatLink_grammar_element(), ":", repr(words[offset_:offset]), " -> ", repr(value))
+            #print("    ", self.to_NatLink_grammar_element(), ":", repr(words[offset_:offset]), " -> ", repr(value))
             yield offset, value
         #print("done parsing: ", self.to_NatLink_grammar_element(), ":", repr(words[offset_:]))
 

@@ -16,13 +16,6 @@ from vocola_common_runtime import *
 ## Element implementation using dragonfly
 ##
 
-class Empty:
-    def to_dragonfly(self):
-        #         return Empty(value=self.value)
-        #         return Optional(Impossible(), default=self.value)
-        return dragonfly.Modifier(dragonfly.Optional(dragonfly.Impossible(), default=None),
-                                  lambda value: None)
-
 class Term:
     def __init__(self, terminal_text):
          self.terminal_text = terminal_text
