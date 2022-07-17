@@ -417,7 +417,8 @@ def compile_Vocola(inputFileOrFolder, force):
     arguments  = [VocolaFolder + r'\exec\vcl2py.py']
 
     # <<<>>>
-    arguments += ['-extensions', ExtensionsFolder + r'\extensions.csv', '-backend', 'dragonfly2']
+    #arguments += ['-extensions', ExtensionsFolder + r'\extensions.csv', '-backend', 'dragonfly2']
+    arguments += ['-extensions', ExtensionsFolder + r'\extensions.csv', '-backend', 'NatLink2']
     if language == "enx":
         arguments += ['-numbers',
                       'zero,one,two,three,four,five,six,seven,eight,nine']
