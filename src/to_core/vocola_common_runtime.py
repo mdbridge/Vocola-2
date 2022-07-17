@@ -35,6 +35,7 @@ class BoundAction(Action):
         self.action = action
 
     def to_string(self):
+        result = ""
         for key in sorted(self.bindings.keys()):
             if result != "":
                 result += " "

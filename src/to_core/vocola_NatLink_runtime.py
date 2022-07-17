@@ -8,19 +8,34 @@ from __future__ import print_function
 import natlinkutils
 
 from VocolaUtils import (VocolaRuntimeError)
-
+from vocola_common_runtime import *
 
 
 ##
 ## Element implementation using NatLink
 ##
 
-class Term:
-    def __init__(self, terminal_text):
-         self.terminal_text = terminal_text
-
+class Element:
     def get_dependent_rules(self):
         return []
+
+    def outer_parse(self, words, offset_):
+        print("  trying to parse " + repr(words[offset_:]))
+        return self.parse(words, offset_)
+
+    def parse(self, words, offset_):
+        for offset, value in self.inner_parse(words, offset_):
+            print("    ", self.to_NatLink_grammar_element(), ":", repr(words[offset_:offset]), " -> ", repr(value))
+            yield offset, value
+        #print("done parsing: ", self.to_NatLink_grammar_element(), ":", repr(words[offset_:]))
+
+    def inner_parse(self, words, offset_):
+        return
+
+
+class Term(Element):
+    def __init__(self, terminal_text):
+         self.terminal_text = terminal_text
 
     def to_NatLink_grammar_element(self):
         word = self.terminal_text
@@ -29,7 +44,7 @@ class Term:
         else:
             return '"' + word + '"'
 
-    def parse(self, words, offset_):
+    def inner_parse(self, words, offset_):
         if offset_ >= len(words):
             return
         if words[offset_][0] == self.terminal_text:
@@ -42,14 +57,14 @@ def make_safe_python_string(text):
     text = text.replace("\n", "\\n")
     return text
 
-class Dictation:
+class Dictation(Element):
     def to_NatLink_grammar_element(self):
         return "<dgndictation>"
 
     def get_dependent_rules(self):
         return ["dgndictation"]
 
-    def parse(self, words, offset_):
+    def inner_parse(self, words, offset_):
         offset = offset_
         value = []
         while offset < len(words):
@@ -60,7 +75,7 @@ class Dictation:
         if value != []:
             yield offset, format_words(value)
 
-class RuleRef:
+class RuleRef(Element):
     def __init__(self, rule):
          self.rule = rule
 
@@ -70,12 +85,13 @@ class RuleRef:
     def to_NatLink_grammar_element(self):
         return "<" + self.rule.get_name() + ">"
 
-    def parse(self, words, offset_):
-        for offset, value in self.rule.parse(words, offset_):
-            yield offset, value
+    def inner_parse(self, words, offset_):
+        return self.rule.get_element().parse(words, offset_)
+        # for offset, value in self.rule.parse(words, offset_):
+        #     yield offset, value
         
 
-class Opt:
+class Opt(Element):
     def __init__(self, element):
          self.element = element
 
@@ -85,13 +101,12 @@ class Opt:
     def to_NatLink_grammar_element(self):
         return "[" + self.element.to_NatLink_grammar_element() + "]"
 
-    def parse(self, words, offset_):
+    def inner_parse(self, words, offset_):
         for offset, value in self.element.parse(words, offset_):
             yield offset, value
-        if offset_ == len(words):
-            yield offset_, None
+        yield offset_, None
 
-class Alt:
+class Alt(Element):
     def __init__(self, alternatives):
          self.alternatives = alternatives
 
@@ -104,12 +119,12 @@ class Alt:
     def to_NatLink_grammar_element(self):
         return "(" + " | ".join(c.to_NatLink_grammar_element() for c in self.alternatives) + ")"
 
-    def parse(self, words, offset_):
+    def inner_parse(self, words, offset_):
         for alternative in self.alternatives:
             for offset, value in alternative.parse(words, offset_):
                 yield offset, value
 
-class Seq:
+class Seq(Element):
     def __init__(self, elements):
          self.elements = elements
 
@@ -122,21 +137,20 @@ class Seq:
     def to_NatLink_grammar_element(self):
         return " ".join(c.to_NatLink_grammar_element() for c in self.elements)
 
-    def inner_parse(self, remaining_elements, words, offset_):
+    def inner_parse_helper(self, remaining_elements, words, offset_):
         if len(remaining_elements) == 0:
             yield offset_, []
             return
         first_element = remaining_elements[0]
         remaining_elements = remaining_elements[1:]
         for offset, value in first_element.parse(words, offset_):
-            for offset2, remaining_values in self.inner_parse(remaining_elements, words, offset):
+            for offset2, remaining_values in self.inner_parse_helper(remaining_elements, words, offset):
                 yield offset2, [value] + remaining_values
 
-    def parse(self, words, offset_):
-        for offset, value in self.inner_parse(self.elements, words, offset_):
-                yield offset, value
+    def inner_parse(self, words, offset_):
+        return self.inner_parse_helper(self.elements, words, offset_)
 
-class Slot:
+class Slot(Element):
     def __init__(self, element, number):
          self.element = element
          self.number = number
@@ -167,11 +181,11 @@ class Slot:
     def to_NatLink_grammar_element(self):
         return self.element.to_NatLink_grammar_element()
 
-    def parse(self, words, offset_):
+    def inner_parse(self, words, offset_):
         for offset, value in self.element.parse(words, offset_):
             yield offset, (self.number, self.reduce_to_action(value))
 
-class With:
+class With(Element):
     def __init__(self, element, actions):
          self.element = element
          self.action = Prog(actions)
@@ -192,11 +206,11 @@ class With:
     def to_NatLink_grammar_element(self):
         return self.element.to_NatLink_grammar_element()
 
-    def parse(self, words, offset_):
+    def inner_parse(self, words, offset_):
         for offset, value in self.element.parse(words, offset_):
             yield offset, self.action.bind(self.get_bindings(value))
 
-class Without:
+class Without(Element):
     def __init__(self, element):
          self.element = element
 
@@ -222,7 +236,7 @@ class Without:
     def to_NatLink_grammar_element(self):
         return self.element.to_NatLink_grammar_element()
 
-    def parse(self, words, offset_):
+    def inner_parse(self, words, offset_):
         for offset, value in self.element.parse(words, offset_):
             yield offset, Join(self.reduce_to_actions(value))
 
@@ -279,10 +293,6 @@ class Rule():
     def is_exported(self):
         return False
 
-    def parse(self, words, offset_):
-        for offset, value in self.element.parse(words, offset_):
-            yield offset, value
-
 class ExportedRule():
     def __init__(self, file_, name_, element_):
         self.name = name_
@@ -318,9 +328,6 @@ class ExportedRule():
     def is_exported(self):
         return True
 
-    def parse(self, words, offset_):
-        for offset, value in self.element.parse(words, offset_):
-            yield offset, value
 
 
 ##
@@ -379,12 +386,22 @@ class Grammar(natlinkutils.GrammarBase):
         
     def gotResultsInit(self, words, fullResults):
         print(repr(words), repr(fullResults))
-        for offset, value in self.rules[0].parse(fullResults, 0):
-            print("found offset = " + str(offset) +" value = " + repr(value))
-            if offset == len(words):
-                action = value
+        results = self.rules[0].get_element().outer_parse(fullResults, 0)
+        found = False
+        for offset, value in results:
+            if offset != len(words):
+                print("found partial parse: ",
+                      words[0:offset], " -> ", repr(value))
+                continue
+            if found:
+                print("found second parse: ",
+                      words[0:offset], " -> ", repr(value))
+                continue
+            found = False
+            print("found parse: ",
+                  words[0:offset], " -> ", repr(value))
             try:
-                print("resulting value: " + repr(action))
+                action = value
                 text = action.eval(True, {}, "")
                 print("resulting text is <" + text + ">")
                 do_flush(False, text)
@@ -392,4 +409,4 @@ class Grammar(natlinkutils.GrammarBase):
                 print(" threw exception: " + repr(e))
                 import traceback
                 traceback.print_exc(e)
-        print("no more parsing left")
+        print("no more parsing left\n")
