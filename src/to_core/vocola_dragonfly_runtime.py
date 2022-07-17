@@ -176,26 +176,62 @@ class Without(Modifier):
 ## Rule implementation using dragonfly
 ##
 
-class Rule(dragonfly.Rule):
-    def __init__(self, name_, element_):
+class BasicRule(dragonfly.Rule):
+    def __init__(self, exported, name_, element_):
         dragonfly.Rule.__init__(self, name=name_, element=element_.to_dragonfly(), 
-                                exported=False)
+                                exported=exported)
+        self.vocola_element = element_
 
-class ExportedRule(dragonfly.Rule):
-    def __init__(self, file_, name_, element_):
-        dragonfly.Rule.__init__(self, name=name_, element=element_.to_dragonfly())
-        self.file = file_
-        print("loaded from " + file_ + " : " + repr(element_.to_dragonfly().gstring()))
+    def get_element(self):
+        return self.vocola_element
+
+class Rule(BasicRule):
+    def __init__(self, name_, element_):
+        BasicRule.__init__(self, name, element_, False)
+
+class ExportedRule(BasicRule):
+    def __init__(self, name_, element_):
+        BasicRule.__init__(self, name, element_, True)
+        self.file = "unknown"
+
+    def set_grammar(self, grammar):
+        self.vocola_grammar = grammar
+        self.file = grammar.get_file()
 
     def process_recognition(self, node):
+        print("\nRule " + self.name + " from " + self.file + ":")
         try:
-            print("\nExportedRule " + self.name + " from "+ self.file + " recognized: " + repr(node))
+            print("  recognized: " + repr(note))
             action = node.value()
-            print("resulting value: " + repr(action))
+            print("  ->  " + repr(action))
             text = action.eval(True, {}, "")
-            print("resulting text is <" + text + ">")
+            print("  resulting text is <" + text + ">")
             do_flush(False, text)
         except Exception as e:
-            print(self.name + " threw exception: " + repr(e))
+            print("  Rule " + self.name + " threw exception: " + repr(e))
             import traceback
             traceback.print_exc(e)
+
+
+##
+## Grammar implementation using dragonfly
+##
+
+class Grammar:
+    def __init__(self, file, context):
+        self.file = file
+        self.dragonfly_grammar = dragonfly.Grammar(context=context)
+
+    def load_grammar(self):
+        print("***** loading " + self.file + "...")
+        self.dragonfly_grammar.load()
+
+    def unload_grammar(self):
+        print("***** unloading " + self.file + "...")
+        self.dragonfly_grammar.unload()
+
+    def add_rule(self, rule):
+        rule.set_grammar(self)
+        self.dragonfly_grammar.add_rule(rule)
+        print("loaded from " + self.file + ": " + 
+              repr(rule.get_element().to_dragonfly().gstring()))

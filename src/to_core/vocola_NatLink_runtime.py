@@ -269,75 +269,44 @@ class Without(Modifier):
 ## Rule implementation using NatLink
 ##
 
-class Rule():
+class BasicRule:
+    def __init__(self, exported, name_, element_):
+        self.exported = exported
+        self.name = name_
+        self.element = element_
+
+    def get_name(self):
+        return self.name
+
+    def get_element(self):
+        return self.element
+
+    def is_exported(self):
+        return self.exported
+
+class Rule(dragonfly.Rule):
     def __init__(self, name_, element_):
-        self.name = name_
-        self.element = element_
-        # dragonfly.Rule.__init__(self, name=name_, element=element_.to_dragonfly(), 
-        #                         exported=False)
-        #print("inner : " + repr(element_.to_dragonfly().gstring()))
+        BasicRule.__init__(self, name, element_, False)
 
-    def get_name(self):
-        return self.name
-
-    def get_element(self):
-        return self.element
-
-    def get_dependent_rules(self):
-        return self.element.get_dependent_rules()
-
-    def is_exported(self):
-        return False
-
-class ExportedRule():
-    def __init__(self, file_, name_, element_):
-        self.name = name_
-        self.element = element_
-        # dragonfly.Rule.__init__(self, name=name_, element=element_.to_dragonfly())
-        self.file = file_
-        # print("loaded from " + file_ + " : " + repr(element_.to_dragonfly().gstring()))
-
-    def process_recognition(self, node):
-        try:
-            print("\nExportedRule " + self.name + " from "+ self.file + " recognized: " + repr(node))
-            action = node.value()
-            text = action.eval(True, {}, "")
-            print("resulting text is <" + text + ">")
-            do_flush(False, text)
-        except Exception as e:
-            print(self.name + " threw exception: " + repr(e))
-            import traceback
-            traceback.print_exc(e)
-
-    def to_NatLink_grammar_element(self):
-        return self.element.to_NatLink_grammar_element()
-
-    def get_name(self):
-        return self.name
-
-    def get_element(self):
-        return self.element
-
-    def get_dependent_rules(self):
-        return self.element.get_dependent_rules()
-
-    def is_exported(self):
-        return True
-
+class ExportedRule(BasicRule):
+    def __init__(self, name_, element_):
+        BasicRule.__init__(self, name, element_, True)
 
 
 ##
-## 
+## Grammar implementation using NatLink
 ##
 
 class Grammar(natlinkutils.GrammarBase):
-    def __init__(self):
+    def __init__(self, file):
         natlinkutils.GrammarBase.__init__(self)
+        self.file = file
         self.rules = []
 
     def load_grammar(self):
+        print("***** loading " + self.file + "...")
         self.gramSpec = self.get_grammar_spec()
-        print("loading grammar specification of:")
+        print("  grammar specification is:")
         print(self.gramSpec)
         self.load(self.gramSpec)
         self.currentModule = ("","",0)
@@ -345,11 +314,12 @@ class Grammar(natlinkutils.GrammarBase):
         self.activateAll()
 
     def unload_grammar(self):
+        print("***** unloading " + self.file + "...")
         self.unload()
-        pass
 
     def add_rule(self, rule):
         self.rules += [rule]
+
 
     def get_grammar_spec(self):
         done = set()
@@ -358,12 +328,6 @@ class Grammar(natlinkutils.GrammarBase):
             done, spec = self.generate_grammar_spec(rule, done, spec)
         return spec
 
-    def get_rule_name(self, rule):
-        if isinstance(rule, str):
-            return rule
-        else:
-            return rule.get_name()
-
     def generate_grammar_spec(self, rule, done=set(), before=""):
         rule_name = self.get_rule_name(rule)
         if rule_name in done:
@@ -371,38 +335,44 @@ class Grammar(natlinkutils.GrammarBase):
         done.add(rule_name)
         if isinstance(rule, str):
             return done, before + "<" + rule_name + "> imported;\n"
-        dependencies = rule.get_dependent_rules()
+        dependencies = rule.get_element().get_dependent_rules()
         for r in dependencies:
-            r_name = self.get_rule_name(r)
             done, before = self.generate_grammar_spec(r, done, before)
         added_spec = "<" + rule_name + ">" + \
             (" exported" if rule.is_exported() else "") + " = " + \
             rule.get_element().to_NatLink_grammar_element() + ";\n"
         return done, before + added_spec
+
+    def get_rule_name(self, rule):
+        if isinstance(rule, str):
+            return rule
+        else:
+            return rule.get_name()
+
         
     def gotResultsInit(self, words, fullResults):
-        print(repr(words), repr(fullResults))
+        print("\nGrammar from " + self.file + ":")
+        print("  recognized: " + repr(fullResults))
         results = self.rules[0].get_element().outer_parse(fullResults, 0)
         found = False
         for offset, value in results:
             if offset != len(words):
-                print("found partial parse: ",
+                print("  found partial parse: ",
                       words[0:offset], " -> ", repr(value))
                 continue
             if found:
-                print("found second parse: ",
+                print("  FOUND SECOND PARSE: ",
                       words[0:offset], " -> ", repr(value))
                 continue
             found = False
-            print("found parse: ",
+            print("  found parse: ",
                   words[0:offset], " -> ", repr(value))
             try:
                 action = value
                 text = action.eval(True, {}, "")
-                print("resulting text is <" + text + ">")
+                print("  resulting text is <" + text + ">")
                 do_flush(False, text)
             except Exception as e:
-                print(" threw exception: " + repr(e))
+                print("  threw exception: " + repr(e))
                 import traceback
                 traceback.print_exc(e)
-        print("no more parsing left\n")
