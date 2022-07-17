@@ -187,11 +187,11 @@ class BasicRule(dragonfly.Rule):
 
 class Rule(BasicRule):
     def __init__(self, name_, element_):
-        BasicRule.__init__(self, name, element_, False)
+        BasicRule.__init__(self, False, name_, element_)
 
 class ExportedRule(BasicRule):
     def __init__(self, name_, element_):
-        BasicRule.__init__(self, name, element_, True)
+        BasicRule.__init__(self, True, name_, element_)
         self.file = "unknown"
 
     def set_grammar(self, grammar):
@@ -220,7 +220,7 @@ class ExportedRule(BasicRule):
 class Grammar:
     def __init__(self, file, context):
         self.file = file
-        self.dragonfly_grammar = dragonfly.Grammar(context=context)
+        self.dragonfly_grammar = dragonfly.Grammar(file, context=context)
 
     def load_grammar(self):
         print("***** loading " + self.file + "...")

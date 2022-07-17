@@ -123,8 +123,6 @@ def emit_rule(rule_name, rule, top_level):
     element_code = [code_for_element(rule)]
     rule_class = "ExportedRule" if top_level else "Rule"
     element_code = [make_string(rule_name)] + element_code
-    if top_level:
-        element_code = [make_variable("__file__")] + element_code
     rule_variable = "rule_" + rule_name
     rule_code = make_assignment(rule_variable, make_call(rule_class, element_code))
     emit_code(rule_code)
