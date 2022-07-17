@@ -161,7 +161,8 @@ class Modifier(Element):
         return self.element.to_NatLink_grammar_element()
 
     def inner_parse(self, words, offset_):
-        return self.element.parse(words, offset_)
+        for offset, value in self.element.parse(words, offset_):
+            yield offset, self.transform(value)
 
 
 #
@@ -284,13 +285,13 @@ class BasicRule:
     def is_exported(self):
         return self.exported
 
-class Rule(dragonfly.Rule):
+class Rule(BasicRule):
     def __init__(self, name_, element_):
-        BasicRule.__init__(self, name, element_, False)
+        BasicRule.__init__(self, False, name_, element_)
 
 class ExportedRule(BasicRule):
     def __init__(self, name_, element_):
-        BasicRule.__init__(self, name, element_, True)
+        BasicRule.__init__(self, True, name_, element_)
 
 
 ##
@@ -357,16 +358,16 @@ class Grammar(natlinkutils.GrammarBase):
         found = False
         for offset, value in results:
             if offset != len(words):
-                print("  found partial parse: ",
-                      words[0:offset], " -> ", repr(value))
+                # print("  found partial parse: ",
+                #       words[0:offset], "->", repr(value))
                 continue
             if found:
                 print("  FOUND SECOND PARSE: ",
-                      words[0:offset], " -> ", repr(value))
+                      words[0:offset], "->", repr(value))
                 continue
             found = False
             print("  found parse: ",
-                  words[0:offset], " -> ", repr(value))
+                  words[0:offset], "->", repr(value))
             try:
                 action = value
                 text = action.eval(True, {}, "")
