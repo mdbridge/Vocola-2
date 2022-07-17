@@ -385,12 +385,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
             print(unparse_grammar(grammar), end="", file=out)
         return logged_errors()
 
-    if params["backend"] != "dragonfly2":
-        Backend.output(out_file, module_name, statements, definitions, 
-                       file_empty, should_emit_dictation_support,
-                       extension_functions, params_per_file)
-    else:
-        Backend.output(out_file, grammar, params_per_file)
+    Backend.output(out_file, grammar, params_per_file)
 
     return logged_errors()
 
