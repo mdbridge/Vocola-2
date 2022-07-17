@@ -33,7 +33,7 @@ def output(out_file, grammar, params):
 
 
     emit(0, "#grammar = dragonfly.Grammar('Test grammar', context=context)\n\n\n")
-    emit(0, "grammar = Grammar()\n\n\n")
+    emit(0, "grammar = Grammar(__file__)\n\n\n")
 
 
     global Emitted_Rules
@@ -319,11 +319,9 @@ from vocola_NatLink_runtime import *
 def emit_file_trailer():
     print >>OUT, '''
 
-print("***** loading " + __file__ + "...")
 grammar.load_grammar()
 def unload():
     global grammar
-    print("***** unloading " + __file__ + "...")
     if grammar: grammar.unload_grammar()
     grammar = None
 ''',

@@ -32,7 +32,7 @@ def output(out_file, grammar, params):
     # emit(0, 'context = dragonfly.AppContext(executable="emacs", title="yellow emacs")'+ "\n")
 
 
-    emit(0, "grammar = dragonfly.Grammar('Test grammar', context=context)\n\n\n")
+    emit(0, "grammar = Grammar(__file__, context=context)\n\n\n")
 
 
     global Emitted_Rules
@@ -320,11 +320,9 @@ from vocola_dragonfly_runtime import *
 def emit_file_trailer():
     print >>OUT, '''
 
-print("***** loading " + __file__ + "...")
-grammar.load()
+grammar.load_grammar()
 def unload():
     global grammar
-    print("***** unloading " + __file__ + "...")
-    if grammar: grammar.unload()
+    if grammar: grammar.unload_grammar()
     grammar = None
 ''',
