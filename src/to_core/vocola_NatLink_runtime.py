@@ -36,7 +36,7 @@ class Term:
     def parse(self, words, offset_):
         if offset_ >= len(words):
             return
-        if words[offset_] == self.terminal_text:
+        if words[offset_][0] == self.terminal_text:
             yield offset_ + 1, self.terminal_text
 
 def make_safe_python_string(text):
@@ -51,7 +51,18 @@ class Dictation:
         return "<dgndictation>"
 
     def get_dependent_rules(self):
-        return []
+        return ["dgndictation"]
+
+    def parse(self, words, offset_):
+        offset = offset_
+        value = []
+        while offset < len(words):
+            if words[offset][1] != 'dgndictation':
+                break
+            value += [words[offset][0]]
+            offset += 1
+        if value != []:
+            yield offset, format_words(value)
 
 class RuleRef:
     def __init__(self, rule):
@@ -554,22 +565,31 @@ class Grammar(natlinkutils.GrammarBase):
             done, spec = self.generate_grammar_spec(rule, done, spec)
         return spec
 
+    def get_rule_name(self, rule):
+        if isinstance(rule, str):
+            return rule
+        else:
+            return rule.get_name()
+
     def generate_grammar_spec(self, rule, done=set(), before=""):
-        rule_name = rule.get_name()
+        rule_name = self.get_rule_name(rule)
         if rule_name in done:
             return done, before
         done.add(rule_name)
+        if isinstance(rule, str):
+            return done, before + "<" + rule_name + "> imported;\n"
         dependencies = rule.get_dependent_rules()
         for r in dependencies:
-            if not r.get_name() in done:
-                done, before = self.generate_grammar_spec(r, done, before)
-        added_spec = "<" + rule_name + ">" + (" exported" if rule.is_exported() else "") + " = " + \
+            r_name = self.get_rule_name(r)
+            done, before = self.generate_grammar_spec(r, done, before)
+        added_spec = "<" + rule_name + ">" + \
+            (" exported" if rule.is_exported() else "") + " = " + \
             rule.get_element().to_NatLink_grammar_element() + ";\n"
         return done, before + added_spec
         
     def gotResultsInit(self, words, fullResults):
         print(repr(words), repr(fullResults))
-        for offset, value in self.rules[0].parse(words, 0):
+        for offset, value in self.rules[0].parse(fullResults, 0):
             print("found offset = " + str(offset) +" value = " + repr(value))
             if offset == len(words):
                 action = value
