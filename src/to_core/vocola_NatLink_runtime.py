@@ -384,6 +384,7 @@ class Grammar(natlinkutils.GrammarBase):
             if offset == len(words):
                 action = value
             try:
+                print("resulting value: " + repr(action))
                 text = action.eval(True, {}, "")
                 print("resulting text is <" + text + ">")
                 do_flush(False, text)

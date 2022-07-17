@@ -17,6 +17,12 @@ from VocolaUtils import (VocolaRuntimeError, do_flush, to_long, call_Dragon, eva
 # note that the type of bindings is Dict of int => Action
 
 class Action:
+    def __repr__(self):
+        return "Action(" + self.to_string() + ")"
+
+    def to_string(self):
+        return "<base_class>"
+
     def bind(self, bindings):
         return BoundAction(bindings, self)
 
@@ -28,6 +34,13 @@ class BoundAction(Action):
         self.bindings = bindings
         self.action = action
 
+    def to_string(self):
+        for key in sorted(self.bindings.keys()):
+            if result != "":
+                result += " "
+            result += "$" + str(key) + "=" +  self.bindings[key].to_string()
+        return "[" + result + "] " + self.action.to_string()
+
     def eval(self, is_top_level, bindings, preceding_text):
         return self.action.eval(is_top_level, self.bindings, preceding_text)
 
@@ -36,12 +49,18 @@ class Text(Action):
     def __init__(self, text):
         self.text = text
 
+    def to_string(self):
+        return '"' + self.text.replace('"', '""') + '"'
+
     def eval(self, is_top_level, bindings, preceding_text):
         return preceding_text + self.text
 
 class Ref(Action):
     def __init__(self, slot):
          self.slot = slot
+
+    def to_string(self):
+        return "$" + str(self.slot)
 
     def eval(self, is_top_level, bindings, preceding_text):
         if self.slot in bindings.keys():
@@ -52,19 +71,27 @@ class Ref(Action):
 
 class Prog(Action):
     def __init__(self, actions):
-        self.actions = actions
-
-    def eval(self, is_top_level, bindings, preceding_text):
-        for action in self.actions:
+        self.actions = []
+        for action in actions:
             # For conciseness, Prog allows passing strings instead of Text actions
             if isinstance(action, str):
                 action = Text(action)
+            self.actions.append(action)
+
+    def to_string(self):
+        return ";".join([action.to_string() for action in self.actions])
+
+    def eval(self, is_top_level, bindings, preceding_text):
+        for action in self.actions:
             preceding_text = action.eval(is_top_level, bindings, preceding_text)
         return preceding_text
 
 class Join(Action):
     def __init__(self, actions):
         self.actions = actions
+
+    def to_string(self):
+        return "Join(" + ",".join([action.to_string() for action in self.actions]) + ")"
 
     def eval(self, is_top_level, bindings, preceding_text):
         result = preceding_text
@@ -88,7 +115,21 @@ class Join(Action):
 class ActionCall(Action):
     def __init__(self, name, *arguments):
         self.name = name
+        self.module_name = None
         self.arguments = [Prog(actions) for actions in arguments]
+
+    def full_name(self):
+        if self.module_name is not None:
+            separator = ":"
+            if isinstance(self,ExtProc):
+                separator = "!"
+            return self.module_name + separator + self.name
+        else:
+            return self.name
+
+    def to_string(self):
+        return self.full_name() + "(" + \
+            ",".join([argument.to_string() for argument in self.arguments]) + ")"
 
 
 class DragonCall(ActionCall):
@@ -181,8 +222,8 @@ class VocolaCall(ActionCall):
 
 class ExtensionCall(ActionCall):
     def __init__(self, module_name, name, *arguments):
-        self.module_name = module_name
         ActionCall.__init__(self, name, *arguments)
+        self.module_name = module_name
 
     def get_extension_implementation(self):
         if self.module_name in sys.modules:
@@ -213,6 +254,3 @@ class ExtProc(ExtensionCall):
         implementation = self.get_extension_implementation()
         result = implementation(*values)
         return ""
-
-    
-

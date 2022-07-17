@@ -188,6 +188,7 @@ class ExportedRule(dragonfly.Rule):
         try:
             print("\nExportedRule " + self.name + " from "+ self.file + " recognized: " + repr(node))
             action = node.value()
+            print("resulting value: " + repr(action))
             text = action.eval(True, {}, "")
             print("resulting text is <" + text + ">")
             do_flush(False, text)
