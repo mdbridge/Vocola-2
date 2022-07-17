@@ -11,9 +11,8 @@ from VocolaUtils import (VocolaRuntimeError)
 from vocola_common_runtime import *
 
 
-
 ##
-## Element implementation using dragonfly
+## Basic element implementation using dragonfly
 ##
 
 class Term:
@@ -60,77 +59,16 @@ class Seq:
     def to_dragonfly(self):
          return dragonfly.Sequence(children=[element.to_dragonfly() for element in self.elements])
 
-class Slot:
-    def __init__(self, element, number):
-         self.element = element
-         self.number = number
-
-    def reduce_to_actions(self, value):
-        if value is None:
-            return []
-        if isinstance(value, str):
-            return [Text(value)]
-        if isinstance(value, Action):
-            return [value]
-        if isinstance(value, list):
-            result = []
-            for v in value:
-                result += self.reduce_to_actions(v)
-            return result
-        raise VocolaRuntimeError("Implementation error: " +
-                                 "Slot element received unexpected value from sub element: " +
-                                 repr(value))
-
-    def reduce_to_action(self, value):
-        actions = self.reduce_to_actions(value)
-        return actions[0] if len(actions) > 0 else Text("")
-
-    def to_dragonfly(self):
-         return dragonfly.Modifier(self.element.to_dragonfly(), 
-                                   lambda values: (self.number, self.reduce_to_action(values)))
-
-class With:
-    def __init__(self, element, actions):
-         self.element = element
-         self.action = Prog(actions)
-
-    def get_bindings(self, value):
-        bindings = {}
-        if isinstance(value, tuple):
-            bindings[value[0]] = value[1]
-        if isinstance(value, list):
-            for v in value:
-                b = self.get_bindings(v)
-                bindings.update(b)
-        return bindings
-
-    def to_dragonfly(self):
-         return dragonfly.Modifier(self.element.to_dragonfly(), 
-                                   lambda value: self.action.bind(self.get_bindings(value)))
-
-class Without:
+class Modifier:
     def __init__(self, element):
-         self.element = element
+        self.element = element
 
-    def reduce_to_actions(self, value):
-        if value is None:
-            return []
-        if isinstance(value, str):
-            return [Text(value)]
-        if isinstance(value, Action):
-            return [value]
-        if isinstance(value, list):
-            result = []
-            for v in value:
-                result += self.reduce_to_actions(v)
-            return result
-        raise VocolaRuntimeError("Implementation error: " +
-                                 "Without element received unexpected value from sub element: " +
-                                 repr(value))
-        
+    def transform(self, value):
+        return value
+
     def to_dragonfly(self):
-         return dragonfly.Modifier(self.element.to_dragonfly(), 
-                                   lambda values: Join(self.reduce_to_actions(values)))
+        return dragonfly.Modifier(self.element.to_dragonfly(), 
+                                  lambda value: self.transform(value))
 
 
 #
@@ -160,6 +98,79 @@ def format_words2(word_list):
     return result
 
 
+##
+## Standard derived elements
+##
+
+class Slot(Modifier):
+    def __init__(self, element, number):
+        Modifier.__init__(self, element)
+        self.number = number
+
+    def transform(self, value):
+        return (self.number, self.reduce_to_action(value))
+
+    def reduce_to_action(self, value):
+        actions = self.reduce_to_actions(value)
+        return actions[0] if len(actions) > 0 else Text("")
+
+    def reduce_to_actions(self, value):
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [Text(value)]
+        if isinstance(value, Action):
+            return [value]
+        if isinstance(value, list):
+            result = []
+            for v in value:
+                result += self.reduce_to_actions(v)
+            return result
+        raise VocolaRuntimeError("Implementation error: " +
+                                 "Slot element received unexpected value from sub element: " +
+                                 repr(value))
+
+class With(Modifier):
+    def __init__(self, element, actions):
+        Modifier.__init__(self, element)
+        self.action = Prog(actions)
+
+    def transform(self, value):
+        return self.action.bind(self.get_bindings(value))
+
+    def get_bindings(self, value):
+        bindings = {}
+        if isinstance(value, tuple):
+            bindings[value[0]] = value[1]
+        if isinstance(value, list):
+            for v in value:
+                b = self.get_bindings(v)
+                bindings.update(b)
+        return bindings
+
+class Without(Modifier):
+    def __init__(self, element):
+        Modifier.__init__(self, element)
+
+    def transform(self, value):
+        return Join(self.reduce_to_actions(value))
+
+    def reduce_to_actions(self, value):
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [Text(value)]
+        if isinstance(value, Action):
+            return [value]
+        if isinstance(value, list):
+            result = []
+            for v in value:
+                result += self.reduce_to_actions(v)
+            return result
+        raise VocolaRuntimeError("Implementation error: Without element " + 
+                                 "received unexpected value from sub element: " +
+                                 repr(value))
+        
 
 ##
 ## Rule implementation using dragonfly
@@ -169,7 +180,6 @@ class Rule(dragonfly.Rule):
     def __init__(self, name_, element_):
         dragonfly.Rule.__init__(self, name=name_, element=element_.to_dragonfly(), 
                                 exported=False)
-        #print("inner : " + repr(element_.to_dragonfly().gstring()))
 
 class ExportedRule(dragonfly.Rule):
     def __init__(self, file_, name_, element_):

@@ -1,6 +1,6 @@
 ###
 ### vocola_NatLink_runtime.py - Code used by Vocola's generated
-###                               Python code produced by the NatLink backend
+###                             Python code produced by the NatLink backend
 ###
 
 from __future__ import print_function
@@ -12,7 +12,7 @@ from vocola_common_runtime import *
 
 
 ##
-## Element implementation using NatLink
+## Basic element implementation using NatLink
 ##
 
 class Element:
@@ -20,7 +20,7 @@ class Element:
         return []
 
     def outer_parse(self, words, offset_):
-        print("  trying to parse " + repr(words[offset_:]))
+        #print("  trying to parse " + repr(words[offset_:]))
         return self.parse(words, offset_)
 
     def parse(self, words, offset_):
@@ -70,7 +70,7 @@ class Dictation(Element):
         while offset < len(words):
             if words[offset][1] != 'dgndictation':
                 break
-            value += [words[offset][0]]
+            value.append(words[offset][0])
             offset += 1
         if value != []:
             yield offset, format_words(value)
@@ -87,8 +87,6 @@ class RuleRef(Element):
 
     def inner_parse(self, words, offset_):
         return self.rule.get_element().parse(words, offset_)
-        # for offset, value in self.rule.parse(words, offset_):
-        #     yield offset, value
         
 
 class Opt(Element):
@@ -117,7 +115,8 @@ class Alt(Element):
         return result
 
     def to_NatLink_grammar_element(self):
-        return "(" + " | ".join(c.to_NatLink_grammar_element() for c in self.alternatives) + ")"
+        return "(" + " | ".join(c.to_NatLink_grammar_element() for c in self.alternatives) \
+            + ")"
 
     def inner_parse(self, words, offset_):
         for alternative in self.alternatives:
@@ -137,6 +136,10 @@ class Seq(Element):
     def to_NatLink_grammar_element(self):
         return " ".join(c.to_NatLink_grammar_element() for c in self.elements)
 
+    def inner_parse(self, words, offset_):
+        return self.inner_parse_helper(self.elements, words, offset_)
+
+
     def inner_parse_helper(self, remaining_elements, words, offset_):
         if len(remaining_elements) == 0:
             yield offset_, []
@@ -147,89 +150,10 @@ class Seq(Element):
             for offset2, remaining_values in self.inner_parse_helper(remaining_elements, words, offset):
                 yield offset2, [value] + remaining_values
 
-    def inner_parse(self, words, offset_):
-        return self.inner_parse_helper(self.elements, words, offset_)
-
-class Slot(Element):
-    def __init__(self, element, number):
-         self.element = element
-         self.number = number
-
-    def reduce_to_actions(self, value):
-        if value is None:
-            return []
-        if isinstance(value, str):
-            return [Text(value)]
-        if isinstance(value, Action):
-            return [value]
-        if isinstance(value, list):
-            result = []
-            for v in value:
-                result += self.reduce_to_actions(v)
-            return result
-        raise VocolaRuntimeError("Implementation error: " +
-                                 "Slot element received unexpected value from sub element: " +
-                                 repr(value))
-
-    def reduce_to_action(self, value):
-        actions = self.reduce_to_actions(value)
-        return actions[0] if len(actions) > 0 else Text("")
-
-    def get_dependent_rules(self):
-        return self.element.get_dependent_rules()
-
-    def to_NatLink_grammar_element(self):
-        return self.element.to_NatLink_grammar_element()
-
-    def inner_parse(self, words, offset_):
-        for offset, value in self.element.parse(words, offset_):
-            yield offset, (self.number, self.reduce_to_action(value))
-
-class With(Element):
-    def __init__(self, element, actions):
-         self.element = element
-         self.action = Prog(actions)
-
-    def get_bindings(self, value):
-        bindings = {}
-        if isinstance(value, tuple):
-            bindings[value[0]] = value[1]
-        if isinstance(value, list):
-            for v in value:
-                b = self.get_bindings(v)
-                bindings.update(b)
-        return bindings
-
-    def get_dependent_rules(self):
-        return self.element.get_dependent_rules()
-
-    def to_NatLink_grammar_element(self):
-        return self.element.to_NatLink_grammar_element()
-
-    def inner_parse(self, words, offset_):
-        for offset, value in self.element.parse(words, offset_):
-            yield offset, self.action.bind(self.get_bindings(value))
-
-class Without(Element):
+class Modifier(Element):
     def __init__(self, element):
          self.element = element
 
-    def reduce_to_actions(self, value):
-        if value is None:
-            return []
-        if isinstance(value, str):
-            return [Text(value)]
-        if isinstance(value, Action):
-            return [value]
-        if isinstance(value, list):
-            result = []
-            for v in value:
-                result += self.reduce_to_actions(v)
-            return result
-        raise VocolaRuntimeError("Implementation error: " +
-                                 "Without element received unexpected value from sub element: " +
-                                 repr(value))
-        
     def get_dependent_rules(self):
         return self.element.get_dependent_rules()
 
@@ -237,8 +161,7 @@ class Without(Element):
         return self.element.to_NatLink_grammar_element()
 
     def inner_parse(self, words, offset_):
-        for offset, value in self.element.parse(words, offset_):
-            yield offset, Join(self.reduce_to_actions(value))
+        return self.element.parse(words, offset_)
 
 
 #
@@ -268,9 +191,82 @@ def format_words2(word_list):
     return result
 
 
+##
+## Standard derived elements
+##
+
+class Slot(Modifier):
+    def __init__(self, element, number):
+        Modifier.__init__(self, element)
+        self.number = number
+
+    def transform(self, value):
+        return (self.number, self.reduce_to_action(value))
+
+    def reduce_to_action(self, value):
+        actions = self.reduce_to_actions(value)
+        return actions[0] if len(actions) > 0 else Text("")
+
+    def reduce_to_actions(self, value):
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [Text(value)]
+        if isinstance(value, Action):
+            return [value]
+        if isinstance(value, list):
+            result = []
+            for v in value:
+                result += self.reduce_to_actions(v)
+            return result
+        raise VocolaRuntimeError("Implementation error: " +
+                                 "Slot element received unexpected value from sub element: " +
+                                 repr(value))
+
+class With(Modifier):
+    def __init__(self, element, actions):
+        Modifier.__init__(self, element)
+        self.action = Prog(actions)
+
+    def transform(self, value):
+        return self.action.bind(self.get_bindings(value))
+
+    def get_bindings(self, value):
+        bindings = {}
+        if isinstance(value, tuple):
+            bindings[value[0]] = value[1]
+        if isinstance(value, list):
+            for v in value:
+                b = self.get_bindings(v)
+                bindings.update(b)
+        return bindings
+
+class Without(Modifier):
+    def __init__(self, element):
+        Modifier.__init__(self, element)
+
+    def transform(self, value):
+        return Join(self.reduce_to_actions(value))
+
+    def reduce_to_actions(self, value):
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [Text(value)]
+        if isinstance(value, Action):
+            return [value]
+        if isinstance(value, list):
+            result = []
+            for v in value:
+                result += self.reduce_to_actions(v)
+            return result
+        raise VocolaRuntimeError("Implementation error: Without element " + 
+                                 "received unexpected value from sub element: " +
+                                 repr(value))
+        
 
 ##
-## Rule implementation using 
+## Rule implementation using NatLink
 ##
 
 class Rule():
