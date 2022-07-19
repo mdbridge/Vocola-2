@@ -4,7 +4,6 @@ from __future__ import print_function
 # Main control flow module
 #
 
-from builtins import str
 import os
 import re
 import sys
@@ -248,8 +247,8 @@ def read_extensions_file(extensions_filename):
             module_name       = match.group(5)
             function_name     = match.group(6)
 
-	    if extension_functions.has_key(extension_name):
-	       log_error("Redefinition of extension function: %s" % (extension_name))
+            if extension_name in extension_functions.keys():
+               log_error("Redefinition of extension function: %s" % (extension_name))
             extension_functions[extension_name] = [minimum_arguments, maximum_arguments, needs_flushing, module_name, function_name]
     except IOError as e:
         pass

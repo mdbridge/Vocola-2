@@ -1,5 +1,4 @@
 from builtins import range
-from builtins import str
 import copy
 
 from vcl2py.ast import *
