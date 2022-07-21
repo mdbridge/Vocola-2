@@ -38,7 +38,10 @@ import time
 import win32gui
 
 import natlink
-from   natlinkutils import *
+try:
+    from natlink.natlinkutils import *
+except ImportError:
+    from natlinkutils import *
 import VocolaUtils
 
 import vocola_ext_clipboard
