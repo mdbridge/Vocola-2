@@ -96,7 +96,7 @@ def format_words(word_list):
     try:
         from natlink import nsformat
     except ImportError:
-        import natlinkstatus
+        import nsformat
     state = [nsformat.flag_no_space_next]
     result, _new_state = nsformat.formatWords(word_list, state)
     print("format_words: %s -> '%s'"  % (repr(word_list), result))
