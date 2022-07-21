@@ -93,7 +93,10 @@ def combineDictationWords(fullResults):
 
 def format_words(word_list):
     format_words2(word_list)  # for print side effect
-    import nsformat
+    try:
+        from natlink import nsformat
+    except ImportError:
+        import natlinkstatus
     state = [nsformat.flag_no_space_next]
     result, _new_state = nsformat.formatWords(word_list, state)
     print("format_words: %s -> '%s'"  % (repr(word_list), result))
