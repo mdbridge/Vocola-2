@@ -112,7 +112,7 @@ def get_top_command_folder():
             import win32con
             # Scott's installer:
             r = RegistryDict.RegistryDict(win32con.HKEY_CURRENT_USER,
-                                          "Software\NatLink")
+                                          "Software\\NatLink")
             if r:
                 configured = r["VocolaUserDirectory"]
         except ImportError:
