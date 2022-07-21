@@ -466,6 +466,8 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
         terms = parse_terms(TOKEN_EQUALS)
     else:
         terms = parse_terms(separators | TOKEN_EQUALS)
+    if needs_actions:
+        check_can_get_concrete_term(terms)
 
     command          = {}
     command["TYPE"]  = "command"
@@ -481,6 +483,20 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
 
     command["LINE"] = get_line_number(get_current_position()) # line number is *last* line of command # <<<>>>
     return command
+
+def check_can_get_concrete_term(terms):
+    for term in terms:
+        if term_is_concrete_or_inlineable(term):
+            return True
+    error("At least one term must not be optional or <_anything>",
+          terms[0]["POSITION"])
+
+def term_is_concrete_or_inlineable(term):
+    type = term["TYPE"]
+    if   type == "menu":      return True
+    elif type == "variable":  return True 
+    elif type == "dictation": return False
+    else: return not term["OPTIONAL"]
 
 def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
     starting_position = get_current_position()
@@ -513,8 +529,8 @@ def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
     if not seen_non_optional:
         error("At least one term must not be optional",
               starting_position)
-    else:
-        return combine_terms(terms)
+
+    return combine_terms(terms)
 
 def parse_term():         # <term> ::= <word> | variable | range | <menu>
     global Debug, Definitions

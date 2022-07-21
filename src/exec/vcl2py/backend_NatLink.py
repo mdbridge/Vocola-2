@@ -167,7 +167,7 @@ def emit_context_activations(contexts):
 
     # Emit code to activate the context's commands iff one of the context
     # strings matches the current window
-    emit(2, "title = string.lower(moduleInfo[1])\n")
+    emit(2, "title = moduleInfo[1].lower()\n")
     for context in contexts:
         names = context["RULENAMES"]
         if len(names) == 0: continue
@@ -177,7 +177,7 @@ def emit_context_activations(contexts):
                 emit(2, "self.activate_rule('" + names[0] + "', moduleInfo[2], True)\n")
         else:
             targets = [make_safe_python_string(target) for target in targets]
-            tests = " or ".join(["string.find(title,'" + target + "') >= 0" for target in targets])
+            tests = " or ".join(["str.find(title,'" + target + "') >= 0" for target in targets])
             emit(2, "status = (" + tests + ")\n")
             emit(2, "self.activate_rule('" + names[0] + "', moduleInfo[2], status)\n")
     emit(0, "\n")
@@ -598,6 +598,8 @@ def inline_a_term(unnamed):
     index = 0
     while (index < len(terms)) and (terms[index]["OPTIONAL"] or terms[index]["TYPE"] == "dictation"):
     	  index += 1
+    if index == len(terms):
+        implementation_error("Attempting to process a command without a concrete term or inline-able term")
 
     type = terms[index]["TYPE"]
     number = terms[index]["NUMBER"]
@@ -676,7 +678,10 @@ def emit_file_header():
     print('''
 import string
 import natlink
-from natlinkutils import *
+try:
+    from natlink.natlinkutils import *
+except ImportError:
+    from natlinkutils import *
 from VocolaUtils import *
 
 

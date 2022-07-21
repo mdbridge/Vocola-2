@@ -34,7 +34,6 @@ from __future__ import print_function
 from builtins import int
 
 import re
-import string
 import sys
 from   types import *
 import traceback       # for debugging traceback code in handle_error
@@ -280,7 +279,10 @@ def direct_Dragon(function_name, argument_types, arguments):
 # attempt to import Unimacro, suppressing errors, and noting success status:
 unimacro_available = False
 try:
-    import actions
+    try:
+        from unimacro import actions
+    except ImportError:
+        import actions
     unimacro_available = True
 except ImportError:
     pass
