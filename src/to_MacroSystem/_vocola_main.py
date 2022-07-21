@@ -41,7 +41,10 @@ import time             # print time in messages
 from   stat import *    # file statistics
 import re
 import natlink
-from   natlinkutils import *
+try:
+    from natlink.natlinkutils import *
+except ImportError:
+    from natlinkutils import *
 
 
 
@@ -52,7 +55,10 @@ from   natlinkutils import *
 ###########################################################################
 
 try:
-    import natlinkstatus
+    try:
+        from natlink import natlinkstatus
+    except ImportError:
+        import natlinkstatus
     Quintijn_installer = True
     status             = natlinkstatus.NatlinkStatus()
     VocolaEnabled      = not not status.getVocolaUserDirectory()
@@ -94,7 +100,10 @@ def get_command_folder():
 def get_top_command_folder():
     configured = None
     try:
-        import natlinkstatus
+        try:
+            from natlink import natlinkstatus
+        except ImportError:
+            import natlinkstatus
         # Quintijn's's installer:
         configured = natlinkstatus.NatlinkStatus().getVocolaUserDirectory()
     except ImportError:
