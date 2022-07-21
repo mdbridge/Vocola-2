@@ -279,7 +279,10 @@ def direct_Dragon(function_name, argument_types, arguments):
 # attempt to import Unimacro, suppressing errors, and noting success status:
 unimacro_available = False
 try:
-    import actions
+    try:
+        from unimacro import actions
+    except ImportError:
+        import actions
     unimacro_available = True
 except ImportError:
     pass
