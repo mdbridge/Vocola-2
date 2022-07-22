@@ -54,40 +54,55 @@ except ImportError:
 #                                                                         #
 ###########################################################################
 
+# get location of (Vocola) MacroSystem folder:
+NatLinkFolder = os.path.abspath(os.path.split(__file__)[0])
+CoreFolder    = None
+
 try:
-    try:
-        from natlink import natlinkstatus
-    except ImportError:
-        import natlinkstatus
-    Quintijn_installer = True
-    status             = natlinkstatus.NatlinkStatus()
-    VocolaEnabled      = not not status.getVocolaUserDirectory()
-    language           = status.getLanguage()
+    from natlink import natlinkstatus
+    # new NatLink for Python 3 installer
+    Quintijn_installer  = True
+    _status             = natlinkstatus.NatlinkStatus()
+    language            = _status.get_language()  # <<<>>>
+    VocolaUserDirectory = _status.getVocolaUserDirectory()
+    VocolaEnabled       = not not VocolaUserDirectory    
+    VocolaFolder        = os.path.normpath(os.path.join(NatLinkFolder, '..'))
+    CoreFolder          = os.path.normpath(os.path.join(VocolaFolder, 'core'))
 except ImportError:
-    Quintijn_installer = False
-    VocolaEnabled      = True
-    language           = 'enx'
+    try:
+        import natlinkstatus
+        # Old Quintijn NatLink for Python 2 installer
+        Quintijn_installer  = True
+        _status             = natlinkstatus.NatlinkStatus()
+        language            = _status.getLanguage()
+        VocolaUserDirectory = _status.getVocolaUserDirectory()
+        VocolaEnabled       = not not VocolaUserDirectory
+        VocolaFolder        = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola'))
+    except ImportError:
+        Quintijn_installer  = False
+        language            = 'enx'
+        VocolaUserDirectory = None
+        try:
+            import RegistryDict
+            import win32con
+            # Scott's installer:
+            r = RegistryDict.RegistryDict(win32con.HKEY_CURRENT_USER,
+                                          "Software\\NatLink")
+            if r:
+                VocolaUserDirectory = r["VocolaUserDirectory"]
+        except ImportError:
+            # unknown very old installer
+            pass
+        VocolaEnabled = True
+        VocolaFolder  = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola'))
 
-
-# get location of MacroSystem folder:
-NatLinkFolder = os.path.split(
-    sys.modules['natlinkmain'].__dict__['__file__'])[0]
-# (originally, natlinkmain lived in MacroSystem, not MacroSystem\core)
-NatLinkFolder = re.sub(r'\core$', "", NatLinkFolder)
-
-
-VocolaFolder     = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola'))
-ExecFolder       = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 
-                                                 'exec'))
-ExtensionsFolder = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola', 
-                                                 'extensions'))
-
-NatLinkFolder = os.path.abspath(NatLinkFolder)
+ExecFolder       = os.path.normpath(os.path.join(VocolaFolder, 'exec'))
+ExtensionsFolder = os.path.normpath(os.path.join(VocolaFolder, 'extensions'))
 
 if VocolaEnabled:
     sys.path.append(ExecFolder)
     sys.path.append(ExtensionsFolder)
-
+    if CoreFolder: sys.path.append(CoreFolder)
 
 def get_command_folder():
     commandFolder = get_top_command_folder()
@@ -98,25 +113,7 @@ def get_command_folder():
     return commandFolder
 
 def get_top_command_folder():
-    configured = None
-    try:
-        try:
-            from natlink import natlinkstatus
-        except ImportError:
-            import natlinkstatus
-        # Quintijn's's installer:
-        configured = natlinkstatus.NatlinkStatus().getVocolaUserDirectory()
-    except ImportError:
-        try:
-            import RegistryDict
-            import win32con
-            # Scott's installer:
-            r = RegistryDict.RegistryDict(win32con.HKEY_CURRENT_USER,
-                                          "Software\NatLink")
-            if r:
-                configured = r["VocolaUserDirectory"]
-        except ImportError:
-            pass
+    configured = VocolaUserDirectory
     if os.path.isdir(configured):
         return configured
 
