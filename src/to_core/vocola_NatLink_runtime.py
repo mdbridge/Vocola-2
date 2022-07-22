@@ -5,7 +5,10 @@
 
 from __future__ import print_function
 
-import natlinkutils
+try:
+    from natlink.natlinkutils import *
+except ImportError:
+    from natlinkutils import *
 
 from VocolaUtils import (VocolaRuntimeError)
 from vocola_common_runtime import *
@@ -161,7 +164,8 @@ class Modifier(Element):
         return self.element.to_NatLink_grammar_element()
 
     def inner_parse(self, words, offset_):
-        return self.element.parse(words, offset_)
+        for offset, value in self.element.parse(words, offset_):
+            yield offset, self.transform(value)
 
 
 #
@@ -171,7 +175,10 @@ class Modifier(Element):
 def format_words(word_list):
     word_list = [word.encode('Windows-1252') for word in word_list]
     format_words2(word_list)  # for print side effect
-    import nsformat
+    try:
+        from natlink import nsformat
+    except ImportError:
+        import nsformat
     state = [nsformat.flag_no_space_next]
     result, _new_state = nsformat.formatWords(word_list, state)
     print("format_words: %s -> '%s'"  % (repr(word_list), result))
@@ -284,13 +291,13 @@ class BasicRule:
     def is_exported(self):
         return self.exported
 
-class Rule(dragonfly.Rule):
+class Rule(BasicRule):
     def __init__(self, name_, element_):
-        BasicRule.__init__(self, name, element_, False)
+        BasicRule.__init__(self, False, name_, element_)
 
 class ExportedRule(BasicRule):
     def __init__(self, name_, element_):
-        BasicRule.__init__(self, name, element_, True)
+        BasicRule.__init__(self, True, name_, element_)
 
 
 ##
@@ -357,16 +364,16 @@ class Grammar(natlinkutils.GrammarBase):
         found = False
         for offset, value in results:
             if offset != len(words):
-                print("  found partial parse: ",
-                      words[0:offset], " -> ", repr(value))
+                # print("  found partial parse: ",
+                #       words[0:offset], "->", repr(value))
                 continue
             if found:
                 print("  FOUND SECOND PARSE: ",
-                      words[0:offset], " -> ", repr(value))
+                      words[0:offset], "->", repr(value))
                 continue
             found = False
             print("  found parse: ",
-                  words[0:offset], " -> ", repr(value))
+                  words[0:offset], "->", repr(value))
             try:
                 action = value
                 text = action.eval(True, {}, "")

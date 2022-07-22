@@ -78,7 +78,10 @@ class Modifier:
 def format_words(word_list):
     word_list = [word.encode('Windows-1252') for word in word_list]
     format_words2(word_list)  # for print side effect
-    import nsformat
+    try:
+        from natlink import nsformat
+    except ImportError:
+        import nsformat
     state = [nsformat.flag_no_space_next]
     result, _new_state = nsformat.formatWords(word_list, state)
     print("format_words: %s -> '%s'"  % (repr(word_list), result))
@@ -201,7 +204,7 @@ class ExportedRule(BasicRule):
     def process_recognition(self, node):
         print("\nRule " + self.name + " from " + self.file + ":")
         try:
-            print("  recognized: " + repr(note))
+            print("  recognized: " + repr(node))
             action = node.value()
             print("  ->  " + repr(action))
             text = action.eval(True, {}, "")
@@ -221,6 +224,9 @@ class Grammar:
     def __init__(self, file, context):
         self.file = file
         self.dragonfly_grammar = dragonfly.Grammar(file, context=context)
+
+    def get_file(self):
+        return self.file
 
     def load_grammar(self):
         print("***** loading " + self.file + "...")
