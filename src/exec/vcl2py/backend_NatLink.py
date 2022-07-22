@@ -678,7 +678,10 @@ def emit_file_header():
     print('''
 import string
 import natlink
-from natlinkutils import *
+try:
+    from natlink.natlinkutils import *
+except ImportError:
+    from natlinkutils import *
 from VocolaUtils import *
 
 
