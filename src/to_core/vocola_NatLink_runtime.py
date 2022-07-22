@@ -5,7 +5,10 @@
 
 from __future__ import print_function
 
-import natlinkutils
+try:
+    from natlink.natlinkutils import *
+except ImportError:
+    from natlinkutils import *
 
 from VocolaUtils import (VocolaRuntimeError)
 from vocola_common_runtime import *
@@ -172,7 +175,10 @@ class Modifier(Element):
 def format_words(word_list):
     word_list = [word.encode('Windows-1252') for word in word_list]
     format_words2(word_list)  # for print side effect
-    import nsformat
+    try:
+        from natlink import nsformat
+    except ImportError:
+        import nsformat
     state = [nsformat.flag_no_space_next]
     result, _new_state = nsformat.formatWords(word_list, state)
     print("format_words: %s -> '%s'"  % (repr(word_list), result))
