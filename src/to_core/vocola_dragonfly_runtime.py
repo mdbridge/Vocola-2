@@ -193,8 +193,8 @@ class Rule(BasicRule):
         BasicRule.__init__(self, False, name_, element_)
 
 class ExportedRule(BasicRule):
-    def __init__(self, name_, element_):
-        BasicRule.__init__(self, True, name_, element_)
+    def __init__(self, name_, context_, element_):
+        BasicRule.__init__(self, True, name_, element_, context=context_)
         self.file = "unknown"
 
     def set_grammar(self, grammar):
@@ -221,9 +221,9 @@ class ExportedRule(BasicRule):
 ##
 
 class Grammar:
-    def __init__(self, file, context):
+    def __init__(self, file):
         self.file = file
-        self.dragonfly_grammar = dragonfly.Grammar(file, context=context)
+        self.dragonfly_grammar = dragonfly.Grammar(file)
 
     def get_file(self):
         return self.file
