@@ -217,6 +217,25 @@ class ExportedRule(BasicRule):
 
 
 ##
+## Context implementation using dragonfly
+##
+
+class Context:
+    def __init__(self, executables=[], titles=[], high_priority=False):
+        self.executables = executables
+        self.titles = titles
+        self.high_priority = high_priority
+
+    def to_dragonfly(self):
+        if len(executables) == 0:
+            return dragonfly.AppContext()
+        context = dragonfly.AppContext(executable=executables[0])
+        for executable in executables:
+            context = context & dragonfly.AppContext(executable=executable)
+        return context
+
+
+##
 ## Grammar implementation using dragonfly
 ##
 
