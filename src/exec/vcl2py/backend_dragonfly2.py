@@ -32,7 +32,7 @@ def output(out_file, grammar, params):
     # emit(0, 'context = dragonfly.AppContext(executable="emacs", title="yellow emacs")'+ "\n")
 
 
-    emit(0, "grammar = Grammar(__file__, context=context)\n\n\n")
+    emit(0, "grammar = Grammar(__file__)\n\n\n")
 
 
     global Emitted_Rules
@@ -122,6 +122,8 @@ def emit_rule(rule_name, rule, top_level):
     # the next line emits as a side effect any rules we are dependent on:
     element_code = [code_for_element(rule)]
     rule_class = "ExportedRule" if top_level else "Rule"
+    if top_level:
+        element_code = [make_variable("context")] + element_code
     element_code = [make_string(rule_name)] + element_code
     rule_variable = "rule_" + rule_name
     rule_code = make_assignment(rule_variable, make_call(rule_class, element_code))
