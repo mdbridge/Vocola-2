@@ -3,10 +3,20 @@ from vcl2py.ast import *
 from vcl2py.log import *
 
 def output(out_file, grammar, params):
-    global Grammar, VocolaVersion
+    # <<<>>>
+    global InvertExecutables
+    InvertExecutables = False
+    if len(grammar["EXECUTABLE"]) == 0:
+        if re.match(r'.*(short|range).*', out_file):
+            InvertExecutables = True
+            grammar["EXECUTABLE"] = ['emacs', 'xwin']
+
+    global Grammar, VocolaVersion, ContextCount
     Grammar = grammar
     VocolaVersion = params["Vocola_version"]
+    ContextCount = 0
     maximum_commands = params["maximum_commands"]
+
 
     global OUT
     try:
@@ -18,42 +28,29 @@ def output(out_file, grammar, params):
 
     emit_file_header()
 
-    executables = grammar["EXECUTABLE"]
-    if len(executables) == 0:
-         # <<<>>>
-        if re.match(r'.*(short|range).*', out_file):
-            emit(0, "context = Context(executables=['emacs','xwin'],invert_executables=True)\n")
-        else:
-            emit(0, "context = Context()\n")
-    else:
-        # <<<>>>
-        emit(0, "context = Context(executables=[" 
-             + ",".join("'" + e + "'" for e in executables) + "])\n")
-    # emit(0, 'context = dragonfly.AppContext(executable="emacs", title="yellow emacs")'+ "\n")
-
-
-    emit(0, "grammar = Grammar(__file__)\n\n\n")
-
-
     global Emitted_Rules
     Emitted_Rules = set()
 
-    # <<<>>>
-    if () in grammar["CONTEXTS"].keys():
-        rule_names = grammar["CONTEXTS"][()]
-        grammar["RULES"]["0_all"] = one_of(rule_names)
+    rule_set = 0
+    for titles in grammar["CONTEXTS"].keys():
+        rule_set_all = str(rule_set) + "_all"
+        rule_set_repeated = str(rule_set) + "_repeated"
+        rule_set += 1
+        rule_names = grammar["CONTEXTS"][titles]
+        grammar["RULES"][rule_set_all] = one_of(rule_names)
         if maximum_commands == 1:
-            grammar["CONTEXTS"][()] = ["0_all"]
+            grammar["CONTEXTS"][titles] = [rule_set_all]
         else:
-            grammar["RULES"]["1_all"] = magic_with(repeated_element(rule_ref("0_all"), maximum_commands), maximum_commands)
-            grammar["CONTEXTS"][()] = ["1_all"]
+            grammar["RULES"][rule_set_repeated] = magic_with(
+                repeated_element(rule_ref(rule_set_all), maximum_commands), maximum_commands)
+            grammar["CONTEXTS"][titles] = [rule_set_repeated]
 
-    # don't do title-specific contexts yet:
-    if () in grammar["CONTEXTS"].keys():
-        rule_names = grammar["CONTEXTS"][()]
+    for titles in grammar["CONTEXTS"].keys():
+        rule_names = grammar["CONTEXTS"][titles]
         for rule_name in rule_names:
-            emit_rule(rule_name, grammar["RULES"][rule_name], True) 
-
+            emit_rule(rule_name, grammar["RULES"][rule_name], True, titles) 
+        emit(0, "\n\n")
+        
     # <<<>>>
     if len(Emitted_Rules) > 0:
         emit_file_trailer()
@@ -114,7 +111,7 @@ def optional_element(element):
 # ---------------------------------------------------------------------------
 # Emit dragonfly output
 
-def emit_rule(rule_name, rule, top_level):
+def emit_rule(rule_name, rule, top_level, titles):
     global Emitted_Rules
     if rule_name in Emitted_Rules:
         return
@@ -123,13 +120,29 @@ def emit_rule(rule_name, rule, top_level):
     element_code = [code_for_element(rule)]
     rule_class = "ExportedRule" if top_level else "Rule"
     if top_level:
-        element_code = [make_variable("context")] + element_code
+        element_code = [code_for_context(titles)] + element_code
     element_code = [make_string(rule_name)] + element_code
     rule_variable = "rule_" + rule_name
     rule_code = make_assignment(rule_variable, make_call(rule_class, element_code))
     emit_code(rule_code)
     if top_level:
         emit(0, "grammar.add_rule(" + rule_variable + ")\n")
+
+
+def code_for_context(titles):
+    global ContextCount
+    ContextCount += 1
+    context_variable = "context_" + str(ContextCount)
+    executables = Grammar["EXECUTABLE"]
+    text = context_variable + " = Context(executables=" + \
+        make_python_list(executables) + ",titles=" + \
+        make_python_list(titles) + \
+        (",invert_executables=True" if InvertExecutables else "") + ")\n"
+    emit(0, text)
+    return make_variable(context_variable)
+
+def make_python_list(strings):
+    return "[" + ",".join('"' + make_safe_python_string(s) + '"' for s in strings) + "]"
 
 def code_for_element(element):
     type = element["TYPE"]
@@ -139,7 +152,7 @@ def code_for_element(element):
         return make_call("Dictation", [])
     elif type == "rule_reference":
         referenced = element["NAME"]
-        emit_rule(referenced, Grammar["RULES"][referenced], False)
+        emit_rule(referenced, Grammar["RULES"][referenced], False, None)
         return make_call("RuleRef", [make_variable("rule_" + referenced)])
     elif type == "optional":
         element_code = code_for_element(element["ELEMENT"])
@@ -314,6 +327,9 @@ from vocola_dragonfly_runtime import *
 #
 # Our grammar's rules:
 #
+
+grammar = Grammar(__file__)
+
 
 ''',
 
