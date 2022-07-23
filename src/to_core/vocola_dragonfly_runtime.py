@@ -249,8 +249,8 @@ class Context:
         return result
 
     def to_dragonfly(self):
-        executables_context = self.context_for_executables(executables)
-        titles_context = self.context_for_titles(titles)
+        executables_context = self.context_for_executables(self.executables)
+        titles_context = self.context_for_titles(self.titles)
         result = executables_context
         if self.invert_executables:
             result = ~result
