@@ -182,7 +182,7 @@ class Without(Modifier):
 class BasicRule(dragonfly.Rule):
     def __init__(self, exported, name_, element_, context=None):
         dragonfly.Rule.__init__(self, name=name_, element=element_.to_dragonfly(), 
-                                exported=exported, context=context_)
+                                exported=exported, context=context)
         self.vocola_element = element_
 
     def get_element(self):
@@ -194,7 +194,8 @@ class Rule(BasicRule):
 
 class ExportedRule(BasicRule):
     def __init__(self, name_, context_, element_):
-        BasicRule.__init__(self, True, name_, element_, context=context_)
+        BasicRule.__init__(self, True, name_, element_, 
+                           context=context_.to_dragonfly())
         self.file = "unknown"
 
     def set_grammar(self, grammar):
@@ -214,6 +215,47 @@ class ExportedRule(BasicRule):
             print("  Rule " + self.name + " threw exception: " + repr(e))
             import traceback
             traceback.print_exc(e)
+
+
+##
+## Context implementation using dragonfly
+##
+
+class Context:
+    def __init__(self, executables=[], invert_executables=False, titles=[], 
+                 high_priority=False):
+        self.executables = executables
+        self.invert_executables = invert_executables
+        self.titles = titles
+        # currently dragonfly has no way of implementing this so ignore
+        self.high_priority = high_priority
+
+    def context_for_executables(self, executables):
+        if len(executables) == 0:
+            return dragonfly.AppContext()
+        result = ~dragonfly.AppContext()
+        for executable in executables:
+            context = dragonfly.AppContext(executable=executable)
+            result = result | context
+        return result
+
+    def context_for_titles(self, titles):
+        if len(titles) == 0:
+            return dragonfly.AppContext()
+        result = ~dragonfly.AppContext()
+        for title in titles:
+            context = dragonfly.AppContext(title=title)
+            result = result | context
+        return result
+
+    def to_dragonfly(self):
+        executables_context = self.context_for_executables(executables)
+        titles_context = self.context_for_titles(titles)
+        result = executables_context
+        if self.invert_executables:
+            result = ~result
+        result = result & titles_context
+        return result
 
 
 ##
