@@ -22,13 +22,13 @@ def output(out_file, grammar, params):
     if len(executables) == 0:
          # <<<>>>
         if re.match(r'.*(short|range).*', out_file):
-            emit(0, "context = (~dragonfly.AppContext(executable='emacs')) & ~dragonfly.AppContext(executable='xwin')\n")
+            emit(0, "context = Context(executables=['emacs','xwin'],invert_executables=True)\n")
         else:
-            emit(0, "context = dragonfly.AppContext()\n")
+            emit(0, "context = Context()\n")
     else:
         # <<<>>>
-        executable = executables[-1]
-        emit(0, "context = dragonfly.AppContext(executable='" + executable + "')\n")
+        emit(0, "context = Context(executables=[" 
+             + ",".join("'" + e + "'" for e in executables) + "])\n")
     # emit(0, 'context = dragonfly.AppContext(executable="emacs", title="yellow emacs")'+ "\n")
 
 
