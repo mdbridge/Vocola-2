@@ -180,9 +180,9 @@ class Without(Modifier):
 ##
 
 class BasicRule(dragonfly.Rule):
-    def __init__(self, exported, name_, element_):
+    def __init__(self, exported, name_, element_, context=None):
         dragonfly.Rule.__init__(self, name=name_, element=element_.to_dragonfly(), 
-                                exported=exported)
+                                exported=exported, context=context_)
         self.vocola_element = element_
 
     def get_element(self):
