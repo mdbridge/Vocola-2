@@ -679,7 +679,7 @@ def emit_file_header():
 import string
 import natlink
 try:
-    from natlink.natlinkutils import *
+    from natlinkcore.natlinkutils import *
 except ImportError:
     from natlinkutils import *
 from VocolaUtils import *
