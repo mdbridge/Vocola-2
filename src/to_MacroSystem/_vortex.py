@@ -39,7 +39,7 @@ import win32gui
 
 import natlink
 try:
-    from natlink.natlinkutils import *
+    from natlinkcore.natlinkutils import *
 except ImportError:
     from natlinkutils import *
 import VocolaUtils
