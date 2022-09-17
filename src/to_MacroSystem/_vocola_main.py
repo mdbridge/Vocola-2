@@ -42,7 +42,7 @@ from   stat import *    # file statistics
 import re
 import natlink
 try:
-    from natlink.natlinkutils import *
+    from natlinkcore.natlinkutils import *
 except ImportError:
     from natlinkutils import *
 
@@ -59,7 +59,7 @@ NatLinkFolder = os.path.abspath(os.path.split(__file__)[0])
 CoreFolder    = None
 
 try:
-    from natlink import natlinkstatus
+    from natlinkcore import natlinkstatus
     # new NatLink for Python 3 installer
     Quintijn_installer  = True
     _status             = natlinkstatus.NatlinkStatus()
