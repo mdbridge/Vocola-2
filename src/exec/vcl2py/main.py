@@ -123,7 +123,7 @@ def read_INI_file(ini_file, default_params):
         if  sys.version_info[0] < 3:
             input = open(ini_file)
         else:
-            input = open(ini_file, encoding="latin-1")
+            input = open(ini_file, encoding="Windows-1252")
         for line in input:
             match = re.match(r'^(.*?)=(.*)$', line)
             if not match: continue
@@ -204,7 +204,7 @@ def main_routine():
             if sys.version_info[0] < 3:
                 set_log(open(log_file, "w"))
             else:
-                set_log(open(log_file, "w", encoding="latin-1"))
+                set_log(open(log_file, "w", encoding="Windows-1252"))
         except IOError as e:
             fatal_error("Unable to open log file '" + log_file +
                         "' for writing: " + str(e))

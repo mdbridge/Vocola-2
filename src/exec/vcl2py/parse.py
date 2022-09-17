@@ -199,7 +199,7 @@ def read_file(in_file):
         if  sys.version_info[0] < 3:
             return open(in_file).read()
         else:
-            return open(in_file, encoding="latin-1").read()
+            return open(in_file, encoding="Windows-1252").read()
     except (IOError, OSError) as e:
         log_parse_error("Unable to open or read '" + in_file + "'", # + ": " + str(e),
                         Last_include_position)
