@@ -4,15 +4,21 @@
 ### 
 ### Uses ctypes (requires Python 2.5+).
 ### 
-### Assumes input is 8-bit Windows-1252 encoding.
+### Assumes input is (under Python 2) 8-bit Windows-1252 encoding or
+### (under Python 3) Unicode encodable as Windows-1252.
 ### 
+### Handling of control characters is at the mercy of the Windows
+### VkKeyScan function; it sometimes makes odd choices like {pause}
+### for 0x03.  Accordingly, I recommend avoiding these.  At least for
+### the standard American keyboard, 0x0d (\r) presses {enter}.
 ### 
 ### Author:  Mark Lillibridge
-### Version: 0.9
+### Version: 1.0
 ### 
 
 from __future__ import print_function
 
+import sys
 import re
 import win32con
 
@@ -77,12 +83,19 @@ def parse_into_chords(specification):
     
     return chords
 
-# Because we can't be sure of the current code page, treat all non-ASCII
-# characters as potential accented letters for now.  
-chord_pattern = re.compile(r"""\{ ( (?: [a-zA-Z0-9\x80-\xff]+ \+ )* ) 
-                                  ( . | [-a-zA-Z0-9/*+.\x80-\xff]+ )
-                                  (?: [ _] (\d+|hold|release) )?
-                               \}""", re.VERBOSE|re.IGNORECASE)
+if sys.version_info[0] < 3:
+    # Because we can't be sure of the current code page, treat all non-ASCII
+    # characters as potential accented letters for now.  
+    chord_pattern = re.compile(r"""\{ ( (?: [a-zA-Z0-9\x80-\xff]+ \+ )* ) 
+                                      ( . | [-a-zA-Z0-9/*+.\x80-\xff]+ )
+                                      (?: [ _] (\d+|hold|release) )?
+                                   \}""", re.VERBOSE|re.IGNORECASE)
+else:
+    # for now, just assume modifiers and multiple-letter base names are pure ASCII:
+    chord_pattern = re.compile(r"""\{ ( (?: [a-zA-Z0-9]+ \+ )* ) 
+                                      ( . | [-a-zA-Z0-9/*+.]+ )
+                                      (?: [ _] ([0-9]+|hold|release) )?
+                                   \}""", re.VERBOSE|re.IGNORECASE)
 
 
 ### 
@@ -162,9 +175,10 @@ def chord_to_events(chord):
         print("Warning: unable to independently release character: " + base)
         return []
 
+    windows_char = get_windows_1252_char(base)
     if debug:
-        print("using numpad entry for: " + base)
-    return windows1252_to_events(ord(base[0])) * hold_count
+        print("using numpad entry " + str(ord(windows_char)) + " for: " + base)
+    return windows1252_to_events(ord(windows_char)) * hold_count
 
 
 
@@ -174,6 +188,8 @@ def chord_to_events(chord):
 
 ## 
 ## Keyboard key names:
+## 
+##   If you add names not matching [-a-zA-Z0-9/*+.]+, adjust chord_pattern.
 ## 
 
 Key_name = {
@@ -467,6 +483,15 @@ def how_type_character(char):
 ### 
 ### 
 ### 
+
+def get_windows_1252_char(char):
+    if sys.version_info[0] > 2:
+        try:
+            return char.encode('Windows-1252')
+        except:
+            raise LookupError("SendInput passed non-Windows-1252 character: " + char)
+    return char
+
 
 def windows1252_to_events(code):
     events = []
