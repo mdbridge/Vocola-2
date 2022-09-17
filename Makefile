@@ -12,6 +12,7 @@ prepare:
 	#
 	# top level:
 	(cd build/Vocola; mkdir commands exec extensions samples to_core to_MacroSystem)
+	(cd build/Vocola; mkdir MacroSystem core)
 	cp src/install.bat	     build/Vocola/
 	cp src/install-user-dir.bat  build/Vocola/
 	cp src/README.html	     build/Vocola/
@@ -39,6 +40,13 @@ prepare:
 	# to_MacroSystem:
 	cp src/to_MacroSystem/*.py   build/Vocola/to_MacroSystem/
 	#
+	# core:
+	cp src/to_core/*.py	     build/Vocola/core/
+	#
+	# MacroSystem:
+	cp src/to_MacroSystem/*.py   build/Vocola/MacroSystem/
+	mv build/Vocola/MacroSystem/_vocola_main.py build/Vocola/MacroSystem/__init__.py
+	#
 	(cd build; zip -r Vocola Vocola) > /dev/null
 	#
 	#
@@ -47,6 +55,8 @@ prepare:
 	rm     build/Vocola_for_NatLink/install-user-dir.bat
 	rm -rf build/Vocola_for_NatLink/to_MacroSystem
 	rm -rf build/Vocola_for_NatLink/to_core
+	rm -rf build/Vocola_for_NatLink/core
+	rm -rf build/Vocola_for_NatLink/MacroSystem
 
 clean::
 	rm -rf build
