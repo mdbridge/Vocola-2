@@ -5,6 +5,8 @@
 ### Version: 1.0
 ### 
 
+from __future__ import print_function
+
 import VocolaUtils
 
 use_send_input = True
