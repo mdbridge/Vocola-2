@@ -5,6 +5,8 @@
 ### Version: 1.0+at_patch
 ### 
 
+from __future__ import print_function
+
 import re
 import VocolaUtils
 
