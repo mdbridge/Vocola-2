@@ -58,13 +58,27 @@ except ImportError:
 NatLinkFolder = os.path.abspath(os.path.split(__file__)[0])
 CoreFolder    = None
 
+Quintijn_installer2 = False
+Quintijn_installer3 = False
+
+# temporary kludge for new installer <<<>>>
+def get_natlinkmain():
+    import logging
+    from natlinkcore import loader  
+    from natlinkcore import config
+    ## when natlinkmain is already there, the Logger and Config variables are ignored...
+    Logger = logging.getLogger('natlink')
+    Config = config.NatlinkConfig.from_first_found_file(loader.config_locations())
+    return loader.NatlinkMain(Logger, Config)
+
 try:
     from natlinkcore import natlinkstatus
     # new NatLink for Python 3 installer
-    Quintijn_installer  = True
+    Quintijn_installer3 = True
     _status             = natlinkstatus.NatlinkStatus()
     language            = _status.get_language()  # <<<>>>
     VocolaUserDirectory = _status.getVocolaUserDirectory()
+    natlinkmain         = get_natlinkmain()
     VocolaEnabled       = not not VocolaUserDirectory    
     VocolaFolder        = os.path.normpath(os.path.join(NatLinkFolder, '..'))
     CoreFolder          = os.path.normpath(os.path.join(VocolaFolder, 'core'))
@@ -72,14 +86,13 @@ except ImportError:
     try:
         import natlinkstatus
         # Old Quintijn NatLink for Python 2 installer
-        Quintijn_installer  = True
+        Quintijn_installer2 = True
         _status             = natlinkstatus.NatlinkStatus()
         language            = _status.getLanguage()
         VocolaUserDirectory = _status.getVocolaUserDirectory()
         VocolaEnabled       = not not VocolaUserDirectory
         VocolaFolder        = os.path.normpath(os.path.join(NatLinkFolder, '..', 'Vocola'))
     except ImportError:
-        Quintijn_installer  = False
         language            = 'enx'
         VocolaUserDirectory = None
         try:
@@ -569,7 +582,7 @@ def output_changes():
 #
 # Must return result of output_changes() so we can tell NatLink when
 # files need to be loaded.
-def utterance_start_callback(moduleInfo):
+def utterance_start_callback():
     compile_changed()
     return output_changes()
 
@@ -582,7 +595,7 @@ def utterance_start_callback(moduleInfo):
 ###########################################################################
 
 #
-# With Quintijn's installer as of February 4, 2008:
+# With Quintijn's (Python 2) installer as of February 4, 2008:
 #
 #   _vocola_main is loaded before any other NatLink modules
 #   vocolaBeginCallback is called directly by natlinkmain before any
@@ -599,27 +612,38 @@ def enable_callback():
     global callback_enabled
     if not callback_enabled:
         callback_enabled = True
-        if not Quintijn_installer:
+        if Quintijn_installer2:
+            pass
+        elif Quintijn_installer3:
+            natlinkmain.set_on_begin_utterance_callback(vocolaBeginCallback)
+        else:
             # Replace NatLink's "begin" callback function with ours:
             natlink.setBeginCallback(vocolaBeginCallback)
 
 def disable_callback():
     global callback_enabled
     callback_enabled = False
-    if not Quintijn_installer:
+    if Quintijn_installer2:
+        pass
+    elif Quintijn_installer3:
+        natlinkmain.delete_on_begin_utterance_callback(vocolaBeginCallback)
+    else:
         natlink.setBeginCallback(beginCallback)
 
 
-def vocolaBeginCallback(moduleInfo):
+# moduleInfo is not passed by new Python 3 installer
+def vocolaBeginCallback(moduleInfo=None):
     if not callback_enabled:
         return 0
 
     changes = 0
-    if Quintijn_installer or getCallbackDepth()<2:
-        changes = utterance_start_callback(moduleInfo)
+    if Quintijn_installer2 or Quintijn_installer3 or getCallbackDepth()<2:
+        changes = utterance_start_callback()
 
-    if Quintijn_installer:
+    if Quintijn_installer2:
         return changes
+    elif Quintijn_installer3:
+        pass
     else:
         if changes > 1:
             # make sure NatLink sees any new .py files:
