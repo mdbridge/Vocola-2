@@ -582,7 +582,7 @@ def output_changes():
 #
 # Must return result of output_changes() so we can tell NatLink when
 # files need to be loaded.
-def utterance_start_callback(moduleInfo):
+def utterance_start_callback():
     compile_changed()
     return output_changes()
 
@@ -631,13 +631,14 @@ def disable_callback():
         natlink.setBeginCallback(beginCallback)
 
 
-def vocolaBeginCallback(moduleInfo):
+# moduleInfo is not passed by new Python 3 installer
+def vocolaBeginCallback(moduleInfo=None):
     if not callback_enabled:
         return 0
 
     changes = 0
     if Quintijn_installer2 or Quintijn_installer3 or getCallbackDepth()<2:
-        changes = utterance_start_callback(moduleInfo)
+        changes = utterance_start_callback()
 
     if Quintijn_installer2:
         return changes
