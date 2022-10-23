@@ -58,11 +58,12 @@ except ImportError:
 NatLinkFolder = os.path.abspath(os.path.split(__file__)[0])
 CoreFolder    = None
 
-Quintijn_installer2 = false
-Quintijn_installer3 = false
+Quintijn_installer2 = False
+Quintijn_installer3 = False
 
 # temporary kludge for new installer <<<>>>
 def get_natlinkmain():
+    import logging
     from natlinkcore import loader  
     from natlinkcore import config
     ## when natlinkmain is already there, the Logger and Config variables are ignored...
