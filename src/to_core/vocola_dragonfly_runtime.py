@@ -244,7 +244,7 @@ class Context:
             return dragonfly.AppContext()
         result = ~dragonfly.AppContext()
         for title in titles:
-            context = dragonfly.AppContext(title=title)
+            context = dragonfly.AppContext(title=title.decode('Windows-1252'))
             result = result | context
         return result
 
