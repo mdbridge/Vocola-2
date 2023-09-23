@@ -6,10 +6,10 @@ select XYZ through ABC
 select again, next, previous
 
 select {all,document}
-select next character
-select forward 1..20 characters
-select previous word
-select back 1..20 words
+
+select {next,previous} {character,word}
+select {next,previous} 2.. {characters,words}
+select {forward,back} 1..20 {characters,words}
 select last
 
 unselect that
