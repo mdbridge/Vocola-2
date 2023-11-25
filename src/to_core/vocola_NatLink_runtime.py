@@ -5,6 +5,8 @@
 
 from __future__ import print_function
 
+import os, os.path
+
 try:
     from natlink.natlinkutils import *
 except ImportError:
@@ -277,10 +279,14 @@ class Without(Modifier):
 ##
 
 class BasicRule:
-    def __init__(self, exported, name_, element_):
+    def __init__(self, exported, name_, element_, context_=None):
         self.exported = exported
         self.name = name_
         self.element = element_
+        self.context = context_
+
+    def is_exported(self):
+        return self.exported
 
     def get_name(self):
         return self.name
@@ -288,25 +294,61 @@ class BasicRule:
     def get_element(self):
         return self.element
 
-    def is_exported(self):
-        return self.exported
+    def get_context(self):
+        return self.context
 
 class Rule(BasicRule):
     def __init__(self, name_, element_):
         BasicRule.__init__(self, False, name_, element_)
 
 class ExportedRule(BasicRule):
-    def __init__(self, name_, element_):
-        BasicRule.__init__(self, True, name_, element_)
+    def __init__(self, name_, context_, element_):
+        BasicRule.__init__(self, True, name_, element_, context_)
 
+
+##
+## Context implementation for NatLink
+##
+
+class Context:
+    def __init__(self, executables=[], titles=[], high_priority=False):
+        self.executables = executables
+        self.titles = titles
+        self.high_priority = high_priority
+
+    def is_high_priority(self):
+        return self.high_priority
+
+    def should_be_active(self, executable_basename, window_title):
+        return (self.executable_matches(executable_basename) and 
+                self.title_matches(window_title))
+
+    def executable_matches(self, executable_basename):
+        if len(self.executables) == 0:
+            return True
+        for executable in self.executables:
+            if executable == executable_basename:
+                return True
+        return False
+
+    def title_matches(self, window_title):
+        if len(self.titles) == 0:
+            return True
+        for title in self.titles:
+            if str.find(window_title, title) >= 0:
+                return True
+        return False
+        
 
 ##
 ## Grammar implementation using NatLink
 ##
 
-class Grammar(natlinkutils.GrammarBase):
+#class Grammar(natlinkutils.GrammarBase):
+class Grammar(GrammarBase):
     def __init__(self, file):
-        natlinkutils.GrammarBase.__init__(self)
+        # natlinkutils.GrammarBase.__init__(self)
+        GrammarBase.__init__(self)
         self.file = file
         self.rules = []
 
@@ -316,9 +358,9 @@ class Grammar(natlinkutils.GrammarBase):
         print("  grammar specification is:")
         print(self.gramSpec)
         self.load(self.gramSpec)
-        self.currentModule = ("","",0)
+        #self.currentModule = ("","",0)
         self.rule_state = {}
-        self.activateAll()
+        #self.activateAll()
 
     def unload_grammar(self):
         print("***** unloading " + self.file + "...")
@@ -360,26 +402,85 @@ class Grammar(natlinkutils.GrammarBase):
     def gotResultsInit(self, words, fullResults):
         print("\nGrammar from " + self.file + ":")
         print("  recognized: " + repr(fullResults))
-        results = self.rules[0].get_element().outer_parse(fullResults, 0)
-        found = False
-        for offset, value in results:
-            if offset != len(words):
-                # print("  found partial parse: ",
-                #       words[0:offset], "->", repr(value))
-                continue
-            if found:
-                print("  FOUND SECOND PARSE: ",
-                      words[0:offset], "->", repr(value))
-                continue
+        for rule in self.rules:
+            print("  trying rule " + rule.get_name() + ":")
+            results = rule.get_element().outer_parse(fullResults, 0)
             found = False
-            print("  found parse: ",
-                  words[0:offset], "->", repr(value))
+            for offset, value in results:
+                if offset != len(words):
+                    # print("    found partial parse: ",
+                    #       words[0:offset], "->", repr(value))
+                    continue
+                if found:
+                    print("    FOUND SECOND PARSE: ",
+                          words[0:offset], "->", repr(value))
+                    continue
+                found = False
+                print("    found parse: ",
+                      words[0:offset], "->", repr(value))
+                try:
+                    action = value
+                    text = action.eval(True, {}, "")
+                    print("    resulting text is <" + text + ">")
+                    do_flush(False, text)
+                    return
+                except Exception as e:
+                    print("    threw exception: " + repr(e))
+                    import traceback
+                    traceback.print_exc(e)
+                    return
+
+
+    def gotBegin(self, moduleInfo):
+        if len(moduleInfo)<3 or not moduleInfo[0]: 
+            executable_basename = "unknown"
+            window_title = "unknown"
+        else:
+            executable_basename = getBaseName(moduleInfo[0]).lower()
+            window_title = moduleInfo[1].lower()
+
+        for rule in self.rules:
+            if not rule.is_exported():
+                continue
+            context = rule.get_context()
+            high_priority = context.is_high_priority()
+            status = context.should_be_active(executable_basename, window_title)
+            if high_priority:
+                self.activate_rule_for_window(rule.get_name(), moduleInfo[2], status)
+            else:
+                self.activate_rule_for_everywhere(rule.get_name(), status)
+
+    def getBaseName(name):
+        return os.path.splitext(os.path.split(name)[1])[0]
+
+    def activate_rule_for_window(self, rule_name, window, status):
+        current = self.rule_state.get(rule_name)
+        active = (current == window)
+        if status == active: return
+        if current:
+            print("Deactivating " + rule_name + "@" + self.file + 
+                  " (was active for " + repr(current) + ")")
+            self.deactivate(rule_name)
+            self.rule_state[rule_name] = None
+        if status:
             try:
-                action = value
-                text = action.eval(True, {}, "")
-                print("  resulting text is <" + text + ">")
-                do_flush(False, text)
-            except Exception as e:
-                print("  threw exception: " + repr(e))
-                import traceback
-                traceback.print_exc(e)
+                print("Activating " + rule_name + "@" + self.file + " for window " + repr(window))
+                self.activate(rule_name, window)
+                self.rule_state[rule_name] = window
+            except natlink.BadWindow:
+                pass
+
+    def activate_rule_for_everywhere(self, rule_name, status):
+        active = self.rule_state.get(rule_name) is not None
+        if status == active: return
+        if status:
+            try:
+                print("Activating " + rule_name + "@" + self.file + " globally")
+                self.activate(rule_name)
+                self.rule_state[rule_name] = "global"
+            except natlink.BadWindow:
+                pass
+        else:
+            print("Deactivating " + rule_name + "@" + self.file)
+            self.deactivate(rule_name)
+            self.rule_state[rule_name] = None

@@ -176,7 +176,7 @@ class Without(Modifier):
         
 
 ##
-## Rule implementation using dragonfly
+## Rule implementation using Dragonfly
 ##
 
 class BasicRule(dragonfly.Rule):
@@ -218,7 +218,7 @@ class ExportedRule(BasicRule):
 
 
 ##
-## Context implementation using dragonfly
+## Context implementation using Dragonfly
 ##
 
 class Context:
