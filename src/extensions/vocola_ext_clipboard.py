@@ -3,7 +3,7 @@
 ### Module clipboard:
 ### 
 ### Author:  Mark Lillibridge
-### Version: 2.0
+### Version: 2.1
 ### 
 
 from __future__ import print_function
@@ -253,7 +253,7 @@ def clipboard_restore(name="save"):
 
 
 ## 
-## Waiting for the clipboard contents to change
+## Wait for the clipboard contents to change to something different
 ## 
 ##     Useful for slow applications (e.g., due to a high latency
 ## connection to a remote application).  Typical usage pattern is:
@@ -284,6 +284,35 @@ def clipboard_wait_for_new(old="", timeout=20):  # timeout in seconds
         time.sleep(delay)
         timeout -= delay
     raise Timeout("A timeout occurred while waiting for the clipboard contents to change")
+
+
+## 
+## Wait for the clipboard contents to become something specific
+## 
+##     Useful for synchronizing with slow applications (e.g., due to a
+## high latency connection to a remote application).  Typical usage
+## pattern is:
+## 
+##   <set of keyboard commands to the application>
+##   <keyboard command to the application to set the clipboard to "foo">
+##   Clipboard.WaitForValue("foo")
+## 
+
+# Vocola procedure: Clipboard.WaitForValue,0-2
+def clipboard_wait_for_value(value, timeout=20):  # timeout in seconds
+    try:
+        timeout = int(timeout)
+    except ValueError:
+        raise ValueError("unable to convert '" + timeout.replace("'", "''") +
+                         "' into an integer")
+    delay = 0.1
+    while timeout > 0:
+        if clipboard_get(value + "!") == value:
+            return
+        time.sleep(delay)
+        timeout -= delay
+    raise Timeout("A timeout occurred while waiting for the clipboard contents to become " 
+                  + repr(value))
 
 
 

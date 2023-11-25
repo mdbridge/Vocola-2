@@ -176,7 +176,7 @@ class Without(Modifier):
         
 
 ##
-## Rule implementation using dragonfly
+## Rule implementation using Dragonfly
 ##
 
 class BasicRule(dragonfly.Rule):
@@ -218,7 +218,7 @@ class ExportedRule(BasicRule):
 
 
 ##
-## Context implementation using dragonfly
+## Context implementation using Dragonfly
 ##
 
 class Context:
@@ -244,7 +244,7 @@ class Context:
             return dragonfly.AppContext()
         result = ~dragonfly.AppContext()
         for title in titles:
-            context = dragonfly.AppContext(title=title)
+            context = dragonfly.AppContext(title=title.decode('Windows-1252'))
             result = result | context
         return result
 

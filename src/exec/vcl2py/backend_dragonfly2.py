@@ -4,6 +4,7 @@ from vcl2py.log import *
 
 def output(out_file, grammar, params):
     # <<<>>>
+    # this is a hack to cover for the fact that dragonfly doesn't have priorities yet
     global InvertExecutables
     InvertExecutables = False
     if len(grammar["EXECUTABLE"]) == 0:
@@ -11,12 +12,10 @@ def output(out_file, grammar, params):
             InvertExecutables = True
             grammar["EXECUTABLE"] = ['emacs', 'xwin']
 
-    global Grammar, VocolaVersion, ContextCount
+    global Grammar, VocolaVersion
     Grammar = grammar
     VocolaVersion = params["Vocola_version"]
-    ContextCount = 0
     maximum_commands = params["maximum_commands"]
-
 
     global OUT
     try:
@@ -31,12 +30,15 @@ def output(out_file, grammar, params):
     global Emitted_Rules
     Emitted_Rules = set()
 
+    have_non_title_specific_commands = () in grammar["CONTEXTS"].keys()
     rule_set = 0
-    for titles in grammar["CONTEXTS"].keys():
-        rule_set_all = str(rule_set) + "_all"
-        rule_set_repeated = str(rule_set) + "_repeated"
+    for titles in sorted(grammar["CONTEXTS"].keys()):
+        rule_set_all      = str(rule_set) + "_set"
+        rule_set_repeated = str(rule_set) + "_set_repeated"
         rule_set += 1
         rule_names = grammar["CONTEXTS"][titles]
+        if titles != () and maximum_commands != 1 and have_non_title_specific_commands:
+            rule_names += ["0_set"]
         grammar["RULES"][rule_set_all] = one_of(rule_names)
         if maximum_commands == 1:
             grammar["CONTEXTS"][titles] = [rule_set_all]
@@ -45,12 +47,12 @@ def output(out_file, grammar, params):
                 repeated_element(rule_ref(rule_set_all), maximum_commands), maximum_commands)
             grammar["CONTEXTS"][titles] = [rule_set_repeated]
 
-    for titles in grammar["CONTEXTS"].keys():
+    for titles in sorted(grammar["CONTEXTS"].keys()):
         rule_names = grammar["CONTEXTS"][titles]
         for rule_name in rule_names:
             emit_rule(rule_name, grammar["RULES"][rule_name], True, titles) 
         emit(0, "\n\n")
-        
+
     # <<<>>>
     if len(Emitted_Rules) > 0:
         emit_file_trailer()
@@ -128,16 +130,17 @@ def emit_rule(rule_name, rule, top_level, titles):
     if top_level:
         emit(0, "grammar.add_rule(" + rule_variable + ")\n")
 
-
+  # this reuses the same variable so use the result immediately
 def code_for_context(titles):
-    global ContextCount
-    ContextCount += 1
-    context_variable = "context_" + str(ContextCount)
+    context_variable = "context"
     executables = Grammar["EXECUTABLE"]
+    high_priority = len(executables) > 0 or titles != ()
     text = context_variable + " = Context(executables=" + \
         make_python_list(executables) + ",titles=" + \
         make_python_list(titles) + \
-        (",invert_executables=True" if InvertExecutables else "") + ")\n"
+        (",high_priority=True" if high_priority else "") + \
+        (",invert_executables=True" if InvertExecutables else "") + \
+        ")\n"
     emit(0, text)
     return make_variable(context_variable)
 
