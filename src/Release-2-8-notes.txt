@@ -5,6 +5,9 @@ New in 2.8.8:
 * Attempting to use <_anything> as a command by itself now prints an
   error rather than crashing the compiler.
 
+* Clipboard extension updated to version 2.1, which includes new
+  WaitForValue procedure.
+
 * Various portability fixes to make Vocola 2 work with Python 3.
 
 
