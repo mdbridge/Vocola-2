@@ -11,6 +11,20 @@ from VocolaUtils import (VocolaRuntimeError, do_flush, to_long, call_Dragon, eva
 
 
 ##
+## Verbosity level
+##
+
+vocola_verbosity = 1
+
+def get_vocola_verbosity():
+    return vocola_verbosity
+
+def set_vocola_verbosity(level):
+    global vocola_verbosity
+    vocola_verbosity = level
+
+
+##
 ## Actions except calls
 ##
 
@@ -230,7 +244,8 @@ class ExtensionCall(ActionCall):
         if self.module_name in sys.modules:
             extension_module = sys.modules[self.module_name]
         else:
-            print("automatically importing: " + self.module_name)
+            if vocola_verbosity >= 2:
+                print("    automatically importing: " + self.module_name)
             extension_module = importlib.import_module(self.module_name)
         extension_routine = getattr(extension_module, self.name)
         return extension_routine
@@ -240,8 +255,9 @@ class ExtRoutine(ExtensionCall):
         values = [argument.eval(False, bindings, "") for argument in self.arguments]
         implementation = self.get_extension_implementation()
         result = implementation(*values)
-        print(self.module_name + ":" + self.name + "(" +
-              ", ".join([repr(v) for v in values]) + ") -> " + repr( result))
+        if vocola_verbosity >= 2:
+            print("    " + self.module_name + ":" + self.name + "(" +
+                  ", ".join([repr(v) for v in values]) + ") -> " + repr( result))
         return preceding_text + result
 
 class ExtProc(ExtensionCall):

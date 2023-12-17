@@ -84,7 +84,8 @@ def format_words(word_list):
         import nsformat
     state = [nsformat.flag_no_space_next]
     result, _new_state = nsformat.formatWords(word_list, state)
-    print("format_words: %s -> '%s'"  % (repr(word_list), result))
+    if get_vocola_verbosity() >= 1:
+        print("format_words: %s -> '%s'"  % (repr(word_list), result))
     return result
 
 def format_words2(word_list):
@@ -97,7 +98,8 @@ def format_words2(word_list):
         if result != "":
             result = result + " "
         result = result + word
-    print("format_words2: %s -> '%s'"  % (repr(word_list), result))
+    if get_vocola_verbosity() >= 1:
+        print("format_words2: %s -> '%s'"  % (repr(word_list), result))
     return result
 
 
@@ -203,16 +205,21 @@ class ExportedRule(BasicRule):
         self.file = grammar.get_file()
 
     def process_recognition(self, node):
-        print("\nRule " + self.name + " from " + self.file + ":")
+        if get_vocola_verbosity() >= 1:
+            print("\nRule " + self.name + " from " + self.file + ":")
         try:
-            print("  recognized: " + repr(node))
+            if get_vocola_verbosity() >= 1:
+                print("  recognized: " + repr(node))
             action = node.value()
-            print("  ->  " + repr(action))
+            if get_vocola_verbosity() >= 2:
+                print("  ->  " + repr(action))
             text = action.eval(True, {}, "")
-            print("  resulting text is <" + text + ">")
+            if get_vocola_verbosity() >= 1:
+                print("  resulting text is <" + text + ">")
             do_flush(False, text)
         except Exception as e:
-            print("  Rule " + self.name + " threw exception: " + repr(e))
+            if get_vocola_verbosity() >= 1:
+                print("  Rule " + self.name + " threw exception: " + repr(e))
             import traceback
             traceback.print_exc(e)
 
@@ -271,15 +278,18 @@ class Grammar:
         return self.file
 
     def load_grammar(self):
-        print("***** loading " + self.file + "...")
+        if get_vocola_verbosity() >= 3:
+            print("***** loading " + self.file + "...")
         self.dragonfly_grammar.load()
 
     def unload_grammar(self):
-        print("***** unloading " + self.file + "...")
+        if get_vocola_verbosity() >= 3:
+            print("***** unloading " + self.file + "...")
         self.dragonfly_grammar.unload()
 
     def add_rule(self, rule):
         rule.set_grammar(self)
         self.dragonfly_grammar.add_rule(rule)
-        print("loaded from " + self.file + ": " + 
-              repr(rule.get_element().to_dragonfly().gstring()))
+        if get_vocola_verbosity() >= 3:
+            print("loaded from " + self.file + ": " + 
+                  repr(rule.get_element().to_dragonfly().gstring()))

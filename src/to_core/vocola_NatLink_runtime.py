@@ -183,7 +183,8 @@ def format_words(word_list):
         import nsformat
     state = [nsformat.flag_no_space_next]
     result, _new_state = nsformat.formatWords(word_list, state)
-    print("format_words: %s -> '%s'"  % (repr(word_list), result))
+    if get_vocola_verbosity() >= 1:
+        print("format_words: %s -> '%s'"  % (repr(word_list), result))
     return result
 
 def format_words2(word_list):
@@ -196,7 +197,8 @@ def format_words2(word_list):
         if result != "":
             result = result + " "
         result = result + word
-    print("format_words2: %s -> '%s'"  % (repr(word_list), result))
+    if get_vocola_verbosity() >= 1:
+        print("format_words2: %s -> '%s'"  % (repr(word_list), result))
     return result
 
 
@@ -353,17 +355,20 @@ class Grammar(GrammarBase):
         self.rules = []
 
     def load_grammar(self):
-        print("***** loading " + self.file + "...")
+        if get_vocola_verbosity() >= 3:
+            print("***** loading " + self.file + "...")
         self.gramSpec = self.get_grammar_spec()
-        print("  grammar specification is:")
-        print(self.gramSpec)
+        if get_vocola_verbosity() >= 3:
+            print("  grammar specification is:")
+            print(self.gramSpec)
         self.load(self.gramSpec)
         #self.currentModule = ("","",0)
         self.rule_state = {}
         #self.activateAll()
 
     def unload_grammar(self):
-        print("***** unloading " + self.file + "...")
+        if get_vocola_verbosity() >= 3:
+            print("***** unloading " + self.file + "...")
         self.unload()
 
     def add_rule(self, rule):
@@ -400,10 +405,12 @@ class Grammar(GrammarBase):
 
         
     def gotResultsInit(self, words, fullResults):
-        print("\nGrammar from " + self.file + ":")
-        print("  recognized: " + repr(fullResults))
+        if get_vocola_verbosity() >= 1:
+            print("\nGrammar from " + self.file + ":")
+            print("  recognized: " + repr(fullResults))
         for rule in self.rules:
-            print("  trying rule " + rule.get_name() + ":")
+            if get_vocola_verbosity() >= 1:
+                print("  trying rule " + rule.get_name() + ":")
             results = rule.get_element().outer_parse(fullResults, 0)
             found = False
             for offset, value in results:
@@ -412,20 +419,26 @@ class Grammar(GrammarBase):
                     #       words[0:offset], "->", repr(value))
                     continue
                 if found:
-                    print("    FOUND SECOND PARSE: ",
-                          words[0:offset], "->", repr(value))
+                    if get_vocola_verbosity() >= 1:
+                        print("    FOUND SECOND PARSE: ",
+                              words[0:offset], "->", repr(value))
                     continue
                 found = False
-                print("    found parse: ",
-                      words[0:offset], "->", repr(value))
+                if get_vocola_verbosity() >= 2:
+                    print("    found parse: ",
+                          words[0:offset], "->", repr(value))
+                elif get_vocola_verbosity() >= 1:
+                    print("    found parse: ", words[0:offset])
                 try:
                     action = value
                     text = action.eval(True, {}, "")
-                    print("    resulting text is <" + text + ">")
+                    if get_vocola_verbosity() >= 1:
+                        print("    resulting text is <" + text + ">")
                     do_flush(False, text)
                     return
                 except Exception as e:
-                    print("    threw exception: " + repr(e))
+                    if get_vocola_verbosity() >= 1:
+                        print("    threw exception: " + repr(e))
                     import traceback
                     traceback.print_exc(e)
                     return
@@ -458,13 +471,15 @@ class Grammar(GrammarBase):
         active = (current == window)
         if status == active: return
         if current:
-            print("Deactivating " + rule_name + "@" + self.file + 
-                  " (was active for " + repr(current) + ")")
+            if get_vocola_verbosity() >= 3:
+                print("Deactivating " + rule_name + "@" + self.file + 
+                      " (was active for " + repr(current) + ")")
             self.deactivate(rule_name)
             self.rule_state[rule_name] = None
         if status:
             try:
-                print("Activating " + rule_name + "@" + self.file + " for window " + repr(window))
+                if get_vocola_verbosity() >= 3:
+                    print("Activating " + rule_name + "@" + self.file + " for window " + repr(window))
                 self.activate(rule_name, window)
                 self.rule_state[rule_name] = window
             except natlink.BadWindow:
@@ -475,12 +490,14 @@ class Grammar(GrammarBase):
         if status == active: return
         if status:
             try:
-                print("Activating " + rule_name + "@" + self.file + " globally")
+                if get_vocola_verbosity() >= 3:
+                    print("Activating " + rule_name + "@" + self.file + " globally")
                 self.activate(rule_name)
                 self.rule_state[rule_name] = "global"
             except natlink.BadWindow:
                 pass
         else:
-            print("Deactivating " + rule_name + "@" + self.file)
+            if get_vocola_verbosity() >= 3:
+                print("Deactivating " + rule_name + "@" + self.file)
             self.deactivate(rule_name)
             self.rule_state[rule_name] = None
