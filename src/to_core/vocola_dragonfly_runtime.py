@@ -216,7 +216,7 @@ class ExportedRule(BasicRule):
             text = action.eval(True, {}, "")
             if get_vocola_verbosity() >= 1:
                 print("  resulting text is <" + text + ">")
-            do_flush(False, text)
+            do_playString(text)
         except Exception as e:
             if get_vocola_verbosity() >= 1:
                 print("  Rule " + self.name + " threw exception: " + repr(e))

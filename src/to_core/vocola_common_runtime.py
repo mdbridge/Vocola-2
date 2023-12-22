@@ -7,13 +7,21 @@ from __future__ import print_function
 import importlib
 import sys
 
-from VocolaUtils import (VocolaRuntimeError, do_flush, to_long, eval_template, 
+from VocolaUtils import (VocolaRuntimeError, call_playString, to_long, eval_template, 
                          call_Dragon, call_Unimacro)
 
 
 ##
 ## Verbosity level
 ##
+
+# Verbosity levels (cumulative effects)
+# 
+#   0: no verbose output
+#   1: basic output per command recognized
+#   2: output for most command execution steps, details of resulting actions from parse
+#   3: output for loading/unloading grammars and activating/deactivating rules
+#      output for EvalTemplate steps
 
 vocola_verbosity = 1
 
@@ -27,6 +35,16 @@ def set_vocola_verbosity(level):
 def vlog(level, *args, **kwargs):
     if level <= vocola_verbosity:
         print(*args, **kwargs)
+
+
+##
+## Sending text
+##
+
+def do_playString(buffer):
+    if buffer != "":
+        call_playString(buffer)
+        vlog(2, "    playString(" + repr(buffer) + ")")
 
 
 ##
@@ -155,10 +173,18 @@ class ActionCall(Action):
          return self.full_name() + "(" + \
              ", ".join([repr(v) for v in values]) + ")"
 
+    def do_flush(self, functional_context, buffer):
+        if functional_context:
+            raise VocolaRuntimeError(
+                'attempt to call Unimacro, Dragon, or a Vocola extension ' +
+                'procedure in a functional context!  Procedure name was '  +
+                self.full_name())
+        do_playString(buffer)
+
 
 class DragonCall(ActionCall):
     def eval(self, is_top_level, bindings, preceding_text):
-        do_flush(not is_top_level, preceding_text)
+        self.do_flush(not is_top_level, preceding_text)
         dragon_info = Dragon_functions[self.name][1]
         values = [argument.eval(False, bindings, "") for argument in self.arguments]
         call_Dragon(self.name, dragon_info, values)
@@ -239,10 +265,7 @@ class VocolaCall(ActionCall):
                 preceding_text = self.arguments[1].eval(is_top_level, bindings, preceding_text)
             return preceding_text
         elif name == "Unimacro":
-            if not is_top_level:
-                raise VocolaRuntimeError(
-                    'attempt to call Unicode in a functional context!')
-            do_flush(not is_top_level, preceding_text)
+            self.do_flush(not is_top_level, preceding_text)
             values = [argument.eval(False, bindings, "") for argument in self.arguments]
             call_Unimacro(values[0])
             vlog(2, "    " +  self.call_description(values) + "!")
@@ -282,11 +305,7 @@ class ExtRoutine(ExtensionCall):
             raise
 class ExtProc(ExtensionCall):
     def eval(self, is_top_level, bindings, preceding_text):
-        if not is_top_level:
-            raise VocolaRuntimeError(
-                'attempt to call Vocola extension ' +
-                'procedure ' +  self.name + ' in a functional context!')
-        do_flush(not is_top_level, preceding_text)
+        self.do_flush(not is_top_level, preceding_text)
         values = [argument.eval(False, bindings, "") for argument in self.arguments]
         implementation = self.get_extension_implementation()
         try:

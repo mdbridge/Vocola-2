@@ -1,2 +1,4 @@
 New in 2.9:
 
+  * ability to turn on verbose output for runtime
+    *  dynamically changeable verbose level
