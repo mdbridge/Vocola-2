@@ -12,7 +12,7 @@ try:
 except ImportError:
     from natlinkutils import *
 
-from VocolaUtils import (VocolaRuntimeError)
+from VocolaUtils import (VocolaRuntimeError, VocolaRuntimeAbort)
 from vocola_common_runtime import *
 
 
@@ -425,6 +425,9 @@ class Grammar(GrammarBase):
                     text = action.eval(True, {}, "")
                     vlog(1, "    resulting text is <" + text + ">")
                     do_playString(text)
+                    return
+                except VocolaRuntimeAbort:
+                    vlog(1, "    command aborted")
                     return
                 except Exception as e:
                     vlog(1, "    exception thrown: " + repr(e))

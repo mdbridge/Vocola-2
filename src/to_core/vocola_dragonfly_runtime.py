@@ -7,7 +7,7 @@ from __future__ import print_function
 
 import dragonfly
 
-from VocolaUtils import (VocolaRuntimeError)
+from VocolaUtils import (VocolaRuntimeError, VocolaRuntimeAbort)
 from vocola_common_runtime import *
 
 
@@ -205,14 +205,16 @@ class ExportedRule(BasicRule):
     def process_recognition(self, node):
         vlog(1, "\nRule " + self.name + " from " + self.file + ":")
         try:
-            vlog(1, "  recognized: " + repr(node))
+            vlog(1, "    recognized: " + repr(node))
             action = node.value()
-            vlog(2, "  ->  " + repr(action))
+            vlog(2, "    ->  " + repr(action))
             text = action.eval(True, {}, "")
-            vlog(1, "  resulting text is <" + text + ">")
+            vlog(1, "    resulting text is <" + text + ">")
             do_playString(text)
+        except VocolaRuntimeAbort:
+            vlog(1, "    command aborted")
         except Exception as e:
-            vlog(1, "  Rule " + self.name + " threw exception: " + repr(e))
+            vlog(1, "    Rule " + self.name + " threw exception: " + repr(e))
             import traceback
             traceback.print_exc(e)
 
