@@ -7,7 +7,8 @@ from __future__ import print_function
 import importlib
 import sys
 
-from VocolaUtils import (VocolaRuntimeError, do_flush, to_long, call_Dragon, eval_template)
+from VocolaUtils import (VocolaRuntimeError, do_flush, to_long, eval_template, 
+                         call_Dragon, call_Unimacro)
 
 
 ##
@@ -22,6 +23,10 @@ def get_vocola_verbosity():
 def set_vocola_verbosity(level):
     global vocola_verbosity
     vocola_verbosity = level
+
+def vlog(level, *args, **kwargs):
+    if level <= vocola_verbosity:
+        print(*args, **kwargs)
 
 
 ##
@@ -146,6 +151,10 @@ class ActionCall(Action):
         return self.full_name() + "(" + \
             ",".join([argument.to_string() for argument in self.arguments]) + ")"
 
+    def call_description(self, values):
+         return self.full_name() + "(" + \
+             ", ".join([repr(v) for v in values]) + ")"
+
 
 class DragonCall(ActionCall):
     def eval(self, is_top_level, bindings, preceding_text):
@@ -153,6 +162,7 @@ class DragonCall(ActionCall):
         dragon_info = Dragon_functions[self.name][1]
         values = [argument.eval(False, bindings, "") for argument in self.arguments]
         call_Dragon(self.name, dragon_info, values)
+        vlog(2, "    " +  self.call_description(values) + "!")
         return ""
 
 # Built in Dragon functions with (minimum number of arguments,
@@ -203,7 +213,9 @@ class VocolaCall(ActionCall):
         name = self.name
         if   name == "EvalTemplate":
             values = [argument.eval(False, bindings, "") for argument in self.arguments]
-            return preceding_text + eval_template(*values)
+            result = eval_template(*values)
+            vlog(3, "    " +  self.call_description(values) + " -> " + repr(result))
+            return preceding_text + result
         elif name == "If":
             condition = self.arguments[0].eval(False, bindings, "")
             if condition.lower() == "true":
@@ -227,8 +239,14 @@ class VocolaCall(ActionCall):
                 preceding_text = self.arguments[1].eval(is_top_level, bindings, preceding_text)
             return preceding_text
         elif name == "Unimacro":
-            # <<<>>>
-            raise VocolaRuntimeError("Unimacro gateway not yet implemented")
+            if not is_top_level:
+                raise VocolaRuntimeError(
+                    'attempt to call Unicode in a functional context!')
+            do_flush(not is_top_level, preceding_text)
+            values = [argument.eval(False, bindings, "") for argument in self.arguments]
+            call_Unimacro(values[0])
+            vlog(2, "    " +  self.call_description(values) + "!")
+            return ""
         else: 
             raise VocolaRuntimeError("Implementation error: " +
                                      "VocolaCall passed unknown Vocola function: " +
@@ -244,22 +262,24 @@ class ExtensionCall(ActionCall):
         if self.module_name in sys.modules:
             extension_module = sys.modules[self.module_name]
         else:
-            if vocola_verbosity >= 2:
-                print("    automatically importing: " + self.module_name)
+            vlog(2, "    automatically importing:", self.module_name)
             extension_module = importlib.import_module(self.module_name)
         extension_routine = getattr(extension_module, self.name)
         return extension_routine
+
 
 class ExtRoutine(ExtensionCall):
     def eval(self, is_top_level, bindings, preceding_text):
         values = [argument.eval(False, bindings, "") for argument in self.arguments]
         implementation = self.get_extension_implementation()
-        result = implementation(*values)
-        if vocola_verbosity >= 2:
-            print("    " + self.module_name + ":" + self.name + "(" +
-                  ", ".join([repr(v) for v in values]) + ") -> " + repr( result))
-        return preceding_text + result
-
+        try:
+            result = implementation(*values)
+            vlog(2, "    " +  self.call_description(values) + " -> " + repr(result))
+            return preceding_text + result
+        except Exception as e:
+            vlog(2, "    " +  self.call_description(values) + " -> threw " + 
+                 type(e).__name__)
+            raise
 class ExtProc(ExtensionCall):
     def eval(self, is_top_level, bindings, preceding_text):
         if not is_top_level:
@@ -269,5 +289,12 @@ class ExtProc(ExtensionCall):
         do_flush(not is_top_level, preceding_text)
         values = [argument.eval(False, bindings, "") for argument in self.arguments]
         implementation = self.get_extension_implementation()
-        result = implementation(*values)
+        try:
+            result = implementation(*values)
+            vlog(2, "    " +  self.call_description(values) + "!")
+        except Exception as e:
+            vlog(2, "    " +  self.call_description(values) + " threw " + 
+                 type(e).__name__)
+            raise
+
         return ""

@@ -438,7 +438,7 @@ class Grammar(GrammarBase):
                     return
                 except Exception as e:
                     if get_vocola_verbosity() >= 1:
-                        print("    threw exception: " + repr(e))
+                        print("    exception thrown: " + repr(e))
                     import traceback
                     traceback.print_exc(e)
                     return
