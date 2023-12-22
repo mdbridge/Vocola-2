@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 import os, os.path
+import time
 
 try:
     from natlink.natlinkutils import *
@@ -400,6 +401,7 @@ class Grammar(GrammarBase):
 
         
     def gotResultsInit(self, words, fullResults):
+        start_time = time.time()
         vlog(1, "\nGrammar from " + self.file + ":")
         vlog(1, "  recognized: " + repr(fullResults))
         for rule in self.rules:
@@ -416,24 +418,27 @@ class Grammar(GrammarBase):
                          repr(value))
                     continue
                 found = False
+                found_time = time.time() - start_time
                 if get_vocola_verbosity() >= 2:
-                    vlog(2, "    found parse: ", words[0:offset], "->", repr(value))
+                    vlog(2, "    found parse: ", words[0:offset], "->", repr(value), 
+                         "in %4.1f ms" % (found_time*1000))
                 else:
-                    vlog(1, "    found parse: ", words[0:offset])
+                    vlog(1, "    found parse: ", words[0:offset],
+                         "in %4.1f ms" % (found_time*1000))
                 try:
                     action = value
                     text = action.eval(True, {}, "")
                     vlog(1, "    resulting text is <" + text + ">")
                     do_playString(text)
-                    return
                 except VocolaRuntimeAbort:
                     vlog(1, "    command aborted")
-                    return
                 except Exception as e:
                     vlog(1, "    exception thrown: " + repr(e))
                     import traceback
                     traceback.print_exc(e)
-                    return
+                vlog(1, "  total time: %6.1f ms" % ((time.time() - start_time)*1000))
+                return
+            vlog(1, "  total time: %6.1f ms" % ((time.time() - start_time)*1000))
 
 
     def gotBegin(self, moduleInfo):
