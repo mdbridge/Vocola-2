@@ -237,9 +237,18 @@ class With(Modifier):
     def __init__(self, element, actions):
         Modifier.__init__(self, element)
         self.action = Prog(actions)
+        self.filename      = "<unknown>"
+        self.line          = 0
+        self.specification = "unknown command"
+
+    def set_command_info(self, filename, line, specification):
+        self.filename      = filename
+        self.line          = line
+        self.specification = specification
 
     def transform(self, value):
-        return self.action.bind(self.get_bindings(value))
+        return CatchAction(self.filename, self.line, self.specification, 
+                           self.action.bind(self.get_bindings(value)))
 
     def get_bindings(self, value):
         bindings = {}

@@ -7,7 +7,8 @@ from __future__ import print_function
 import importlib
 import sys
 
-from VocolaUtils import (VocolaRuntimeError, call_playString, to_long, eval_template, 
+from VocolaUtils import (VocolaRuntimeError, VocolaRuntimeAbort, 
+                         call_playString, to_long, eval_template, 
                          call_Dragon, call_Unimacro)
 
 
@@ -81,6 +82,31 @@ class BoundAction(Action):
 
     def eval(self, is_top_level, bindings, preceding_text):
         return self.action.eval(is_top_level, self.bindings, preceding_text)
+
+class CatchAction(Action):
+    def __init__(self, filename, line, specification, action):
+        self.filename      = filename
+        self.line          = line
+        self.specification = specification
+        self.action        = action
+
+    def to_string(self):
+        return "~" + self.action.to_string()
+
+    def eval(self, is_top_level, bindings, preceding_text):
+        try:
+            return self.action.eval(is_top_level, bindings, preceding_text)
+        except VocolaRuntimeAbort:
+            raise
+        except Exception as exception:
+            print()
+            print("While executing the following Vocola command:", file=sys.stderr)
+            print("    " + self.specification, file=sys.stderr)
+            print("defined at line " + str(self.line) + " of " + self.filename +",", file=sys.stderr)
+            print("the following error occurred:", file=sys.stderr)
+            print("    " + exception.__class__.__name__ + ": " \
+                  + str(exception), file=sys.stderr)
+            raise VocolaRuntimeAbort()
 
 
 class Text(Action):
@@ -177,8 +203,8 @@ class ActionCall(Action):
         if functional_context:
             raise VocolaRuntimeError(
                 'attempt to call Unimacro, Dragon, or a Vocola extension ' +
-                'procedure in a functional context!  Procedure name was '  +
-                self.full_name())
+                'procedure in a functional context!\n    ' + 
+                'Procedure name was ' + self.full_name())
         do_playString(buffer)
 
 
