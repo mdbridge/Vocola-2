@@ -30,6 +30,11 @@ import re
 #    with:
 #       ELEMENT  - The single element that may provide slot(s)
 #       ACTIONS  - Python list of actions
+#         next 3 fields are only present for explicit commands; they
+#         are not available for implicit commands like 1..10 under $set numbers:
+#       SPEC     - short string describing the command grammar (e.g., "'up' 1..10")
+#       FILE     - filename of file containing command
+#       LINE     - line number of command's = or the separator following the command if none
 #    without:
 #       ELEMENT  - a single element
 #

@@ -64,18 +64,20 @@ def flatten_definition(definition):
           
 
 def generate_from_command(command):
+    rule = {}
     if "ACTIONS" not in command.keys():
-        rule = {}
-        rule["TYPE"] = "without"
         element, _slots = generate_from_terms(command["TERMS"], -1)
+        rule["TYPE"]    = "without"
         rule["ELEMENT"] = element
         return rule
     element, _slots = generate_from_terms(command["TERMS"], 0)
-    ast_actions = command["ACTIONS"]
-    rule = {}
-    rule["TYPE"] = "with"
+    ast_actions     = command["ACTIONS"]
+    rule["TYPE"]    = "with"
     rule["ELEMENT"] = element
     rule["ACTIONS"] = generate_from_actions(ast_actions)
+    rule["FILE"]    = command["FILE"]
+    rule["LINE"]    = command["LINE"]
+    rule["SPEC"]    = unparse_terms(False, command["TERMS"])
     return rule
 
 def generate_from_terms(terms, slots):
