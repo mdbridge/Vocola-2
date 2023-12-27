@@ -100,7 +100,7 @@ class CatchAction(Action):
             raise
         except Exception as exception:
             print()
-            print("While executing the following Vocola command:", file=sys.stderr)
+            print("While executing the following Vocola (sub)command:", file=sys.stderr)
             print("    " + self.specification, file=sys.stderr)
             print("defined at line " + str(self.line) + " of " + self.filename +",", file=sys.stderr)
             print("the following error occurred:", file=sys.stderr)
