@@ -72,12 +72,12 @@ def generate_from_command(command):
         return rule
     element, _slots = generate_from_terms(command["TERMS"], 0)
     ast_actions     = command["ACTIONS"]
+    action          = generate_with_catch(unparse_terms(False, command["TERMS"]),
+                                          command["FILE"], command["LINE"],
+                                          generate_from_actions(ast_actions))
     rule["TYPE"]    = "with"
     rule["ELEMENT"] = element
-    rule["ACTIONS"] = generate_from_actions(ast_actions)
-    rule["FILE"]    = command["FILE"]
-    rule["LINE"]    = command["LINE"]
-    rule["SPEC"]    = unparse_terms(False, command["TERMS"])
+    rule["ACTIONS"] = [action]
     return rule
 
 def generate_from_terms(terms, slots):
@@ -202,6 +202,15 @@ def generate_from_action(ast_action):
         implementation_error("Not all formal references transformed away")
     else:
         implementation_error("Unknown action type: '" + type + "'")
+    return action
+
+def generate_with_catch(specification, filename, line, actions):
+    action            = {}
+    action["TYPE"]    = "catch"
+    action["ACTIONS"] = actions
+    action["SPEC"]    = specification
+    action["FILE"]    = filename
+    action["LINE"]    = line
     return action
 
 def generate_text_action(text):

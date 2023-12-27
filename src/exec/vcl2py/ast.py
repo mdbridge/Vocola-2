@@ -1,3 +1,5 @@
+import re
+
 #   The parse tree is built from three kinds of nodes (statement,
 # term, and action), using the following fields:
 #
@@ -173,8 +175,7 @@ def unparse_term(term, show_actions):
     result = ""
     if term.get("OPTIONAL"): result +=  "["
 
-#    if   term["TYPE"] == "word":      result += term["TEXT"]
-    if   term["TYPE"] == "word":      result += "'" + term["TEXT"] + "'"
+    if   term["TYPE"] == "word":      result +=  unparse_word_term(term)
     elif term["TYPE"] == "variable":  result += "<" + term["TEXT"] + ">"
     elif term["TYPE"] == "dictation": result += "<_anything>"
     elif term["TYPE"] == "menu":
@@ -184,6 +185,13 @@ def unparse_term(term, show_actions):
 
     if term.get("OPTIONAL"): result +=  "]"
     return result
+
+def unparse_word_term(word):
+    text = word["TEXT"]
+    if re.match(r'^[a-zA-Z0-9_]+$', text):
+        return text
+    else:
+        return "'" + text.replace("'", "''") + "'"
 
 def unparse_menu(menu, show_actions):
     commands = menu["COMMANDS"]
@@ -200,7 +208,7 @@ def unparse_actions(actions):
     return result
 
 def unparse_action(action):
-    if   action["TYPE"] == "word":      return unparse_word(action)
+    if   action["TYPE"] == "word":      return unparse_word_action(action)
     elif action["TYPE"] == "reference": return "$" + action["TEXT"]
     elif action["TYPE"] == "formalref": return "$" + action["TEXT"]
     elif action["TYPE"] == "call":
@@ -214,7 +222,7 @@ def unparse_action(action):
     else:
         return "<UNKNOWN ACTION>"  # should never happen...
 
-def unparse_word(action):
+def unparse_word_action(action):
     word = action["TEXT"]
     word = word.replace("'", "''")
 

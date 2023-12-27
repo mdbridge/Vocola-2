@@ -84,14 +84,14 @@ class BoundAction(Action):
         return self.action.eval(is_top_level, self.bindings, preceding_text)
 
 class CatchAction(Action):
-    def __init__(self, filename, line, specification, action):
+    def __init__(self, specification, filename, line, actions):
+        self.specification = specification
         self.filename      = filename
         self.line          = line
-        self.specification = specification
-        self.action        = action
+        self.action        = Prog(actions)
 
     def to_string(self):
-        return "~" + self.action.to_string()
+        return "^(" + self.action.to_string() + ")"
 
     def eval(self, is_top_level, bindings, preceding_text):
         try:

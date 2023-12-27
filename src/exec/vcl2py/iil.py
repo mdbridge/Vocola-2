@@ -30,11 +30,6 @@ import re
 #    with:
 #       ELEMENT  - The single element that may provide slot(s)
 #       ACTIONS  - Python list of actions
-#         next 3 fields are only present for explicit commands; they
-#         are not available for implicit commands like 1..10 under $set numbers:
-#       SPEC     - short string describing the command grammar (e.g., "'up' 1..10")
-#       FILE     - filename of file containing command
-#       LINE     - line number of command's = or the separator following the command if none
 #    without:
 #       ELEMENT  - a single element
 #
@@ -49,6 +44,11 @@ import re
 #       CALLTYPE  - dragon/vocola/extension_routine/extension_procedure
 #       ARGUMENTS - list of lists of actions, to be passed in call
 #       MODULE    - for extension types, the Python extension name
+#    catch:
+#       ACTIONS   - Python list of actions
+#       SPEC      - short string describing the command grammar (e.g., "'up' 1..10")
+#       FILE      - filename of file containing command
+#       LINE      - line number of command's = or the separator following the command if none
 
 # ---------------------------------------------------------------------------
 # Unparsing (for debugging and generating error messages)
@@ -115,7 +115,7 @@ def unparse_element(element):
     elif type == "with":
         return unparse_element(element["ELEMENT"]) + "=" + unparse_actions(element["ACTIONS"])
     elif type == "without":
-        return unparse_element(element["ELEMENT"]) + "@"
+        return unparse_element(element["ELEMENT"]) + "."
     else:
         return "&UNKNOWN:" + type
 
@@ -141,5 +141,9 @@ def unparse_action(action):
                 module_prefix = module_prefix + ":"
         return module_prefix + action["NAME"] + \
             "(" +  ",".join([unparse_actions(a) for a in action["ARGUMENTS"]]) + ")"
+    elif type == "catch":
+        #return "catch([" + unparse_actions(action["ACTIONS"]) + "])"
+        return "catch(" +  action["SPEC"] + ", " + action["FILE"] + ":" + str(action["LINE"]) + \
+            ", " + unparse_actions(action["ACTIONS"])+ ")"
     else:
         return "&UNKNOWN:" + type
