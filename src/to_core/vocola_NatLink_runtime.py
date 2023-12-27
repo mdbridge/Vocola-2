@@ -449,48 +449,54 @@ class Grammar(GrammarBase):
             executable_basename = getBaseName(moduleInfo[0]).lower()
             window_title = moduleInfo[1].lower()
 
+        desired_active = {}  # rule_name -> window # or 0
         for rule in self.rules:
             if not rule.is_exported():
                 continue
             context = rule.get_context()
             high_priority = context.is_high_priority()
-            status = context.should_be_active(executable_basename, window_title)
+            if not context.should_be_active(executable_basename, window_title):
+                continue
             if high_priority:
-                self.activate_rule_for_window(rule.get_name(), moduleInfo[2], status)
+                window = moduleInfo[2]
             else:
-                self.activate_rule_for_everywhere(rule.get_name(), status)
+                window = 0   # indicates activated for every window
+            desired_active[rule.get_name()] = window
+
+        # Due to a dragon bug, deactivation of any rule can deactivate
+        # all rules of this grammar; accordingly, if we need to do any
+        # deactivations, deactivate every rule first to be safe.
+        for rule_name in self.rule_state.keys():
+            current = self.rule_state.get(rule_name)
+            if current > 0 and current != moduleInfo[2]:
+                current = None
+            if desired_active.get(rule_name) != current:
+                self.deactivate_all_rules()
+                break
+        for rule_name in desired_active:
+            if self.rule_state.get(rule_name) is None:
+                self.activate_rule(rule_name, desired_active[rule_name])
 
     def getBaseName(name):
         return os.path.splitext(os.path.split(name)[1])[0]
 
-    def activate_rule_for_window(self, rule_name, window, status):
-        current = self.rule_state.get(rule_name)
-        active = (current == window)
-        if status == active: return
-        if current:
-            vlog(3, "Deactivating " + rule_name + "@" + self.file + 
-                 " (was active for " + repr(current) + ")")
+    def deactivate_all_rules(self):
+        for rule_name in self.rule_state.keys():
+            old_window = self.rule_state[rule_name]
+            scope = " (was global)"
+            if old_window > 0:
+                scope = " (was active for " + str(old_window) + ")"
+            vlog(3, "Deactivating " + rule_name + "@" + self.file + scope)
             self.deactivate(rule_name)
-            self.rule_state[rule_name] = None
-        if status:
-            try:
-                vlog(3, "Activating " + rule_name + "@" + self.file + " for window " + repr(window))
-                self.activate(rule_name, window)
-                self.rule_state[rule_name] = window
-            except natlink.BadWindow:
-                pass
+            del self.rule_state[rule_name]
 
-    def activate_rule_for_everywhere(self, rule_name, status):
-        active = self.rule_state.get(rule_name) is not None
-        if status == active: return
-        if status:
-            try:
-                vlog(3, "Activating " + rule_name + "@" + self.file + " globally")
-                self.activate(rule_name)
-                self.rule_state[rule_name] = "global"
-            except natlink.BadWindow:
-                pass
-        else:
-            vlog(3, "Deactivating " + rule_name + "@" + self.file)
-            self.deactivate(rule_name)
-            self.rule_state[rule_name] = None
+    def activate_rule(self, rule_name, window):
+        try:
+            scope = " globally"
+            if window > 0:
+                scope = " for window " + repr(window)
+            vlog(3, "Activating " + rule_name + "@" + self.file + scope)
+            self.activate(rule_name, window)
+            self.rule_state[rule_name] = window
+        except natlink.BadWindow:
+            pass
