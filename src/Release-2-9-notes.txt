@@ -17,7 +17,9 @@ New in 2.9:
 * Optional parts of a command are no longer handled by creating versions
   of the command with and without the optional part.  Instead, the
   generated grammar now directly encodes the optionality without
-  duplication; this should reduce grammar complexity.
+  duplication; this should reduce grammar complexity.  For complicated
+  sets of grammars, this can reduce the delay when switching windows by
+  up to 6 times.
 
 ! Fixed bug where title-specific commands could prevent
   non-title-specific commands of the same grammar from working.
