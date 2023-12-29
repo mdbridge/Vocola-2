@@ -838,9 +838,10 @@ def verify_referenced_menu(menu, parent_has_actions=False, parent_has_alternativ
         has_actions = parent_has_actions
         if "ACTIONS" in command:
             has_actions = True
-            if parent_has_actions:
-                error("Nested in-line lists with associated actions may not themselves contain actions",
-                      menu["POSITION"])
+            # <<<>>>
+            # if parent_has_actions:
+            #     error("Nested in-line lists with associated actions may not themselves contain actions",
+            #           menu["POSITION"])
 
         terms = command["TERMS"]
         verify_menu_terms(terms, has_actions, has_alternatives, False)
