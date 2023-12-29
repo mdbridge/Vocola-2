@@ -52,6 +52,9 @@ New in 2.9:
   issues with recognizing non-ASCII words).
 > double check dragonfly issues
 
+* Grammar rules for unused lists are no longer emitted; this means there
+  is no runtime overhead for including lists that you don't end up
+  using.
 
 
 
