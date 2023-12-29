@@ -349,12 +349,12 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         with open(out_file, "w") as out:
             print("BEFORE STATEMENTS:", file=out)
             print(unparse_statements(statements), end="", file=out)
-            statements = transform(statements, function_definitions, statement_count)
+            statements = transform(statements, function_definitions)
             print("AFTER STATEMENTS:", file=out)
             print(unparse_statements(statements), end="", file=out)
         return logged_errors()
     #print_log(unparse_statements(statements), True)
-    statements = transform(statements, function_definitions, statement_count)
+    statements = transform(statements, function_definitions)
     #print_log(unparse_statements(statements), True)
 
     # Handle $set directives:
