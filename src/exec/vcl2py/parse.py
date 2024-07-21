@@ -472,6 +472,7 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
     command          = {}
     command["TYPE"]  = "command"
     command["FILE"]  = Include_stack_file[-1]
+    command["LINE"]  = get_line_number(get_current_position())
     command["TERMS"] = terms
 
     # Count variable terms for range checking in parse_reference
@@ -481,15 +482,15 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
         eat(TOKEN_EQUALS)
         command["ACTIONS"] = parse_actions(separators)
 
-    command["LINE"] = get_line_number(get_current_position()) # line number is *last* line of command # <<<>>>
     return command
 
 def check_can_get_concrete_term(terms):
     for term in terms:
         if term_is_concrete_or_inlineable(term):
             return True
-    error("At least one term must not be optional or <_anything>",
-          terms[0]["POSITION"])
+    return True # <<<>>>
+    # error("At least one term must not be optional or <_anything>",
+    #       terms[0]["POSITION"])
 
 def term_is_concrete_or_inlineable(term):
     type = term["TYPE"]
@@ -837,9 +838,10 @@ def verify_referenced_menu(menu, parent_has_actions=False, parent_has_alternativ
         has_actions = parent_has_actions
         if "ACTIONS" in command:
             has_actions = True
-            if parent_has_actions:
-                error("Nested in-line lists with associated actions may not themselves contain actions",
-                      menu["POSITION"])
+            # <<<>>>
+            # if parent_has_actions:
+            #     error("Nested in-line lists with associated actions may not themselves contain actions",
+            #           menu["POSITION"])
 
         terms = command["TERMS"]
         verify_menu_terms(terms, has_actions, has_alternatives, False)
@@ -856,24 +858,28 @@ def verify_menu_terms(terms, has_actions, has_alternatives, other_terms):
             verify_menu_terms(term["TERMS"], has_actions, has_alternatives,
                               other_terms)
         elif type == "variable" or type == "dictation":
+	    continue # <<<>>>
             error("Alternative cannot contain a variable", term["POSITION"])
         elif type == "menu":
-            if other_terms:
-                error("An inline list cannot be combined with anything else to make up an alternative",
-                      term["POSITION"])
+            # <<<>>>
+            # if other_terms:
+            #     error("An inline list cannot be combined with anything else to make up an alternative",
+            #           term["POSITION"])
             verify_referenced_menu(term, has_actions, has_alternatives)
         elif type == "range":
-            # allow a single range with no actions if it is the only
-            # alternative in the (nested) set:
-            if other_terms:
-                error("A range cannot be combined with anything else to make up an alternative",
-                      term["POSITION"])
-            if has_actions:
-                error("A range alternative may not have associated actions",
-                      term["POSITION"])
-            if has_alternatives:
-                error("A range alternative must be the only alternative in an alternative set",
-                      term["POSITION"])
+            # <<<>>>
+            # # allow a single range with no actions if it is the only
+            # # alternative in the (nested) set:
+            # if other_terms:
+            #     error("A range cannot be combined with anything else to make up an alternative",
+            #           term["POSITION"])
+            # if has_actions:
+            #     error("A range alternative may not have associated actions",
+            #           term["POSITION"])
+            # if has_alternatives:
+            #     error("A range alternative must be the only alternative in an alternative set",
+            #           term["POSITION"])
+            pass
 
 def add_forward_reference(variable, position):
     forward_reference = {}
