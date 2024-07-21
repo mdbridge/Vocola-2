@@ -60,22 +60,19 @@ git commit -a
 
 
 
-(cd ~/voice/NatLink/trunk; svn update)
-make install
-# update version number in ~/voice/NatLink/trunk/natlinkInstaller/setupnatlinkwithinno.py
-make compare
-(cd ~/voice/NatLink/trunk; svn status)
-(cd ~/voice/NatLink/trunk; svn diff) |& more
-(cd ~/voice/NatLink/trunk; svn commit)
+# (cd ~/voice/NatLink/trunk; svn update)
+# make install
+# # update version number in ~/voice/NatLink/trunk/natlinkInstaller/setupnatlinkwithinno.py
+# make compare
+# (cd ~/voice/NatLink/trunk; svn status)
+# (cd ~/voice/NatLink/trunk; svn diff) |& more
+# (cd ~/voice/NatLink/trunk; svn commit)
 
 
 
-git tag -a v2.8.7
-Version 2.8.7, released ??
+git tag -a v2.8.8
+Version 2.8.8, released July 21, 2024
 
-<release notes for just this version>
-
-git checkout -b 2.8.7
 git checkout master
 git push  
 git push origin --tags
