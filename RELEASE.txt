@@ -111,3 +111,14 @@ git commit -a
 
 rebase Mark's branches as needed
 update ~/infra/bootstrap/my_install_Vocola.bat as needed
+
+
+
+
+Build the Vortex release:
+    git switch vortex
+    make clean
+    make
+    cp build/Vocola.zip vortex-releases/Vocola-vortex8.zip
+    git add vortex-releases/Vocola-vortex8.zip
+    git commit -a
