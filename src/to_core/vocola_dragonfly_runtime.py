@@ -7,7 +7,7 @@ from __future__ import print_function
 
 import dragonfly
 
-from VocolaUtils import (VocolaRuntimeError)
+from VocolaUtils import (VocolaRuntimeError, VocolaRuntimeAbort)
 from vocola_common_runtime import *
 
 
@@ -84,7 +84,7 @@ def format_words(word_list):
         import nsformat
     state = [nsformat.flag_no_space_next]
     result, _new_state = nsformat.formatWords(word_list, state)
-    print("format_words: %s -> '%s'"  % (repr(word_list), result))
+    vlog(1, "    format_words: %s -> '%s'"  % (repr(word_list), result))
     return result
 
 def format_words2(word_list):
@@ -97,7 +97,7 @@ def format_words2(word_list):
         if result != "":
             result = result + " "
         result = result + word
-    print("format_words2: %s -> '%s'"  % (repr(word_list), result))
+    vlog(1, "    format_words2: %s -> '%s'"  % (repr(word_list), result))
     return result
 
 
@@ -137,9 +137,13 @@ class With(Modifier):
     def __init__(self, element, actions):
         Modifier.__init__(self, element)
         self.action = Prog(actions)
+        self.filename      = "<unknown>"
+        self.line          = 0
+        self.specification = "unknown command"
 
     def transform(self, value):
-        return self.action.bind(self.get_bindings(value))
+        return CatchAction(self.filename, self.line, self.specification, 
+                           self.action.bind(self.get_bindings(value)))
 
     def get_bindings(self, value):
         bindings = {}
@@ -203,16 +207,18 @@ class ExportedRule(BasicRule):
         self.file = grammar.get_file()
 
     def process_recognition(self, node):
-        print("\nRule " + self.name + " from " + self.file + ":")
+        vlog(1, "\nRule " + self.name + " from " + self.file + ":")
         try:
-            print("  recognized: " + repr(node))
+            vlog(1, "    recognized: " + repr(node))
             action = node.value()
-            print("  ->  " + repr(action))
+            vlog(2, "    ->  " + repr(action))
             text = action.eval(True, {}, "")
-            print("  resulting text is <" + text + ">")
-            do_flush(False, text)
+            vlog(1, "    resulting text is <" + text + ">")
+            do_playString(text)
+        except VocolaRuntimeAbort:
+            vlog(1, "    command aborted")
         except Exception as e:
-            print("  Rule " + self.name + " threw exception: " + repr(e))
+            vlog(1, "    Rule " + self.name + " threw exception: " + repr(e))
             import traceback
             traceback.print_exc(e)
 
@@ -271,15 +277,15 @@ class Grammar:
         return self.file
 
     def load_grammar(self):
-        print("***** loading " + self.file + "...")
+        vlog(3, "***** loading " + self.file + "...")
         self.dragonfly_grammar.load()
 
     def unload_grammar(self):
-        print("***** unloading " + self.file + "...")
+        vlog(3, "***** unloading " + self.file + "...")
         self.dragonfly_grammar.unload()
 
     def add_rule(self, rule):
         rule.set_grammar(self)
         self.dragonfly_grammar.add_rule(rule)
-        print("loaded from " + self.file + ": " + 
-              repr(rule.get_element().to_dragonfly().gstring()))
+        vlog(3, "loaded from " + self.file + ": " + 
+             repr(rule.get_element().to_dragonfly().gstring()))

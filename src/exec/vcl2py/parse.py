@@ -472,6 +472,7 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
     command          = {}
     command["TYPE"]  = "command"
     command["FILE"]  = Include_stack_file[-1]
+    command["LINE"]  = get_line_number(get_current_position())
     command["TERMS"] = terms
 
     # Count variable terms for range checking in parse_reference
@@ -481,7 +482,6 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
         eat(TOKEN_EQUALS)
         command["ACTIONS"] = parse_actions(separators)
 
-    command["LINE"] = get_line_number(get_current_position()) # line number is *last* line of command # <<<>>>
     return command
 
 def check_can_get_concrete_term(terms):
@@ -838,9 +838,10 @@ def verify_referenced_menu(menu, parent_has_actions=False, parent_has_alternativ
         has_actions = parent_has_actions
         if "ACTIONS" in command:
             has_actions = True
-            if parent_has_actions:
-                error("Nested in-line lists with associated actions may not themselves contain actions",
-                      menu["POSITION"])
+            # <<<>>>
+            # if parent_has_actions:
+            #     error("Nested in-line lists with associated actions may not themselves contain actions",
+            #           menu["POSITION"])
 
         terms = command["TERMS"]
         verify_menu_terms(terms, has_actions, has_alternatives, False)

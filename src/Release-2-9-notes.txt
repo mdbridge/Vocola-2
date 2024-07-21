@@ -1,2 +1,74 @@
 New in 2.9:
 
+! Vocola lists may now contain lists; for example,
+    <outer> := ( <inner> | just <l> | 1..20 );
+  Those lists (e.g., <inner>) can in turn refer to other lists and so
+  on.
+
+> Recursive loops are not allowed.
+
+! List entries containing lists may refer to those lists in the usual
+  way in any definitions of those entries; for example,
+    type (0..20 | minus 1..20 = -$1) = $1{tab};
+  Here the first $1 in the subcommand "minus 1..20 = -$1" refers to the
+  value of the "1..20" list.  Thus "go up minus 3" will result in
+  sending the keys "-3{tab}".
+
+* Optional parts of a command are no longer handled by creating versions
+  of the command with and without the optional part.  Instead, the
+  generated grammar now directly encodes the optionality without
+  duplication; this should reduce grammar complexity.  For complicated
+  sets of grammars, this can reduce the delay when switching windows by
+  up to 6 times.
+
+! Fixed bug where title-specific commands could prevent
+  non-title-specific commands of the same grammar from working.
+
+
+?* Attempting to use <_anything> as a command by itself now prints an
+  error rather than crashing the compiler.
+
+?* format_words...
+
+
+
+! Vocola code generation has been rewritten to first produce a
+  backend-agnostic Internal instruction language (IIL), which a backend
+  then translates into a Python file that uses new runtime libraries to
+  implement the needed functionality.
+
+  This should make it much easier to re-target Vocola and improve the
+  runtime functionality.
+
+* The runtime for NatLink now independently parses the words that come
+  back from Dragon; this allows using much more flexible grammars (e.g.,
+  lists containing lists).
+
+* There are currently two backends, one targeting NatLink directly and
+  one targeting Dragonfly on NatLink.  Vocola is set up to use the first
+  backend out-of-the-box.  The second backend has not been fully tested
+  yet and is known to have some limitations currently due to Dragonfly
+  issues (Dragonfly doesn't support multiple grammar priorities and has
+  issues with recognizing non-ASCII words).
+> double check dragonfly issues
+
+* Grammar rules for unused lists are no longer emitted; this means there
+  is no runtime overhead for including lists that you don't end up
+  using.
+
+
+
+* stages...
+
+* error output listing which subcommand
+
+* ability to turn on verbose output for runtime
+  * dynamically changeable verbose level
+  * print out timing...
+
+* Python 3 support
+
+* pretty print output?
+
+
+* testing

@@ -1,23 +1,14 @@
-from builtins import range
-import copy
-
 from vcl2py.ast import *
 
 
-def transform(nodes,
-              function_definitions, statement_count
-              ):
-    global Function_definitions, Statement_count
-
+def transform(nodes, function_definitions):
+    global Function_definitions
     Function_definitions = function_definitions
-    Statement_count = statement_count
     return transform_nodes(nodes)
 
 
 # ---------------------------------------------------------------------------
-# Transform Eval into EvalTemplate, unroll user functions, and remove
-# optional term groups by duplicating commands with and without the
-# optional terms.
+# Transform Eval into EvalTemplate and unroll user functions.
 
   # takes a list of non-action nodes
 def transform_nodes(nodes):   # -> nodes
@@ -43,52 +34,10 @@ def transform_node(node):
 
   # this is called after command's subnodes have been transformed:
 def transform_command(command):  # -> commands !
-    global Statement_count
+    # This used to remove optional term groups by duplicating commands
+    # with and without the optional terms.
+    return [command]
 
-    terms = command["TERMS"]
-    i = offset_of_first_optional(terms)
-    if i < 0:
-        return [command]
-    return [command] # <<<>>>
-
-    without         = copy.deepcopy(command)
-    without["NAME"] = str(Statement_count)
-    Statement_count += 1
-
-    with_terms = command
-    with_terms["TERMS"] = combine_terms(terms[0:i] + terms[i]["TERMS"] + terms[i+1:])
-
-    without_terms    = without["TERMS"]
-    without["TERMS"] = combine_terms(without_terms[0:i] + without_terms[i+1:])
-    before    = len(get_variable_terms(without_terms[0:i]))
-    vanishing = len(get_variable_terms(terms[i]["TERMS"]))
-    after     = len(get_variable_terms(without_terms[i+1:]))
-    if "ACTIONS" in without:
-        without["ACTIONS"] = nop_references(without["ACTIONS"], before,
-                                            vanishing, after)
-    return transform_command(with_terms) + transform_command(without)
-
-def offset_of_first_optional(terms):
-    i = 0
-    for term in terms:
-        if term["TYPE"] == "optionalterms":
-            return i
-        i += 1
-    return -1
-
-def nop_references(actions, before, vanishing, after):
-    nop = create_word_node("", "", -1)
-
-    substitution = {}
-    for j in range(1+before,1+before+vanishing):
-        substitution[str(j)] = [nop]
-    for j in range(1+before+vanishing, 1+before+vanishing+after):
-        reference         = {}
-        reference["TYPE"] = "reference"
-        reference["TEXT"] = str(j - vanishing)
-        substitution[str(j)] = [reference]
-
-    return transform_actions(substitution, actions)
 
 # transforms above are (partially) destructive, transforms below are
 # functional except transform_eval

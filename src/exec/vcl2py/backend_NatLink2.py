@@ -180,6 +180,8 @@ def code_for_action(action):
         return make_call("Ref", [make_integer(action["SLOT"])])
     elif type == "call":
         return code_for_call(action)
+    elif type == "catch":
+        return code_for_catch(action)
     else:
         implementation_error("Unknown action type: '" + type + "'")
 
@@ -204,6 +206,13 @@ def call_type_name(call_type):
         return "ExtProc"
     else:
         implementation_error("Unknown call type: '" + call_type + "'")
+
+def code_for_catch(catch):
+    body = code_for_actions(catch["ACTIONS"])
+    return make_call("CatchAction", [make_string(catch["SPEC"]), 
+                                     make_string(catch["FILE"]),  
+                                     make_integer(catch["LINE"]), 
+                                     body])
 
 
 # ---------------------------------------------------------------------------

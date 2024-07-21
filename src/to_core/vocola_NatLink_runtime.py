@@ -6,13 +6,14 @@
 from __future__ import print_function
 
 import os, os.path
+import time
 
 try:
     from natlink.natlinkutils import *
 except ImportError:
     from natlinkutils import *
 
-from VocolaUtils import (VocolaRuntimeError)
+from VocolaUtils import (VocolaRuntimeError, VocolaRuntimeAbort)
 from vocola_common_runtime import *
 
 
@@ -183,7 +184,7 @@ def format_words(word_list):
         import nsformat
     state = [nsformat.flag_no_space_next]
     result, _new_state = nsformat.formatWords(word_list, state)
-    print("format_words: %s -> '%s'"  % (repr(word_list), result))
+    vlog(1, "    format_words: %s -> '%s'"  % (repr(word_list), result))
     return result
 
 def format_words2(word_list):
@@ -196,7 +197,7 @@ def format_words2(word_list):
         if result != "":
             result = result + " "
         result = result + word
-    print("format_words2: %s -> '%s'"  % (repr(word_list), result))
+    vlog(1, "    format_words2: %s -> '%s'"  % (repr(word_list), result))
     return result
 
 
@@ -353,17 +354,17 @@ class Grammar(GrammarBase):
         self.rules = []
 
     def load_grammar(self):
-        print("***** loading " + self.file + "...")
+        vlog(3, "***** loading " + self.file + "...")
         self.gramSpec = self.get_grammar_spec()
-        print("  grammar specification is:")
-        print(self.gramSpec)
+        vlog(3, "  grammar specification is:")
+        vlog(3, self.gramSpec)
         self.load(self.gramSpec)
         #self.currentModule = ("","",0)
         self.rule_state = {}
         #self.activateAll()
 
     def unload_grammar(self):
-        print("***** unloading " + self.file + "...")
+        vlog(3, "***** unloading " + self.file + "...")
         self.unload()
 
     def add_rule(self, rule):
@@ -400,35 +401,44 @@ class Grammar(GrammarBase):
 
         
     def gotResultsInit(self, words, fullResults):
-        print("\nGrammar from " + self.file + ":")
-        print("  recognized: " + repr(fullResults))
+        start_time = time.time()
+        vlog(1, "\nGrammar from " + self.file + ":")
+        vlog(1, "  recognized: " + repr(fullResults))
         for rule in self.rules:
-            print("  trying rule " + rule.get_name() + ":")
+            vlog(1, "  trying rule " + rule.get_name() + ":")
             results = rule.get_element().outer_parse(fullResults, 0)
             found = False
             for offset, value in results:
                 if offset != len(words):
-                    # print("    found partial parse: ",
-                    #       words[0:offset], "->", repr(value))
+                    # vlog(2, "    found partial parse: ", words[0:offset], "->",
+                    #         repr(value))
                     continue
                 if found:
-                    print("    FOUND SECOND PARSE: ",
-                          words[0:offset], "->", repr(value))
+                    vlog(1, "    FOUND SECOND PARSE: ", words[0:offset], "->", 
+                         repr(value))
                     continue
                 found = False
-                print("    found parse: ",
-                      words[0:offset], "->", repr(value))
+                found_time = time.time() - start_time
+                if get_vocola_verbosity() >= 2:
+                    vlog(2, "    found parse: ", words[0:offset], "->", repr(value), 
+                         "in %4.1f ms" % (found_time*1000))
+                else:
+                    vlog(1, "    found parse: ", words[0:offset],
+                         "in %4.1f ms" % (found_time*1000))
                 try:
                     action = value
                     text = action.eval(True, {}, "")
-                    print("    resulting text is <" + text + ">")
-                    do_flush(False, text)
-                    return
+                    vlog(1, "    resulting text is <" + text + ">")
+                    do_playString(text)
+                except VocolaRuntimeAbort:
+                    vlog(1, "    command aborted")
                 except Exception as e:
-                    print("    threw exception: " + repr(e))
+                    vlog(1, "    exception thrown: " + repr(e))
                     import traceback
                     traceback.print_exc(e)
-                    return
+                vlog(1, "  total time: %6.1f ms" % ((time.time() - start_time)*1000))
+                return
+            vlog(1, "  total time: %6.1f ms" % ((time.time() - start_time)*1000))
 
 
     def gotBegin(self, moduleInfo):
@@ -439,48 +449,54 @@ class Grammar(GrammarBase):
             executable_basename = getBaseName(moduleInfo[0]).lower()
             window_title = moduleInfo[1].lower()
 
+        desired_active = {}  # rule_name -> window # or 0
         for rule in self.rules:
             if not rule.is_exported():
                 continue
             context = rule.get_context()
             high_priority = context.is_high_priority()
-            status = context.should_be_active(executable_basename, window_title)
+            if not context.should_be_active(executable_basename, window_title):
+                continue
             if high_priority:
-                self.activate_rule_for_window(rule.get_name(), moduleInfo[2], status)
+                window = moduleInfo[2]
             else:
-                self.activate_rule_for_everywhere(rule.get_name(), status)
+                window = 0   # indicates activated for every window
+            desired_active[rule.get_name()] = window
+
+        # Due to a dragon bug, deactivation of any rule can deactivate
+        # all rules of this grammar; accordingly, if we need to do any
+        # deactivations, deactivate every rule first to be safe.
+        for rule_name in self.rule_state.keys():
+            current = self.rule_state.get(rule_name)
+            if current > 0 and current != moduleInfo[2]:
+                current = None
+            if desired_active.get(rule_name) != current:
+                self.deactivate_all_rules()
+                break
+        for rule_name in desired_active:
+            if self.rule_state.get(rule_name) is None:
+                self.activate_rule(rule_name, desired_active[rule_name])
 
     def getBaseName(name):
         return os.path.splitext(os.path.split(name)[1])[0]
 
-    def activate_rule_for_window(self, rule_name, window, status):
-        current = self.rule_state.get(rule_name)
-        active = (current == window)
-        if status == active: return
-        if current:
-            print("Deactivating " + rule_name + "@" + self.file + 
-                  " (was active for " + repr(current) + ")")
+    def deactivate_all_rules(self):
+        for rule_name in self.rule_state.keys():
+            old_window = self.rule_state[rule_name]
+            scope = " (was global)"
+            if old_window > 0:
+                scope = " (was active for " + str(old_window) + ")"
+            vlog(3, "Deactivating " + rule_name + "@" + self.file + scope)
             self.deactivate(rule_name)
-            self.rule_state[rule_name] = None
-        if status:
-            try:
-                print("Activating " + rule_name + "@" + self.file + " for window " + repr(window))
-                self.activate(rule_name, window)
-                self.rule_state[rule_name] = window
-            except natlink.BadWindow:
-                pass
+            del self.rule_state[rule_name]
 
-    def activate_rule_for_everywhere(self, rule_name, status):
-        active = self.rule_state.get(rule_name) is not None
-        if status == active: return
-        if status:
-            try:
-                print("Activating " + rule_name + "@" + self.file + " globally")
-                self.activate(rule_name)
-                self.rule_state[rule_name] = "global"
-            except natlink.BadWindow:
-                pass
-        else:
-            print("Deactivating " + rule_name + "@" + self.file)
-            self.deactivate(rule_name)
-            self.rule_state[rule_name] = None
+    def activate_rule(self, rule_name, window):
+        try:
+            scope = " globally"
+            if window > 0:
+                scope = " for window " + repr(window)
+            vlog(3, "Activating " + rule_name + "@" + self.file + scope)
+            self.activate(rule_name, window)
+            self.rule_state[rule_name] = window
+        except natlink.BadWindow:
+            pass
