@@ -54,8 +54,8 @@ bump copyright notices?
 
 make clean
 make
-cp build/Vocola.zip releases/Vocola-2-8-7.zip
-git add releases/Vocola-2-8-7.zip
+cp build/Vocola.zip releases/Vocola-2-8-8.zip
+git add releases/Vocola-2-8-8.zip
 git commit -a
 
 
