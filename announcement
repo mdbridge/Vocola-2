@@ -1,30 +1,29 @@
-New release of Vocola 2, 2.8.6, now available
+New release of Vocola 2, 2.8.8, now available
+
+    Not a lot of notable changes since the last version (2.8.7):
+
+* Attempting to use <_anything> as a command by itself now prints an
+  error rather than crashing the compiler.
+
+* Clipboard extension updated to version 2.1, which includes new
+  WaitForValue procedure.
 
 
-    Notable changes since last announced version (2.8.5):
-
-! Grammar rules are now [de]activated as infrequently as possible; this
-  improves performance with DNS 13/DPI 14, which take a long time to
-  deactivate grammars.
-
-* Executables whose names contain underscores are now properly handled.
-  For example, a Vocola file named xyz_inc_edit__routines.vcl now
-  contains commands that work only with executables named
-  xyz_inc_edit__routines, xyz_inc_edit, xyz_inc, and xyz.
-
-* As of DNS 13, <_anything> can no longer match nothing.  Accordingly,
-  [<_anything>], [[with] <_anything>], and the like are now permitted.
-  These were previously prohibited in an attempt to prohibit optional
-  parts whose contents could be empty.
-
-* Fixed an error where include statements were not interpreted relative
-  to the file containing them.  For example, "include bar/baz.vch" in
-  foo/zeep.vcl now correctly refers to foo/zeep/bar/baz.vch.
+    I also made a lot of portability fixes to make Vocola 2 work with
+Python 3 and (hopefully) with future NatLink versions that work with
+Python 3.  Unfortunately, we still don't have a working installer for
+the new version of NatLink so I was unable to make this version of
+Vocola work with NatLink on Python 3.  :-(
 
 
-    A combined installer that installs NatLink and Vocola 2.8.6 will be
-available soon.  In the meantime, you may install Vocola 2.8.6 over any
-recent NatLink installation by downloading http://vocola.net/v2/Vocola-2-8-6.zip then
+    This is the last release of the 2.8.X series barring emergency hot
+patches.  The next release will be 2.9, hopefully in alpha release in a
+month or two.
+
+    This release is probably not of great interest to most folks, but if
+you want to upgrade to it, you may install Vocola 2.8.8 over any recent
+NatLink for Python 2 installation by downloading
+http://vocola.net/v2/Vocola-2-8-8.zip then
 
     unzip it to a temporary location, say T
     run (e.g., double click) T/install.bat
@@ -87,5 +86,41 @@ dependencies that have crept in for the installer means that the install
 procedure for Vocola is somewhat longer than I would like.  See
 http://vocola.net/v2/InstallVocola.asp for the installation
 instructions.
+
+- Mark
+
+================================================================================
+
+New release of Vocola 2, 2.8.6, now available
+
+
+    Notable changes since last announced version (2.8.5):
+
+! Grammar rules are now [de]activated as infrequently as possible; this
+  improves performance with DNS 13/DPI 14, which take a long time to
+  deactivate grammars.
+
+* Executables whose names contain underscores are now properly handled.
+  For example, a Vocola file named xyz_inc_edit__routines.vcl now
+  contains commands that work only with executables named
+  xyz_inc_edit__routines, xyz_inc_edit, xyz_inc, and xyz.
+
+* As of DNS 13, <_anything> can no longer match nothing.  Accordingly,
+  [<_anything>], [[with] <_anything>], and the like are now permitted.
+  These were previously prohibited in an attempt to prohibit optional
+  parts whose contents could be empty.
+
+* Fixed an error where include statements were not interpreted relative
+  to the file containing them.  For example, "include bar/baz.vch" in
+  foo/zeep.vcl now correctly refers to foo/zeep/bar/baz.vch.
+
+
+    A combined installer that installs NatLink and Vocola 2.8.6 will be
+available soon.  In the meantime, you may install Vocola 2.8.6 over any
+recent NatLink installation by downloading http://vocola.net/v2/Vocola-2-8-6.zip then
+
+    unzip it to a temporary location, say T
+    run (e.g., double click) T/install.bat
+    (re)start Dragon
 
 - Mark

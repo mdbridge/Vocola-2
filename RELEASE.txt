@@ -11,12 +11,13 @@ git checkout master
 Merge any features still not merged
 delete those branches (later)
 
-#git log  beta --not HEAD
-git log HEAD --not 2.8.6
 
-check release notes complete
+Check release notes complete
+       # see what changed:
+     git log HEAD --not 2.8.7
 
-bump version number:
+
+Bump version number:
 
     make clean
 
@@ -44,61 +45,62 @@ bump version number:
 
     git commit -a
 
-bump copyright notices?
+Bump copyright notices?
 
     find . -type f -exec grep --color=always -H -i 'copyright' {} \; -print | grep -v .git
 
 
-#git log  beta --not HEAD
-#git branch -D beta
-
-make clean
-make
-cp build/Vocola.zip releases/Vocola-2-8-7.zip
-git add releases/Vocola-2-8-7.zip
-git commit -a
-
-
-
-(cd ~/voice/NatLink/trunk; svn update)
-make install
-# update version number in ~/voice/NatLink/trunk/natlinkInstaller/setupnatlinkwithinno.py
-make compare
-(cd ~/voice/NatLink/trunk; svn status)
-(cd ~/voice/NatLink/trunk; svn diff) |& more
-(cd ~/voice/NatLink/trunk; svn commit)
-
-
-
-git tag -a v2.8.7
-Version 2.8.7, released ??
-
-<release notes for just this version>
-
-git checkout -b 2.8.7
-git checkout master
-git push  
-git push origin --tags
-
-
-
-update Vocola website?
-    cd src
-    "upload Vocola" Release-2-8-notes.txt
-    cd ..
-    cd releases
-    "upload Vocola" Vocola-2-8-7.zip
-    
-    CD ~/voice/Vocola_development/documentation
+Build the release:
     make clean
     make
-    cd v2
-    <edit VocolaVersions.asp to add new version>
-    "upload Vocola" VocolaVersions.asp
+    cp build/Vocola.zip releases/Vocola-2-8-8.zip
+    git add releases/Vocola-2-8-8.zip
+    git commit -a
 
-draft then send out announcement
-  voice coders, KnowBrainer Vocola forum
-  see file announcement
+
+
+# (cd ~/voice/NatLink/trunk; svn update)
+# make install
+# # update version number in ~/voice/NatLink/trunk/natlinkInstaller/setupnatlinkwithinno.py
+# make compare
+# (cd ~/voice/NatLink/trunk; svn status)
+# (cd ~/voice/NatLink/trunk; svn diff) |& more
+# (cd ~/voice/NatLink/trunk; svn commit)
+
+
+Tag then push the release:
+    git tag -a v2.8.8
+Version 2.8.8, released July 21, 2024
+
+    git checkout master
+    git push  
+    git push origin --tags
+
+
+
+Update Vocola website:
+    cd ~/voice/Vocola_development/Vocola_net
+    git pull
+    cd src/v2
+
+    cp ~/voice/Vocola_development/Vocola_2/src/Release-2-8-notes.txt .
+    cp ~/voice/Vocola_development/Vocola_2/releases/Vocola-2-8-8.zip .
+    git add Vocola-2-8-8.zip
+
+    <edit ~/voice/Vocola_development/Vocola_net/src/v2/VocolaVersions.html to add new version>
+
+    git commit -a
+    git push
+
+    # after a short delay, changes should be live on https://vocola.net/v2/VocolaVersions
+
+
+
+Draft then send out announcement to KnowBrainer third-party command utilities forum
+  https://forums.knowbrainer.com/forum/third-party-command-utilities-vocola-unimacro-voicepower-python
+  see file announcement; save the new announcement at the top
+  seems to work better if you join rather than justify paragraphs
+
 
 +done
 
@@ -108,4 +110,4 @@ bump version number to next # + ALPHA
 git commit -a
 
 rebase Mark's branches as needed
-update /home/mdl/backups/Vocola-patches.bat as needed
+update ~/infra/bootstrap/my_install_Vocola.bat as needed
