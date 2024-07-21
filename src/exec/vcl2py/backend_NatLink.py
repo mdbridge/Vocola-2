@@ -1,4 +1,7 @@
+from __future__ import print_function
+
 import re
+import sys
 from vcl2py.ast import *
 from vcl2py.log import *
 
@@ -22,8 +25,11 @@ def output(out_file, module_name, statements, definitions,
     NestedCallLevel = 0
 
     try:
-        out = open(out_file, "w")
-    except IOError, e:
+        if sys.version_info[0] < 3:
+            out = open(out_file, "w")
+        else:
+            out = open(out_file, "w", encoding="Windows-1252")
+    except IOError as e:
         log_error("Unable to open output file '" + out_file + \
                   "' for writing: " + str(e))
         return
@@ -37,9 +43,9 @@ def output(out_file, module_name, statements, definitions,
     out.close()
 
 
-def implementation_error(error):
-    log_error(error)
-    raise RuntimeError, error    # <<<>>>
+def implementation_error(message):
+    log_error(message)
+    raise RuntimeError(message)    # <<<>>>
 
 
 
@@ -161,7 +167,7 @@ def emit_context_activations(contexts):
 
     # Emit code to activate the context's commands iff one of the context
     # strings matches the current window
-    emit(2, "title = string.lower(moduleInfo[1])\n")
+    emit(2, "title = moduleInfo[1].lower()\n")
     for context in contexts:
         names = context["RULENAMES"]
         if len(names) == 0: continue
@@ -171,7 +177,7 @@ def emit_context_activations(contexts):
                 emit(2, "self.activate_rule('" + names[0] + "', moduleInfo[2], True)\n")
         else:
             targets = [make_safe_python_string(target) for target in targets]
-            tests = " or ".join(["string.find(title,'" + target + "') >= 0" for target in targets])
+            tests = " or ".join(["str.find(title,'" + target + "') >= 0" for target in targets])
             emit(2, "status = (" + tests + ")\n")
             emit(2, "self.activate_rule('" + names[0] + "', moduleInfo[2], status)\n")
     emit(0, "\n")
@@ -240,7 +246,7 @@ def emit_range_grammar(range_term):
 
 def emit_number_word(i):
     global Number_words
-    if Number_words.has_key(i):
+    if i in Number_words:
         return "'" + Number_words[i] + "'"
     return str(i)
 
@@ -252,7 +258,7 @@ def emit_number_words():
         emit(2, "return word\n\n")
         return
     elif_keyword = "if  "
-    numbers = Number_words.keys()
+    numbers = list(Number_words.keys())
     numbers.sort()
     for number in numbers:
         emit(2, elif_keyword + " word == '" + Number_words[number]+ "':\n")
@@ -277,7 +283,7 @@ def emit_top_command_actions(command):
     command_specification = unparse_terms(0, terms)
 
     emit(1, "# ")
-    print >>OUT, unparse_terms (0, terms),
+    print(unparse_terms (0, terms), end='', file=OUT)
     emit(0, "\n")
     emit(1, "def " + function + "(self, words, fullResults):\n")
     emit(2, "if self.firstWord<0:\n")
@@ -295,7 +301,7 @@ def emit_top_command_actions(command):
     if not has_variable_term(terms):
         emit(3, "if len(words) > " + str(nterms) + ": self." + function + \
                 "(words[" + str(nterms) + ":], fullResults)\n")
-    emit(2, "except Exception, e:\n")
+    emit(2, "except Exception as e:\n")
     file = command["FILE"]
     emit(3, "handle_error('" + make_safe_python_string(file) +
             "', " + str(command["LINE"]) + ", '" +
@@ -377,7 +383,7 @@ def emit_menu_actions(buffer, functional, menu, indent):
             text = text.replace("\\", "\\\\")
             text = text.replace("'", "\\'")
             emit(indent, if_keyword + " word == '" + text + "':\n")
-            if command.has_key("ACTIONS"):
+            if "ACTIONS" in command:
                 if len(command["ACTIONS"]) != 0:
                     emit_actions(buffer, functional,
                                  command["ACTIONS"], indent+1)
@@ -590,7 +596,10 @@ def inline_a_term(unnamed):
 
     # Find the array index of the first non-optional term
     index = 0
-    while (index < terms) and (terms[index]["OPTIONAL"] or terms[index]["TYPE"] == "dictation"): index += 1
+    while (index < len(terms)) and (terms[index]["OPTIONAL"] or terms[index]["TYPE"] == "dictation"):
+    	  index += 1
+    if index == len(terms):
+        implementation_error("Attempting to process a command without a concrete term or inline-able term")
 
     type = terms[index]["TYPE"]
     number = terms[index]["NUMBER"]
@@ -614,7 +623,7 @@ def emit(indent, text):
 
 def menu_has_actions(menu):
     for command in menu["COMMANDS"]:
-        if command.has_key("ACTIONS"): return True
+        if "ACTIONS" in command: return True
         for term in command["TERMS"]:
             if term["TYPE"] == "menu" and menu_has_actions(term): return True
     return False
@@ -636,7 +645,7 @@ def menu_is_range(menu):  # verified menu => can contain only 1 range as a 1st t
 def flatten_menu(menu, actions_to_distribute=[]):
     new_commands = []
     for command in menu["COMMANDS"]:
-        if command.has_key("ACTIONS"): new_actions = command["ACTIONS"]
+        if "ACTIONS" in command: new_actions = command["ACTIONS"]
         else:                          new_actions = actions_to_distribute
         terms = command["TERMS"]
         type = terms[0]["TYPE"]
@@ -663,31 +672,35 @@ def emit_file_header():
     from time import localtime, strftime
 
     now = strftime("%a %b %d %H:%M:%S %Y", localtime())
-    print >>OUT, "# NatLink macro definitions for NaturallySpeaking"
-    print >>OUT, "# coding: latin-1"
-    print >>OUT, "# Generated by vcl2py " + VocolaVersion + ", " + now
-    print >>OUT, '''
+    print("# NatLink macro definitions for NaturallySpeaking", file=OUT)
+    print("# coding: Windows-1252", file=OUT)
+    print("# Generated by vcl2py " + VocolaVersion + ", " + now, file=OUT)
+    print('''
+import string
 import natlink
-from natlinkutils import *
+try:
+    from natlinkcore.natlinkutils import *
+except ImportError:
+    from natlinkutils import *
 from VocolaUtils import *
 
 
 class ThisGrammar(GrammarBase):
 
     gramSpec = """
-''',
+''', end='', file=OUT)
 
 def emit_file_middle():
-    print >>OUT, '''    """
+    print('''    """
     
     def initialize(self):
         self.load(self.gramSpec)
         self.currentModule = ("","",0)
         self.rule_state = {}
-''',
+''', end='', file=OUT)
 
 def emit_file_middle2():
-    print >>OUT, '''    
+    print('''    
     def activate_rule(self, rule, window, status):
         current = self.rule_state.get(rule)
         active = (current == window)
@@ -701,14 +714,14 @@ def emit_file_middle2():
                 self.rule_state[rule] = window
             except natlink.BadWindow:
                 pass
-''',
+''', end='', file=OUT)
 
 def emit_file_trailer():
-    print >>OUT, '''thisGrammar = ThisGrammar()
+    print('''thisGrammar = ThisGrammar()
 thisGrammar.initialize()
 
 def unload():
     global thisGrammar
     if thisGrammar: thisGrammar.unload()
     thisGrammar = None
-''',
+''', end='', file=OUT)

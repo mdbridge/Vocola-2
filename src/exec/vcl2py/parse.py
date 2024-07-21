@@ -1,5 +1,6 @@
-import re
 import os
+import re
+import sys
 
 from vcl2py.ast import *
 from vcl2py.lex import *
@@ -195,8 +196,11 @@ def canonicalize_in_file(in_file):
 def read_file(in_file):
     global Last_include_position
     try:
-        return open(in_file).read()
-    except (IOError, OSError), e:
+        if  sys.version_info[0] < 3:
+            return open(in_file).read()
+        else:
+            return open(in_file, encoding="Windows-1252").read()
+    except (IOError, OSError) as e:
         log_parse_error("Unable to open or read '" + in_file + "'", # + ": " + str(e),
                         Last_include_position)
         return ""
@@ -214,7 +218,7 @@ def parse_statements():    # statements = (context | top_command | definition)*
         starting_position = get_current_position()
         try:
             statement = parse_statement()
-        except (SyntaxError, RuntimeError), e:
+        except (SyntaxError, RuntimeError) as e:
             # panic until after next ";":
             while not peek(TOKEN_EOF) and not peek(TOKEN_SEMICOLON):
                 eat()
@@ -224,7 +228,7 @@ def parse_statements():    # statements = (context | top_command | definition)*
 
         if statement["TYPE"] == "definition":
             name = statement["NAME"]
-            if Definitions.has_key(name):
+            if name in Definitions:
                 log_parse_error("Redefinition of <"+name+">", starting_position)
             Definitions[name] = statement
         elif statement["TYPE"] == "command":
@@ -358,7 +362,7 @@ def parse_variable_definition():    # definition = variable ':=' menu_body ';'
     return statement
 
 def check_variable_name(name, position):
-    if not re.match(r'\w+$', name):
+    if not re.match(r'[a-zA-Z0-9_]+$', name):
         error("Illegal variable name: <" + name + ">", position)
 
 def parse_function_definition():   # function = prototype ':=' action* ';'
@@ -367,7 +371,7 @@ def parse_function_definition():   # function = prototype ':=' action* ';'
     position = get_current_position()
     functionName = eat(TOKEN_BARE_WORD)
     if Debug>=2: print_log("Found user function:  " + functionName + "()")
-    if not re.match(r'[a-zA-Z_]\w*$', functionName):
+    if not re.match(r'[a-zA-Z_][a-zA-Z0-9_]*$', functionName):
         error("Illegal user function name: " + functionName, position)
 
     eat(TOKEN_LPAREN)
@@ -384,9 +388,9 @@ def parse_function_definition():   # function = prototype ':=' action* ';'
     statement["ACTIONS"] = parse_actions(TOKEN_SEMICOLON)
     eat(TOKEN_SEMICOLON)
 
-    if Functions.has_key(functionName):
+    if functionName in Functions:
         error("Redefinition of " + functionName + "()", position)
-    if Vocola_functions.has_key(functionName):
+    if functionName in Vocola_functions:
         error("Attempted redefinition of built-in function: " + functionName, position)
     Functions[functionName] = len(formals)  # remember number of formals
     Function_definitions[functionName] = statement
@@ -399,7 +403,7 @@ def parse_formals():    # formals = [name (',' name)*]
     if not peek(TOKEN_RPAREN):
         while True:
             formal = eat(TOKEN_BARE_WORD)
-            if not re.match(r'[a-zA-Z_]\w*$', formal):
+            if not re.match(r'[a-zA-Z_][a-zA-Z0-9_]*$', formal):
                 error("Illegal formal name: '" + formal + "'", get_last_position())
             if Debug>=2: print_log("Found formal:  " + formal)
             safe_formals.append("_" + formal)
@@ -462,6 +466,8 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
         terms = parse_terms(TOKEN_EQUALS)
     else:
         terms = parse_terms(separators | TOKEN_EQUALS)
+    if needs_actions:
+        check_can_get_concrete_term(terms)
 
     command          = {}
     command["TYPE"]  = "command"
@@ -477,6 +483,20 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
 
     command["LINE"] = get_line_number(get_current_position()) # line number is *last* line of command # <<<>>>
     return command
+
+def check_can_get_concrete_term(terms):
+    for term in terms:
+        if term_is_concrete_or_inlineable(term):
+            return True
+    error("At least one term must not be optional or <_anything>",
+          terms[0]["POSITION"])
+
+def term_is_concrete_or_inlineable(term):
+    type = term["TYPE"]
+    if   type == "menu":      return True
+    elif type == "variable":  return True 
+    elif type == "dictation": return False
+    else: return not term["OPTIONAL"]
 
 def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
     starting_position = get_current_position()
@@ -509,8 +529,8 @@ def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
     if not seen_non_optional:
         error("At least one term must not be optional",
               starting_position)
-    else:
-        return combine_terms(terms)
+
+    return combine_terms(terms)
 
 def parse_term():         # <term> ::= <word> | variable | range | <menu>
     global Debug, Definitions
@@ -529,7 +549,7 @@ def parse_term():         # <term> ::= <word> | variable | range | <menu>
         return parse_word()
 
     word  = eat(TOKEN_BARE_WORD)
-    match = re.match(r'<(.*?)>$|(\d+)\.\.(\d+)$', word)
+    match = re.match(r'<(.*?)>$|([0-9]+)\.\.([0-9]+)$', word)
     if not match:
         term = parse_word1(word, starting_position)
     elif match.group(2):
@@ -547,7 +567,7 @@ def parse_term():         # <term> ::= <word> | variable | range | <menu>
             term = create_dictation_node()
         else:
             if Debug>=2: print_log("Found variable:  <" + name + ">")
-            if not Definitions.has_key(name):
+            if name not in Definitions:
                 add_forward_reference(name, starting_position)
             term = create_variable_node(name)
 
@@ -608,7 +628,7 @@ def split_out_references(word_node):
     actions = []
 
     # reference = '$' (number | name)
-    for match in re.finditer(r'(.*?)(\Z|(?<!\\)\$(?:(\d+)|([a-zA-Z_]\w*)))',
+    for match in re.finditer(r'(.*?)(\Z|(?<!\\)\$(?:([0-9]+)|([a-zA-Z_][a-zA-Z0-9_]*)))',
                              word):
         normal = match.group(1)
         if normal != "":
@@ -657,7 +677,7 @@ def parse_call(callName):    # call = callName '(' arguments ')'
 
     call_position = get_last_position()
     if Debug>=2: print_log("Found call:  " + callName + "()")
-    if not re.match(r'[\w.]+$', callName):
+    if not re.match(r'[a-zA-Z0-9_.]+$', callName):
         error("Illegal function call name: '" + callName + "'", call_position)
 
     action = {}
@@ -669,25 +689,25 @@ def parse_call(callName):    # call = callName '(' arguments ')'
 
     nActuals = len(action["ARGUMENTS"])
     if callName.find(".") != -1:
-        if Extension_functions.has_key(callName):
+        if callName in Extension_functions:
             callFormals = Extension_functions[callName]
             lFormals = callFormals[0]
             uFormals = callFormals[1]
             action["CALLTYPE"] = "extension"
         else:
             error("Call to unknown extension '" + callName + "'", call_position)
-    elif Dragon_functions.has_key(callName):
+    elif callName in Dragon_functions:
         callFormals = Dragon_functions[callName]
         lFormals =     callFormals[0]
         uFormals = len(callFormals[1])
         action["CALLTYPE"] = "dragon"
         action["ARGTYPES"] = callFormals[1]
-    elif Vocola_functions.has_key(callName):
+    elif callName in Vocola_functions:
         callFormals = Vocola_functions[callName]
         lFormals = callFormals[0]
         uFormals = callFormals[1]
         action["CALLTYPE"] = "vocola"
-    elif Functions.has_key(callName):
+    elif callName in Functions:
         lFormals = uFormals = Functions[callName]
         action["CALLTYPE"] = "user"
     else:
@@ -737,13 +757,13 @@ def parse_word1(bare_word, position):
     return node
 
 
-def implementation_error(error):
-    log_parse_error(error)
-    raise RuntimeError, error    # <<<>>>
+def implementation_error(message):
+    log_parse_error(message)
+    raise RuntimeError(message)    # <<<>>>
 
 def error(message, position, advice=""):
     log_parse_error(message, position, advice)
-    raise RuntimeError, message    # <<<>>>
+    raise RuntimeError(message)    # <<<>>>
 
 def log_parse_error(message, position=None, advice=""):
     location, message = format_error_message(message, position, advice)
@@ -815,7 +835,7 @@ def verify_referenced_menu(menu, parent_has_actions=False, parent_has_alternativ
 
     for command in commands:
         has_actions = parent_has_actions
-        if command.has_key("ACTIONS"):
+        if "ACTIONS" in command:
             has_actions = True
             if parent_has_actions:
                 error("Nested in-line lists with associated actions may not themselves contain actions",
@@ -867,7 +887,7 @@ def check_forward_references():
     global Include_stack_file, Include_stack_line
     for forward_reference in Forward_references:
         variable = forward_reference["VARIABLE"]
-        if not Definitions.has_key(variable):
+        if variable not in Definitions:
             stack_file = Include_stack_file
             stack_line = Include_stack_line
 

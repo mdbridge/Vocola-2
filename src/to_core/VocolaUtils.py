@@ -3,9 +3,11 @@
 ### VocolaUtils.py - Code used by Vocola's generated Python code
 ###
 ###
-### Copyright (c) 2002-2011 by Rick Mohr.
+### Copyright (c) 2020-2021 by Mark Lillibridge.
 ###
-### Portions Copyright (c) 2015 by Hewlett-Packard Development Company, L.P.
+### Copyright (c) 2015 by Hewlett-Packard Development Company, L.P.
+###
+### Copyright (c) 2002-2011 by Rick Mohr.
 ###
 ### Permission is hereby granted, free of charge, to any person
 ### obtaining a copy of this software and associated documentation
@@ -28,11 +30,13 @@
 ### DEALINGS IN THE SOFTWARE.
 ###
 
+from __future__ import print_function
+from builtins import int
+
 import re
-import string
 import sys
 from   types import *
-import traceback  # for debugging traceback code in handle_error
+import traceback       # for debugging traceback code in handle_error
 
 import natlink
 
@@ -43,6 +47,26 @@ import natlink
 
 # DNS short name of current language being used, set by _vocola_main.py:
 Language = None
+
+
+
+##
+## Dragon proxy detection
+##
+
+def getProxyPlayString():
+    try:
+        from vocola_ext_dragon_proxy import proxy_playString
+        return proxy_playString
+    except ImportError:
+        return direct_playString
+
+def getProxyDragon():
+    try:
+        from vocola_ext_dragon_proxy import proxy_Dragon
+        return proxy_Dragon
+    except ImportError:
+        return direct_Dragon
 
 
 
@@ -60,9 +84,9 @@ def combineDictationWords(fullResults):
     while i < len(fullResults):
         if fullResults[i][1] == "dgndictation":
             # This word came from a "recognize anything" rule.
-            # Convert to written form if necessary, e.g. "@\at-sign" --> "@"
+            # Convert to written form if necessary, e.g., "@\at-sign" --> "@"
             word = fullResults[i][0]
-            backslashPosition = string.find(word, "\\")
+            backslashPosition = word.find("\\")
             if backslashPosition > 0:
                 word = word[:backslashPosition]
             if inDictation:
@@ -96,23 +120,23 @@ def handle_error(filename, line, command, exception):
     if isinstance(exception, VocolaRuntimeAbort):
         return
 
-    print
-    print >> sys.stderr, "While executing the following Vocola command:"
-    print >> sys.stderr, "    " + command
-    print >> sys.stderr, "defined at line " + str(line) + " of " + filename +","
-    print >> sys.stderr, "the following error occurred:"
-    print >> sys.stderr, "    " + exception.__class__.__name__ + ": " \
-        + str(exception)
+    print()
+    print("While executing the following Vocola command:", file=sys.stderr)
+    print("    " + command, file=sys.stderr)
+    print("defined at line " + str(line) + " of " + filename +",", file=sys.stderr)
+    print("the following error occurred:", file=sys.stderr)
+    print("    " + exception.__class__.__name__ + ": " \
+        + str(exception), file=sys.stderr)
     #traceback.print_exc()
     #raise exception
 
 
-def to_long(string):
+def to_long(aString):
     try:
-        return long(string)
+        return int(aString)
     except ValueError:
         raise VocolaRuntimeError("unable to convert '"
-                                 + string.replace("'", "''")
+                                 + aString.replace("'", "''")
                                  + "' into an integer")
 
 def do_flush(functional_context, buffer):
@@ -121,16 +145,20 @@ def do_flush(functional_context, buffer):
             'attempt to call Unimacro, Dragon, or a Vocola extension ' +
             'procedure in a functional context!')
     if buffer != '':
-        natlink.playString(convert_keys(buffer))
+        call_playString(buffer)
     return ''
 
 
 
 ##
-## Dragon built-ins:
+## Dragon natlink.playString (default method of sending keys, what
+##                            SendDragonKeys calls):
 ##
 
-dragon_prefix = ""
+def call_playString(keys):
+    keys = convert_keys(keys)
+    #print("playString("+ repr(keys) + ")")
+    (getProxyPlayString())(keys)
 
 def convert_keys(keys):
     # Roughly, {<keyname>_<count>}'s -> {<keyname> <count>}:
@@ -143,14 +171,20 @@ def convert_keys(keys):
                            (?:[^}]|[-a-zA-Z0-9/*+.\x80-\xff]+) )
                       [ _]
                       (\d+) \}""", r'{\1 \2}', keys)
+    return keys
 
+
+def direct_playString(keys):
     # prefix with current language appropriate version of {shift}
     # to prevent doubling/dropping bug:
+    natlink.playString(shift_prefix() + keys)
+
+def shift_prefix():
     shift = name_for_shift()
     if shift:
-        keys = "{" + shift + "}" + keys
-
-    return keys
+        return "{" + shift + "}"
+    else:
+        return ""
 
 def name_for_shift():
     if Language == "enx":
@@ -168,54 +202,73 @@ def name_for_shift():
     else:
         return None
 
+
+
+##
+## Dragon built-ins:
+##
+
 def call_Dragon(function_name, argument_types, arguments):
+    types = argument_types
+    new_arguments = []
+    for argument in arguments:
+        argument_type = types[0]
+        types = types[1:]
+        if argument_type == 'i':
+            argument = str(to_long(argument))
+        elif argument_type == 's':
+            if function_name == "SendDragonKeys" or function_name == "SendKeys" \
+               or function_name == "SendSystemKeys":
+                argument = convert_keys(argument)
+        else:
+            # there is a vcl2py.pl bug if this happens:
+            raise VocolaRuntimeError("Vocola compiler error: unknown data type "
+                                     + " specifier '" + argument_type +
+                                     "' supplied for a Dragon procedure argument")
+        new_arguments += [argument]
+    (getProxyDragon())(function_name, argument_types, new_arguments)
+
+
+dragon_prefix = ""
+
+def direct_Dragon(function_name, argument_types, arguments):
     global dragon_prefix
+
+    if function_name == "SendDragonKeys":
+        direct_playString(arguments[0])
+        return
 
     def quoteAsVisualBasicString(argument):
         q = argument
-        q = string.replace(q, '"', '""')
-        q = string.replace(q, "\n", '" + chr$(10) + "')
-        q = string.replace(q, "\r", '" + chr$(13) + "')
+        q = q.replace('"', '""')
+        q = q.replace("\n", '" + chr$(10) + "')
+        q = q.replace("\r", '" + chr$(13) + "')
         return '"' + q + '"'
 
     script = ""
     for argument in arguments:
         argument_type = argument_types[0]
         argument_types = argument_types[1:]
-
-        if argument_type == 'i':
-            argument = str(to_long(argument))
-        elif argument_type == 's':
-            if function_name == "SendDragonKeys" or function_name == "SendKeys" \
-                    or function_name == "SendSystemKeys":
-                argument = convert_keys(argument)
+        if argument_type == 's':
             argument = quoteAsVisualBasicString(str(argument))
-        else:
-            # there is a vcl2py.pl bug if this happens:
-            raise VocolaRuntimeError("Vocola compiler error: unknown data type "
-                                     + " specifier '" + argument_type +
-                                     "' supplied for a Dragon procedure argument")
-
         if script != '':
             script += ','
         script += ' ' + argument
 
     script = dragon_prefix + function_name + script
     dragon_prefix = ""
-    #print '[' + script + ']'
+    #print('[' + script + ']')
     try:
-        if function_name == "SendDragonKeys":
-            natlink.playString(convert_keys(arguments[0]))
-        elif function_name == "ShiftKey":
+        if function_name == "ShiftKey":
             dragon_prefix = script + chr(10)
         else:
             natlink.execScript(script)
-    except Exception, e:
+    except Exception as e:
         m = "when Vocola called Dragon to execute:\n" \
             + '        ' + script + '\n' \
             + '    Dragon reported the following error:\n' \
             + '        ' + type(e).__name__ + ": " + str(e)
-        raise VocolaRuntimeError, m
+        raise VocolaRuntimeError(m)
 
 
 
@@ -226,17 +279,24 @@ def call_Dragon(function_name, argument_types, arguments):
 # attempt to import Unimacro, suppressing errors, and noting success status:
 unimacro_available = False
 try:
-    import actions
+    try:
+        from unimacro import actions
+    except ImportError:
+        import actions
     unimacro_available = True
 except ImportError:
     pass
+except:
+    print("Unimacro actions module raised the following exception when imported:", file=sys.stderr)
+    traceback.print_exc()
+           
 
 def call_Unimacro(argumentString):
     if unimacro_available:
-        #print '[' + argumentString + ']'
+        #print('[' + argumentString + ']')
         try:
             actions.doAction(argumentString)
-        except Exception, e:
+        except Exception as e:
             m = "when Vocola called Unimacro to execute:\n" \
                 + '        Unimacro(' + argumentString + ')\n' \
                 + '    Unimacro reported the following error:\n' \
@@ -277,9 +337,9 @@ def eval_template(template, *arguments):
         return name
 
     # is string the canonical representation of a long?
-    def isCanonicalNumber(string):
+    def isCanonicalNumber(aString):
         try:
-            return str(long(string)) == string
+            return str(int(aString)) == aString
         except ValueError:
             return 0
 
@@ -294,7 +354,7 @@ def eval_template(template, *arguments):
         elif descriptor == "%a":
             a = get_argument()
             if isCanonicalNumber(a):
-                return get_variable(long(a))
+                return get_variable(int(a))
             else:
                 return get_variable(str(a))
         else:
@@ -305,14 +365,14 @@ def eval_template(template, *arguments):
         return eval('str(' + expression + ')', variables.copy())
     except VocolaRuntimeAbort:
         raise
-    except Exception, e:
+    except Exception as e:
         m = "when Eval[Template] called Python to evaluate:\n" \
             + '        str(' + expression + ')\n' \
             + '    under the following bindings:\n'
-        names = variables.keys()
+        names = list(variables.keys())
         names.sort()
         for v in names:
             m += '        ' + str(v) + ' -> ' + repr(variables[v]) + '\n'
         m += '    Python reported the following error:\n' \
             + '        ' + type(e).__name__ + ": " + str(e)
-        raise VocolaRuntimeError, m
+        raise VocolaRuntimeError(m)

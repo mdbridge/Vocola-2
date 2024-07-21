@@ -1,0 +1,126 @@
+New release of Vocola 2, 2.8.8, now available
+
+    Not a lot of notable changes since the last version (2.8.7):
+
+* Attempting to use <_anything> as a command by itself now prints an
+  error rather than crashing the compiler.
+
+* Clipboard extension updated to version 2.1, which includes new
+  WaitForValue procedure.
+
+
+    I also made a lot of portability fixes to make Vocola 2 work with
+Python 3 and (hopefully) with future NatLink versions that work with
+Python 3.  Unfortunately, we still don't have a working installer for
+the new version of NatLink so I was unable to make this version of
+Vocola work with NatLink on Python 3.  :-(
+
+
+    This is the last release of the 2.8.X series barring emergency hot
+patches.  The next release will be 2.9, hopefully in alpha release in a
+month or two.
+
+    This release is probably not of great interest to most folks, but if
+you want to upgrade to it, you may install Vocola 2.8.8 over any recent
+NatLink for Python 2 installation by downloading
+http://vocola.net/v2/Vocola-2-8-8.zip then
+
+    unzip it to a temporary location, say T
+    run (e.g., double click) T/install.bat
+    (re)start Dragon
+
+- Mark
+
+================================================================================
+
+New release of Vocola 2, 2.8.7, now available
+
+    Notable changes since last version (2.8.6):
+
+! By default, Vocola now uses SendInput instead of SendDragonKeys to
+  send keystrokes.  This should work better in most cases: SendInput is
+  immune to the character doubling/dropping bug, for example.
+  SendInput, however, does not work with UAC-elevated windows and may
+  have issues with some foreign-language keyboard settings.  
+
+  Accordingly, you may now temporarily switch back to SendDragonKeys via
+  a voice command, add code in the the DragonProxy extension (see below)
+  to further translate keystrokes as needed, or simply delete the
+  DragonProxy extension to permanently switch back to using
+  SendDragonKeys.  
+
+  More information on the different ways of sending keystrokes may be
+  found on the Vocola 2 website at
+  http://vocola.net/v2/SendingKeystrokes.asp.
+
+! The following unofficial Vocola extensions have been made official,
+  and are now included in the Vocola 2 release:
+    Clipboard, Date, Env, Keys, Subprocess, Variable, and Vocola
+
+! Python version 2.6 is no longer supported
+
+* Vocola now supports a _Dragon proxy_, which is a special Vocola
+  extension that can intercept and change or redirect Vocola's calls to
+  Dragon.  A starter version of the proxy is provided which can switch
+  back and forth between SendDragonKeys and SendInput for default
+  keystrokes as well as print out Dragon actions when verbose mode is
+  turned on.
+
+* Vocola now prints an error if the user redefines an extension function
+
+* A great deal of portability work has been done under the covers to
+  make Vocola 2 work with Python 3.  Hopefully the next version will
+  support Python 3.
+
+* Vocola 2 is being refactored to be more flexible.  As part of this, it
+  is now possible to choose a backend dynamically at "compile time".
+  This is intended to be used for "cross-compilation" -- e.g., compiling
+  to Dragonfly or Advanced Scripting instead of NatLink directly.
+  Currently only NatLink and trivial echo backends are available.
+
+    This will hopefully be the last version that only works with Python
+2.  A combined installer that installs NatLink and this version of
+Vocola will *not* be available -- the NatLink project is instead
+focusing on a new version that works with Python 3.  This plus some
+dependencies that have crept in for the installer means that the install
+procedure for Vocola is somewhat longer than I would like.  See
+http://vocola.net/v2/InstallVocola.asp for the installation
+instructions.
+
+- Mark
+
+================================================================================
+
+New release of Vocola 2, 2.8.6, now available
+
+
+    Notable changes since last announced version (2.8.5):
+
+! Grammar rules are now [de]activated as infrequently as possible; this
+  improves performance with DNS 13/DPI 14, which take a long time to
+  deactivate grammars.
+
+* Executables whose names contain underscores are now properly handled.
+  For example, a Vocola file named xyz_inc_edit__routines.vcl now
+  contains commands that work only with executables named
+  xyz_inc_edit__routines, xyz_inc_edit, xyz_inc, and xyz.
+
+* As of DNS 13, <_anything> can no longer match nothing.  Accordingly,
+  [<_anything>], [[with] <_anything>], and the like are now permitted.
+  These were previously prohibited in an attempt to prohibit optional
+  parts whose contents could be empty.
+
+* Fixed an error where include statements were not interpreted relative
+  to the file containing them.  For example, "include bar/baz.vch" in
+  foo/zeep.vcl now correctly refers to foo/zeep/bar/baz.vch.
+
+
+    A combined installer that installs NatLink and Vocola 2.8.6 will be
+available soon.  In the meantime, you may install Vocola 2.8.6 over any
+recent NatLink installation by downloading http://vocola.net/v2/Vocola-2-8-6.zip then
+
+    unzip it to a temporary location, say T
+    run (e.g., double click) T/install.bat
+    (re)start Dragon
+
+- Mark

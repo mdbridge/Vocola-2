@@ -1,0 +1,113 @@
+##
+## Mark's notes on how to release a version of Vocola
+##
+## Still needs work to be comprehensible to others.  :-(
+##
+
+
+
+git checkout master
+
+Merge any features still not merged
+delete those branches (later)
+
+
+Check release notes complete
+       # see what changed:
+     git log HEAD --not 2.8.7
+
+
+Bump version number:
+
+    make clean
+
+    cd src
+    find . -type f -exec grep --color=always -H -i '2\.8\.' {} \; -print | grep -v .git
+      ./to_MacroSystem/_vocola_main.py:    print("Vocola version 2.8.7ALPHA starting...")
+      ./to_MacroSystem/_vocola_main.py
+      ./Release-2-8-notes.txt:New in 2.8.7:
+      ./Release-2-8-notes.txt:New in 2.8.6:
+      ./Release-2-8-notes.txt:New in 2.8.5:
+      ./Release-2-8-notes.txt:New in 2.8.4:
+      ./Release-2-8-notes.txt:New in 2.8.3:
+      ./Release-2-8-notes.txt:New in 2.8.2:
+      ./Release-2-8-notes.txt:New in 2.8.1:
+      ./Release-2-8-notes.txt
+      ./README.html:<title>README file for Vocola 2.8.7ALPHA distribution</title>
+      ./README.html:    This version, 2.8.7ALPHA, requires Dragon NaturallySpeaking (DNS)
+      ./README.html
+      ./exec/vcl2py/main.py:VocolaVersion = "2.8.7ALPHA"
+      ./exec/vcl2py/main.py
+      ./extensions/vocola_ext_vocola.py:from VocolaUtils import VocolaRuntimeAbort  # version 2.8.5+
+      ./extensions/vocola_ext_vocola.py
+      ./extensions/README.txt:As of Vocola 2.8.7, the following standard extensions come preinstalled:
+      ./extensions/README.txt
+
+    git commit -a
+
+Bump copyright notices?
+
+    find . -type f -exec grep --color=always -H -i 'copyright' {} \; -print | grep -v .git
+
+
+Build the release:
+    make clean
+    make
+    cp build/Vocola.zip releases/Vocola-2-8-8.zip
+    git add releases/Vocola-2-8-8.zip
+    git commit -a
+
+
+
+# (cd ~/voice/NatLink/trunk; svn update)
+# make install
+# # update version number in ~/voice/NatLink/trunk/natlinkInstaller/setupnatlinkwithinno.py
+# make compare
+# (cd ~/voice/NatLink/trunk; svn status)
+# (cd ~/voice/NatLink/trunk; svn diff) |& more
+# (cd ~/voice/NatLink/trunk; svn commit)
+
+
+Tag then push the release:
+    git tag -a v2.8.8
+Version 2.8.8, released July 21, 2024
+
+    git checkout master
+    git push  
+    git push origin --tags
+
+
+
+Update Vocola website:
+    cd ~/voice/Vocola_development/Vocola_net
+    git pull
+    cd src/v2
+
+    cp ~/voice/Vocola_development/Vocola_2/src/Release-2-8-notes.txt .
+    cp ~/voice/Vocola_development/Vocola_2/releases/Vocola-2-8-8.zip .
+    git add Vocola-2-8-8.zip
+
+    <edit ~/voice/Vocola_development/Vocola_net/src/v2/VocolaVersions.html to add new version>
+
+    git commit -a
+    git push
+
+    # after a short delay, changes should be live on https://vocola.net/v2/VocolaVersions
+
+
+
+Draft then send out announcement to KnowBrainer third-party command utilities forum
+  https://forums.knowbrainer.com/forum/third-party-command-utilities-vocola-unimacro-voicepower-python
+  see file announcement; save the new announcement at the top
+  seems to work better if you join rather than justify paragraphs
+
+
++done
+
+
+
+bump version number to next # + ALPHA
+git commit -a
+
+rebase Mark's branches as needed
+update ~/infra/bootstrap/my_install_Vocola.bat as needed
