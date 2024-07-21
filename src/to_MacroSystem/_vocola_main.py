@@ -6,7 +6,7 @@
 #    - Autoloading of changed command files
 #
 #
-# Copyright (c) 2020 by Mark Lillibridge.
+# Copyright (c) 2020-2024 by Mark Lillibridge.
 #
 # Copyright (c) 2012-2015 by Hewlett-Packard Development Company, L.P.
 #
