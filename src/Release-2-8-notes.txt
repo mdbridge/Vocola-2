@@ -1,6 +1,6 @@
 New in 2.8.8:
 
-! Changes needed to work with new NatLink 5.1.3+ installers <<<>>>
+* Made some changes needed to work with new NatLink 5.1.3+ installers
 
 * Attempting to use <_anything> as a command by itself now prints an
   error rather than crashing the compiler.

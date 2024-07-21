@@ -12,7 +12,7 @@ Merge any features still not merged
 delete those branches (later)
 
 #git log  beta --not HEAD
-git log HEAD --not 2.8.6
+git log HEAD --not 2.8.7
 
 check release notes complete
 
