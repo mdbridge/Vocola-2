@@ -11,12 +11,13 @@ git checkout master
 Merge any features still not merged
 delete those branches (later)
 
-#git log  beta --not HEAD
-git log HEAD --not 2.8.7
 
-check release notes complete
+Check release notes complete
+       # see what changed:
+     git log HEAD --not 2.8.7
 
-bump version number:
+
+Bump version number:
 
     make clean
 
@@ -44,19 +45,17 @@ bump version number:
 
     git commit -a
 
-bump copyright notices?
+Bump copyright notices?
 
     find . -type f -exec grep --color=always -H -i 'copyright' {} \; -print | grep -v .git
 
 
-#git log  beta --not HEAD
-#git branch -D beta
-
-make clean
-make
-cp build/Vocola.zip releases/Vocola-2-8-8.zip
-git add releases/Vocola-2-8-8.zip
-git commit -a
+Build the release:
+    make clean
+    make
+    cp build/Vocola.zip releases/Vocola-2-8-8.zip
+    git add releases/Vocola-2-8-8.zip
+    git commit -a
 
 
 
@@ -69,17 +68,17 @@ git commit -a
 # (cd ~/voice/NatLink/trunk; svn commit)
 
 
-
-git tag -a v2.8.8
+Tag then push the release:
+    git tag -a v2.8.8
 Version 2.8.8, released July 21, 2024
 
-git checkout master
-git push  
-git push origin --tags
+    git checkout master
+    git push  
+    git push origin --tags
 
 
 
-update Vocola website:
+Update Vocola website:
     cd ~/voice/Vocola_development/Vocola_net
     git pull
     cd src/v2
@@ -97,7 +96,7 @@ update Vocola website:
 
 
 
-draft then send out announcement to KnowBrainer third-party command utilities forum
+Draft then send out announcement to KnowBrainer third-party command utilities forum
   https://forums.knowbrainer.com/forum/third-party-command-utilities-vocola-unimacro-voicepower-python
   see file announcement; save the new announcement at the top
   seems to work better if you join rather than justify paragraphs
