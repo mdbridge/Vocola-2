@@ -1,668 +1,311 @@
-from __future__ import print_function
-
 import re
-import sys
 from vcl2py.ast import *
 from vcl2py.log import *
 
-def output(out_file, module_name, statements, definitions,
-           file_empty, should_emit_dictation_support,
-           extension_functions, params):
-    global NestedCallLevel
-    global VocolaVersion, Should_emit_dictation_support
-    global Module_name, Number_words, Definitions, Maximum_commands
-    global Extension_functions
+def output(out_file, grammar, params):
+    global Grammar, VocolaVersion
+    Grammar = grammar
+    VocolaVersion = params["Vocola_version"]
+    maximum_commands = params["maximum_commands"]
 
-    Module_name                   = module_name
-    Definitions                   = definitions
-    Should_emit_dictation_support = should_emit_dictation_support
-    Extension_functions           = extension_functions
-
-    VocolaVersion    = params["Vocola_version"]
-    Number_words     = params["number_words"]
-    Maximum_commands = params["maximum_commands"]
-
-    NestedCallLevel = 0
-
+    global OUT
     try:
-        if sys.version_info[0] < 3:
-            out = open(out_file, "w")
-        else:
-            out = open(out_file, "w", encoding="Windows-1252")
-    except IOError as e:
+        OUT = open(out_file, "w")
+    except IOError, e:
         log_error("Unable to open output file '" + out_file + \
                   "' for writing: " + str(e))
         return
-        
-    if not file_empty:
-        emit_output(out, statements)
-    else:
-        # note that we write an empty output file for modification time comparisons
-        log_warn("no commands in file.")
-        
-    out.close()
 
+    emit_file_header()
 
-def implementation_error(message):
-    log_error(message)
-    raise RuntimeError(message)    # <<<>>>
+    global Emitted_Rules
+    Emitted_Rules = set()
 
+    have_non_title_specific_commands = () in grammar["CONTEXTS"].keys()
+    rule_set = 0
+    for titles in sorted(grammar["CONTEXTS"].keys()):
+        rule_set_all      = str(rule_set) + "_set"
+        rule_set_repeated = str(rule_set) + "_set_repeated"
+        rule_set += 1
+        rule_names = grammar["CONTEXTS"][titles]
+        if titles != () and maximum_commands != 1 and have_non_title_specific_commands:
+            rule_names += ["0_set"]
+        grammar["RULES"][rule_set_all] = one_of(rule_names)
+        if maximum_commands == 1:
+            grammar["CONTEXTS"][titles] = [rule_set_all]
+        else:
+            grammar["RULES"][rule_set_repeated] = magic_with(
+                repeated_element(rule_ref(rule_set_all), maximum_commands), maximum_commands)
+            grammar["CONTEXTS"][titles] = [rule_set_repeated]
+
+    for titles in sorted(grammar["CONTEXTS"].keys()):
+        rule_names = grammar["CONTEXTS"][titles]
+        for rule_name in rule_names:
+            emit_rule(rule_name, grammar["RULES"][rule_name], True, titles) 
+        emit(0, "\n\n")
+
+    # <<<>>>
+    if len(Emitted_Rules) > 0:
+        emit_file_trailer()
+    OUT.close()
+
+def implementation_error(error):
+    log_error(error)
+    raise RuntimeError, error    # <<<>>>
+
+def magic_with(element, count):
+    rule = {}
+    rule["TYPE"] = "with"
+    rule["ELEMENT"] = element
+    rule["ACTIONS"] = [reference_action(i) for i in range(count,0, -1)]
+    return rule
+
+def reference_action(i):
+    action = {}
+    action["TYPE"] = "reference"
+    action["SLOT"] = i
+    return action
+
+def one_of(rule_names):
+    rule = {}
+    rule["TYPE"] = "alternatives"
+    rule["CHOICES"] = [rule_ref(rule_name) for rule_name in rule_names]
+    return rule
+
+def rule_ref(rule_name):
+    rule = {}
+    rule["TYPE"] = "rule_reference"
+    rule["NAME"] = rule_name
+    return rule
+
+def repeated_element(element, count):
+    if count == 1:
+        return slotted_element(element, count)
+    rule = {}
+    rule["TYPE"] = "sequence"
+    rule["ELEMENTS"] = [slotted_element(element, count), 
+                        optional_element(repeated_element(element, count - 1))]
+    return rule
+
+def slotted_element(element, slot):
+    rule = {}
+    rule["TYPE"] = "slot"
+    rule["NUMBER"] = slot
+    rule["ELEMENT"] = element
+    return rule
+
+def optional_element(element):
+    rule = {}
+    rule["TYPE"] = "optional"
+    rule["ELEMENT"] = element
+    return rule
 
 
 # ---------------------------------------------------------------------------
 # Emit NatLink output
 
-def emit_output(out, statements):
-    global Should_emit_dictation_support, OUT
-    OUT = out
-    emit_file_header()
-    if Should_emit_dictation_support: emit_dictation_grammar()
-    for statement in statements:
-        type = statement["TYPE"]
-        if   type == "definition": emit_definition_grammar (statement)
-        elif type == "command":    emit_command_grammar (statement)
-    emit_sequence_and_context_code(statements)
-    emit_number_words()
-    for statement in statements:
-        type = statement["TYPE"]
-        if    type == "definition": emit_definition_actions (statement)
-        if    type == "function":   pass
-        elif type == "command":     emit_top_command_actions (statement)
-    emit_file_trailer()
-
-def emit_sequence_and_context_code(statements):
-    # Build a list of context statements, and commands defined in each
-    noop     = None
-    context  = None
-    contexts = []
-    for statement in statements:
-        type = statement["TYPE"]
-        if type == "context":
-            context = statement
-            strings = context["STRINGS"]
-            if strings[0] == "":   # <<<>>>
-                # no-op context restriction
-                if noop != None:
-                    context = noop
-                else:
-                    noop = context
-                    context["RULENAMES"] = []
-                    contexts.append(context)
-            else:
-                context["RULENAMES"] = []
-                contexts.append(context)
-        elif type == "command":
-            context["RULENAMES"].append(statement["NAME"])
-    emit_sequence_rules(contexts)
-    emit_file_middle()
-    emit_context_activations(contexts)
-
-def emit_sequence_rules(contexts):
-    global Maximum_commands
-    # Emit rules allowing speaking a sequence of commands
-    # (and add them to the RULENAMES for the context in question)
-    number = 0
-    any = ""
-    for context in contexts:
-        names = context["RULENAMES"]
-        if len(names) == 0: continue
-        number += 1
-        suffix = ""
-        rules = '<' + '>|<'.join(names) + '>'
-        strings = context["STRINGS"]
-        if strings[0] == "":
-            emit(2, "<any> = " + rules + ";\n")
-            any = "<any>|"
-        else:
-            suffix = "_set" + str(number)
-            emit(2, "<any" + suffix + "> = " + any + "" + rules + ";\n")
-        rule_name = "sequence" + suffix
-        context["RULENAMES"] = [rule_name]
-        emit(2, "<" + rule_name + "> exported = " +
-                repeated_upto("<any" + suffix + ">", Maximum_commands) + ";\n")
-
-def repeated_upto(spec, count):
-    # Create grammar for a spec repeated 1 upto count times
-    if count>99: return spec + "+"
-
-    result = spec
-    while count > 1:
-        result = spec + " [" + result + "]"
-        count = count - 1
-    return result
-
-def emit_context_activations(contexts):
-    app = Module_name
-    module_is_global = (app.startswith("_"))
-
-    if module_is_global:
-        for context in contexts:
-            names = context["RULENAMES"]
-            if len(names) == 0: continue
-            strings = context["STRINGS"]
-            if strings[0] == "":
-                emit(2, "self.activate('" + names[0] + "')\n")
-
-    emit_file_middle2()
-
-    emit(0, "\n    def gotBegin(self,moduleInfo):\n")
-    emit(2, "self.firstWord = 0\n")
-    if module_is_global:
-        emit(2, "window = moduleInfo[2]\n")
-    else:
-        emit(2, "# Return if wrong application\n")
-        executable = app
-        emit(2, "window = matchWindow(moduleInfo,'" + executable + "','')\n")
-        while executable.find("_") != -1:
-            match = re.match(r'^(.+?)_+[^_]*$', executable)
-            if not match: break
-            executable = match.group(1)
-            emit(2, "if not window: window = matchWindow(moduleInfo,'" + \
-                    executable + "','')\n")
-        emit(2, "if not window: return None\n")
-
-    emit(2, "# Return if same window and title as before\n")
-    emit(2, "if moduleInfo == self.currentModule: return None\n")
-    emit(2, "self.currentModule = moduleInfo\n\n")
-
-    # Emit code to activate the context's commands iff one of the context
-    # strings matches the current window
-    emit(2, "title = moduleInfo[1].lower()\n")
-    for context in contexts:
-        names = context["RULENAMES"]
-        if len(names) == 0: continue
-        targets = context["STRINGS"]
-        if targets[0] == "":
-            if not module_is_global:
-                emit(2, "self.activate_rule('" + names[0] + "', moduleInfo[2], True)\n")
-        else:
-            targets = [make_safe_python_string(target) for target in targets]
-            tests = " or ".join(["str.find(title,'" + target + "') >= 0" for target in targets])
-            emit(2, "status = (" + tests + ")\n")
-            emit(2, "self.activate_rule('" + names[0] + "', moduleInfo[2], status)\n")
-    emit(0, "\n")
-
-
-def emit_dictation_grammar():
-    emit(2, "<dgndictation> imported;\n")
-
-def emit_definition_grammar(definition):
-    emit(2, "<" + definition["NAME"] + "> = ")
-    emit_menu_grammar (definition["MENU"]["COMMANDS"])
-    emit(0, ";\n")
-
-def emit_command_grammar(command):
-    inline_a_term_if_nothing_concrete(command)
-    (first, last) = find_terms_for_main_rule(command)
-    terms = command["TERMS"]
-    main_terms = terms[first:last+1]
-    name = command["NAME"]
-    name_a = name + "a"
-    name_b = name + "b"
-    if first > 0: main_terms = [create_variable_node(name_a)] + main_terms
-    if last < len(terms)-1: main_terms.append(create_variable_node(name_b))
-    emit_rule(command["NAME"], "", main_terms)
-    if first > 0: emit_rule(name_a, "", terms[0:first])
-    if last < len(terms)-1: emit_rule(name_b, "", terms[last+1:])
-
-def emit_rule(name, exported, terms):
-    emit(2, "<" + name + ">" + exported + " = ")
-    emit_command_terms(terms)
-    emit(0, ";\n")
-
-def emit_command_terms(terms):
-    for term in terms:
-        if term.get("OPTIONAL", False): emit(0, "[ ")
-        if term["TYPE"] == "word":
-            word = term["TEXT"].replace("\\", "\\\\")
-            if word.find("'") != -1: emit(0, '"' + word + '" ')
-            else:               emit(0, "'" + word + "' ")
-        elif term["TYPE"] == "dictation": emit(0, "<dgndictation> ")
-        elif term["TYPE"] == "variable":  emit_variable_term(term)
-        elif term["TYPE"] == "range":     emit_range_grammar(term)
-        elif term["TYPE"] == "menu":
-            emit(0, "(")
-            emit_menu_grammar(term["COMMANDS"])
-            emit(0, ") ")
-        if term.get("OPTIONAL", False): emit(0, "] ")
-
-def emit_variable_term(term):
-    text = term["TEXT"]
-    emit(0, "<" + text + "> ")
-
-def emit_menu_grammar(commands):
-    emit_command_terms(commands[0]["TERMS"])
-    for command in commands[1:]:
-        emit(0, "| ")
-        emit_command_terms(command["TERMS"])
-
-def emit_range_grammar(range_term):
-    i  = range_term["FROM"]
-    to = range_term["TO"]
-    emit(0, "(" + emit_number_word(i))
-    for i in range(i+1,to+1):
-        emit(0, " | " + emit_number_word(i))
-    emit(0, ") ")
-
-def emit_number_word(i):
-    global Number_words
-    if i in Number_words:
-        return "'" + Number_words[i] + "'"
-    return str(i)
-
-def emit_number_words():
-    global Number_words
-    emit(1, "def convert_number_word(self, word):\n")
-
-    if len(Number_words) == 0:
-        emit(2, "return word\n\n")
+def emit_rule(rule_name, rule, top_level, titles):
+    global Emitted_Rules
+    if rule_name in Emitted_Rules:
         return
-    elif_keyword = "if  "
-    numbers = list(Number_words.keys())
-    numbers.sort()
-    for number in numbers:
-        emit(2, elif_keyword + " word == '" + Number_words[number]+ "':\n")
-        emit(3, "return '" + str(number) + "'\n")
-        elif_keyword = "elif"
-    emit(2, "else:\n")
-    emit(3, "return word\n\n")
+    Emitted_Rules.add(rule_name)
+    # the next line emits as a side effect any rules we are dependent on:
+    element_code = [code_for_element(rule)]
+    rule_class = "ExportedRule" if top_level else "Rule"
+    if top_level:
+        element_code = [code_for_context(titles)] + element_code
+    element_code = [make_string(rule_name)] + element_code
+    rule_variable = "rule_" + rule_name
+    rule_code = make_assignment(rule_variable, make_call(rule_class, element_code))
+    emit_code(rule_code)
+    if top_level:
+        emit(0, "grammar.add_rule(" + rule_variable + ")\n")
 
-def emit_definition_actions(definition):
-    emit(1,
-         "def get_" + definition["NAME"] + "(self, list_buffer, functional, word):\n")
-    emit_menu_actions("list_buffer", "functional", definition["MENU"], 2)
-    emit(2, "return list_buffer\n\n")
+  # this reuses the same variable so use the result immediately
+def code_for_context(titles):
+    context_variable = "context"
+    executables = Grammar["EXECUTABLE"]
+    high_priority = len(executables) > 0 or titles != ()
+    text = context_variable + " = Context(executables=" + \
+        make_python_list(executables) + ",titles=" + \
+        make_python_list(titles) + \
+        (",high_priority=True" if high_priority else "") + \
+        ")\n"
+    emit(0, text)
+    return make_variable(context_variable)
 
-def emit_top_command_actions(command):
-    global Variable_terms, OUT
-    terms = command["TERMS"]
-    nterms = len(terms)
-    function = "gotResults_" + command["NAME"]
-    Variable_terms = get_variable_terms(terms) # used in emit_reference
+def make_python_list(strings):
+    return "[" + ",".join('"' + make_safe_python_string(s) + '"' for s in strings) + "]"
 
-    command_specification = unparse_terms(0, terms)
-
-    emit(1, "# ")
-    print(unparse_terms (0, terms), end='', file=OUT)
-    emit(0, "\n")
-    emit(1, "def " + function + "(self, words, fullResults):\n")
-    emit(2, "if self.firstWord<0:\n")
-    emit(3, "return\n")
-    emit_optional_term_fixup(terms)
-    emit(2, "try:\n")
-    emit(3, "top_buffer = ''\n")
-    emit_actions("top_buffer", "False", command["ACTIONS"], 3)
-    emit_flush("top_buffer", "False", 3)
-    emit(3, "self.firstWord += " + str(nterms) + "\n")
-
-    # If repeating a command with no <variable> terms (e.g. "Scratch That
-    # Scratch That"), our gotResults function will be called only once, with
-    # all recognized words. Recurse!
-    if not has_variable_term(terms):
-        emit(3, "if len(words) > " + str(nterms) + ": self." + function + \
-                "(words[" + str(nterms) + ":], fullResults)\n")
-    emit(2, "except Exception as e:\n")
-    file = command["FILE"]
-    emit(3, "handle_error('" + make_safe_python_string(file) +
-            "', " + str(command["LINE"]) + ", '" +
-            make_safe_python_string(command_specification) +
-            "', e)\n")
-    emit(3, "self.firstWord = -1\n")
-    emit(0, "\n")
-
-def emit_flush(buffer, functional, indent):
-    emit(indent, buffer + " = do_flush(" + functional + ", " + buffer + ");\n")
-
-def has_variable_term(unnamed):
-    for term in unnamed:
-        if term["TYPE"] == "variable" or term["TYPE"] == "dictation": return 1
-    return 0
-
-# Our indexing into the "fullResults" array assumes all optional terms were
-# spoken.  So we emit code to insert a dummy entry for each optional word
-# that was not spoken.  (The strategy used could fail in the uncommon case
-# where an optional word is followed by an identical required word.)
-
-def emit_optional_term_fixup(unnamed):
-    for term in unnamed:
-        index = term["NUMBER"]
-        if term.get("OPTIONAL", False):
-            text = term["TEXT"]
-            emit(2, "opt = " + str(index) + " + self.firstWord\n")
-            emit(2, "if opt >= len(fullResults) or fullResults[opt][0] != '" + text + "':\n")
-            emit(3, "fullResults.insert(opt, 'dummy')\n")
-        elif term["TYPE"] == "dictation":
-            emit(2, "fullResults = combineDictationWords(fullResults)\n")
-            emit(2, "opt = " + str(index) + " + self.firstWord\n")
-            emit(2, "if opt >= len(fullResults) or fullResults[opt][1] != 'converted dgndictation':\n")
-            emit(3, "fullResults.insert(opt, ['', 'converted dgndictation'])\n")
-
-def emit_actions(buffer, functional, actions, indent):
-    for action in actions:
-        type = action["TYPE"]
-        if type == "reference":
-            emit_reference(buffer, functional, action, indent)
-        elif type == "formalref":
-            implementation_error("Not all formal references transformed away")
-        elif type == "word":
-            safe_text = make_safe_python_string(action["TEXT"])
-            emit(indent, buffer + " += '" + safe_text + "'\n")
-        elif type == "call":
-            emit_call(buffer, functional, action, indent)
-        else:
-            implementation_error("Unknown action type: '" + type + "'")
-
-def emit_reference(buffer, functional, action, indent):
-    global Variable_terms
-    reference_number = int(action["TEXT"]) - 1
-    variable         = Variable_terms[reference_number]
-    term_number      = variable["NUMBER"]
-    emit(indent, "word = fullResults[" + str(term_number) + " + self.firstWord][0]\n")
-    if variable["TYPE"] == "menu":
-        emit_menu_actions(buffer, functional, variable, indent)
-    elif variable["TYPE"] == "range":
-        emit(indent, buffer + " += self.convert_number_word(word)\n")
-    elif variable["TYPE"] == "dictation":
-        emit(indent, buffer + " += word\n")
-    elif variable["TYPE"] == "variable":
-        function = "self.get_" + variable["TEXT"]
-        emit(indent, buffer + " = " + function + "(" + buffer + ", " + \
-                     functional + ", word)\n")
-
-def emit_menu_actions(buffer, functional, menu, indent):
-    if not menu_has_actions(menu):
-        if menu_is_range(menu):
-            emit(indent, buffer + " += self.convert_number_word(word)\n")
-        else:
-            emit(indent, buffer + " += word\n")
+def code_for_element(element):
+    type = element["TYPE"]
+    if type == "terminal":
+        return make_call("Term", [make_string(element["TEXT"])])
+    elif type == "dictation":
+        return make_call("Dictation", [])
+    elif type == "rule_reference":
+        referenced = element["NAME"]
+        emit_rule(referenced, Grammar["RULES"][referenced], False, None)
+        return make_call("RuleRef", [make_variable("rule_" + referenced)])
+    elif type == "optional":
+        element_code = code_for_element(element["ELEMENT"])
+        return make_call("Opt", [element_code])
+    elif type == "alternatives":
+        codes = [make_list([code_for_element(e) for e in element["CHOICES"]])]
+        return make_call("Alt", codes)
+    elif type == "sequence":
+        codes = [make_list([code_for_element(e) for e in element["ELEMENTS"]])]
+        return make_call("Seq", codes)
+    elif type == "slot":
+        element_code = code_for_element(element["ELEMENT"])
+        return make_call("Slot", [element_code, make_integer(element["NUMBER"])])
+    elif type == "with":
+        element_code = code_for_element(element["ELEMENT"])
+        actions_code = code_for_actions(element["ACTIONS"])
+        return make_call("With", [element_code, actions_code])
+    elif type == "without":
+        element_code = code_for_element(element["ELEMENT"])
+        return make_call("Without", [element_code])
     else:
-        commands = flatten_menu(menu)
-        if_keyword = "if"
-        for command in commands:
-            text = command["TERMS"][0]["TEXT"]
-            text = text.replace("\\", "\\\\")
-            text = text.replace("'", "\\'")
-            emit(indent, if_keyword + " word == '" + text + "':\n")
-            if "ACTIONS" in command:
-                if len(command["ACTIONS"]) != 0:
-                    emit_actions(buffer, functional,
-                                 command["ACTIONS"], indent+1)
-                else:
-                    emit(indent+1, "pass  # no actions\n")
-            else:
-                emit(indent+1, buffer + " += '" + text + "'\n")
-            if_keyword = "elif"
+        implementation_error("code_for_element: unknown element type: " + type)
 
-def emit_call(buffer, functional, call, indent):
-    callType = call["CALLTYPE"]
-    begin_nested_call()
-    if   callType == "dragon":
-        emit_dragon_call(buffer, functional, call, indent)
-    elif callType == "extension":
-        emit_extension_call(buffer, functional, call, indent)
-    elif callType == "user"     :
-        implementation_error("No user function call should be present here!")
-    elif callType == "vocola":
-        callName = call["TEXT"]
-        if    callName == "Eval":
-            implementation_error("Eval not transformed away")
-        elif callName == "EvalTemplate":
-            emit_call_eval_template(buffer, functional, call, indent)
-        elif callName == "If":
-            emit_call_if(buffer, functional, call, indent)
-        elif callName == "Repeat":
-            emit_call_repeat(buffer, functional, call, indent)
-        elif callName == "Unimacro":
-            emit_call_Unimacro(buffer, functional, call, indent)
-        elif callName == "When":
-            emit_call_when(buffer, functional, call, indent)
-        else: implementation_error("Unknown Vocola function: '" + callName + "'")
-    else: implementation_error("Unknown function call type: '" + callType + "'")
-    end_nested_call()
+def code_for_actions(actions):
+    return make_list([code_for_action(action) for action in actions])
 
-def begin_nested_call():
-    global NestedCallLevel
-    NestedCallLevel += 1
-
-def end_nested_call():
-    global NestedCallLevel
-    NestedCallLevel -= 1
-
-def get_nested_buffer_name(root):
-    global NestedCallLevel
-    if NestedCallLevel == 1:
-        return root
+def code_for_action(action):
+    type = action["TYPE"]
+    if type == "text":
+        return make_string(action["TEXT"])
+    elif type == "reference":
+        return make_call("Ref", [make_integer(action["SLOT"])])
+    elif type == "call":
+        return code_for_call(action)
+    elif type == "catch":
+        return code_for_catch(action)
     else:
-        return root + str(NestedCallLevel)
+        implementation_error("Unknown action type: '" + type + "'")
 
-def emit_call_repeat(buffer, functional, call, indent):
-    arguments = call["ARGUMENTS"]
+def code_for_call(call):
+    call_type = call["CALLTYPE"]
+    name_code = [make_string(call["NAME"])]
+    module_code = []
+    if "MODULE" in call.keys():
+        module_code = [make_string(call["MODULE"])]
+    argument_code = [code_for_actions(a) for a in call["ARGUMENTS"]]
+    codes = module_code + name_code + argument_code
+    return make_call(call_type_name(call_type), codes)
 
-    argument_buffer = get_nested_buffer_name("limit")
-    emit(indent, argument_buffer + " = ''\n")
-    emit_actions(argument_buffer, "True", arguments[0], indent)
-    emit(indent, "for i in range(to_long(" + argument_buffer + ")):\n")
-    emit_actions(buffer, functional, arguments[1], indent+1)
-
-def emit_call_if(buffer, functional, call, indent):
-    arguments = call["ARGUMENTS"]
-
-    argument_buffer = get_nested_buffer_name("conditional_value")
-    emit(indent, argument_buffer + " = ''\n")
-    emit_actions(argument_buffer, "True", arguments[0], indent)
-    emit(indent, "if " + argument_buffer + ".lower() == \"true\":\n")
-    emit_actions(buffer, functional, arguments[1], indent+1)
-    if len(arguments)>2:
-        emit(indent, "else:\n")
-        emit_actions(buffer, functional, arguments[2], indent+1)
-
-def emit_call_when(buffer, functional, call, indent):
-    arguments = call["ARGUMENTS"]
-
-    argument_buffer = get_nested_buffer_name("when_value")
-    emit(indent, argument_buffer + " = ''\n")
-    emit_actions(argument_buffer, "True", arguments[0], indent)
-    emit(indent, "if " + argument_buffer + " != \"\":\n")
-    emit_actions(buffer, functional, arguments[1], indent+1)
-    if len(arguments)>2:
-        emit(indent, "else:\n")
-        emit_actions(buffer, functional, arguments[2], indent+1)
-
-def emit_arguments(call, name, indent):
-    arguments = ""
-
-    i=0
-    for argument in call["ARGUMENTS"]:
-        if i != 0:  arguments += ", "
-        i += 1
-        argument_buffer = get_nested_buffer_name(name) + "_arg" + str(i)
-        emit(indent, argument_buffer + " = ''\n")
-        emit_actions(argument_buffer, "True", argument, indent)
-        arguments += argument_buffer
-    return arguments
-
-def emit_dragon_call(buffer, functional, call, indent):
-    callName  = call["TEXT"]
-    argumentTypes = call["ARGTYPES"]
-
-    emit_flush(buffer, functional, indent)
-    arguments = emit_arguments(call, "dragon", indent)
-    emit(indent, "saved_firstWord = self.firstWord\n")
-    emit(indent,
-         "call_Dragon('" + callName + "', '" + argumentTypes + "', [" + arguments + "])\n")
-    emit(indent, "self.firstWord = saved_firstWord\n")
-
-def emit_extension_call(buffer, functional, call, indent):
-    global Extension_functions
-    callName      = call["TEXT"]
-    callFormals   = Extension_functions[callName]
-    needsFlushing = callFormals[2]
-    import_name   = callFormals[3]
-    function_name = callFormals[4]
-
-    if needsFlushing:  emit_flush(buffer, functional, indent)
-    arguments = emit_arguments(call, "extension", indent)
-    emit(indent, "import " + import_name + "\n")
-    if needsFlushing:
-        emit(indent, function_name + "(" + arguments + ")\n")
+def call_type_name(call_type):
+    if call_type == "dragon":
+        return "DragonCall"
+    elif call_type == "vocola":
+        return "VocolaCall"
+    elif call_type == "extension_routine":
+        return "ExtRoutine"
+    elif call_type == "extension_procedure":
+        return "ExtProc"
     else:
-        emit(indent, buffer + " += str(" + function_name + "(" + arguments + "))\n")
+        implementation_error("Unknown call type: '" + call_type + "'")
 
-def emit_call_eval_template(buffer, functional, call, indent):
-    arguments = emit_arguments(call, "eval_template", indent)
-    emit(indent, buffer + " += eval_template(" + arguments + ")\n")
+def code_for_catch(catch):
+    body = code_for_actions(catch["ACTIONS"])
+    return make_call("CatchAction", [make_string(catch["SPEC"]), 
+                                     make_string(catch["FILE"]),  
+                                     make_integer(catch["LINE"]), 
+                                     body])
 
-def emit_call_Unimacro(buffer, functional, call, indent):
-    emit_flush(buffer, functional, indent)
-    arguments = emit_arguments(call, "unimacro", indent)
-    emit(indent, "call_Unimacro(" + arguments + ")\n")
 
 # ---------------------------------------------------------------------------
-# Utilities for transforming command terms into NatLink rules
+# Code for emitting pretty printed Python code
+
 #
-# For each Vocola command, we define a NatLink rule and an associated
-# "gotResults" function. When the command is spoken, we want the gotResults
-# function to be called exactly once. But life is difficult -- NatLink calls a
-# gotResults function once for each contiguous sequence of spoken words
-# specifically present in the associated rule. There are two problems:
+# These are used to generate *code*, which can be later pretty printed:
 #
-# 1) If a rule contains only references to other rules, it won't be called
+
+def make_variable(variable):
+    return make_leaf(variable)
+
+def make_integer(number):
+    return make_leaf(str(number))
+
+def make_string(text):
+    return make_leaf('"' + make_safe_python_string(text) + '"')
+    
+def make_list(codes):
+    return make_branch("[", "]", codes)
+
+def make_call(name, codes):
+    return make_branch(name + "(", ")", codes)
+
+def make_assignment(variable, code):
+    return add_prefix(variable + " = ", code)
+
+
 #
-# We solve this by "inlining" variables (replacing a variable term with the
-# variable's definition) until the command is "concrete" (all branches contain
-# a non-optional word).
+# These are the underlying primitives used by the above
 #
-# 2) If a rule is "split" (e.g. "Kill <n> Words") it will be called twice
-#
-# We solve this by generating two rules, e.g.
-#    <1> exported = 'Kill' <n> <1a> ;
-#    <1a> = 'Words' ;
 
-def find_terms_for_main_rule(command):
-    # Create a "variability profile" summarizing whether each term is
-    # concrete (c), variable (v), or optional (o). For example, the
-    # profile of "[One] Word <direction>" would be "ocv". (Menus are
-    # assumed concrete, and dictation variables are treated like
-    # normal variables.)
+Indent = 2
+Separator = ", "
 
-    pattern = ""
-    for term in command["TERMS"]:
-        if term["TYPE"] == "variable" or term["TYPE"] == "dictation":
-            pattern += "v"
-        elif term.get("OPTIONAL", False):
-            pattern += "o"
-        else:
-            pattern += "c"
-    # Identify terms to use for main rule.
-    # We might not start with the first term. For example:
-    #     [Move] <n> Left  -->  "Left" is the first term to use
-    # We might not end with the last term. For example:
-    #     Kill <n> Words   -->  "Kill" is the last term to use
-    # And in this combined example, our terms would be "Left and Kill"
-    #     [Move] <n> Left and Kill <n> Words
+def make_leaf(text):
+    return (text, len(text), 0)
 
-    match = re.match(r'v*o+v[ov]*c', pattern)
-    if match:
-        first = match.end(0)-1
-    else:
-        first = 0
+def make_branch(head_text, tail_text, codes):
+    size = len(head_text) + len(tail_text)
+    depth = 1
+    if len(codes) > 0:
+        depth = max(c[2] for c in codes) + 1
+        size = size + len(Separator)*(len(codes)-1) + \
+            sum(c[1] for c in codes)
+    return ([head_text, tail_text, codes], size, depth)
 
-    match = re.match(r'([ov]*c[co]*)v+[co]+', pattern)
-    if match:
-        last = match.end(1)-1
-    else:
-        last = len(pattern)-1
-
-    return (first, last)
-
-def inline_a_term_if_nothing_concrete(command):
-    while not command_has_a_concrete_term(command):
-        inline_a_term(command)
-
-def command_has_a_concrete_term(command):
-    for term in command["TERMS"]:
-        if term_is_concrete(term): return True
-    return False
-
-def term_is_concrete(term):
-    type = term["TYPE"]
-    if   type == "menu":                            return True
-    elif type == "variable" or type == "dictation": return False
-    else: return not term["OPTIONAL"]
-
-def inline_a_term(unnamed):
-    global Definitions
-    terms = unnamed["TERMS"]
-
-    # Find the array index of the first non-optional term
-    index = 0
-    while (index < len(terms)) and (terms[index]["OPTIONAL"] or terms[index]["TYPE"] == "dictation"):
-    	  index += 1
-    if index == len(terms):
-        implementation_error("Attempting to process a command without a concrete term or inline-able term")
-
-    type = terms[index]["TYPE"]
-    number = terms[index]["NUMBER"]
-    if type == "variable":
-        variable_name = terms[index]["TEXT"]
-        #print "inlining variable $variable_name\n";
-        definition = Definitions[variable_name]
-        terms[index] = definition["MENU"]
-        terms[index]["NUMBER"] = number
-    elif type == "menu":
-        for command in terms[index]["COMMANDS"]:
-            inline_a_term(command)
-    else: implementation_error("Inlining term of type '" + type + "'")
-
-# ---------------------------------------------------------------------------
-# Utilities used by "emit" methods
-
-def emit(indent, text):
-    global OUT
-    OUT.write(' ' * (4 * indent) + text)
-
-def menu_has_actions(menu):
-    for command in menu["COMMANDS"]:
-        if "ACTIONS" in command: return True
-        for term in command["TERMS"]:
-            if term["TYPE"] == "menu" and menu_has_actions(term): return True
-    return False
-
-def menu_is_range(menu):  # verified menu => can contain only 1 range as a 1st term
-    commands = menu["COMMANDS"]
-    for command in commands:
-        terms = command["TERMS"]
-        type = terms[0]["TYPE"]
-        if type == "menu" and menu_is_range(terms[0]):  return True
-        if type == "range":  return True
-    return False
-
-# To emit actions for a menu, build a flat list of (canonicalized) commands:
-#     - recursively extract commands from nested menus
-#     - distribute actions, i.e. (day|days)=d --> (day=d|days=d)
-# Note that error checking happened during parsing, in verify_referenced_menu
-
-def flatten_menu(menu, actions_to_distribute=[]):
-    new_commands = []
-    for command in menu["COMMANDS"]:
-        if "ACTIONS" in command: new_actions = command["ACTIONS"]
-        else:                          new_actions = actions_to_distribute
-        terms = command["TERMS"]
-        type = terms[0]["TYPE"]
-        if type == "word":
-            if new_actions: command["ACTIONS"] = new_actions
-            new_commands.append(command)
-        elif type == "menu":
-            commands = flatten_menu (terms[0], new_actions)
-            new_commands.extend(commands)
-    return new_commands
+def add_prefix(text, code):
+    info, size, depth = code
+    if isinstance(info, str):
+        return (text + info, size + len(text), depth)
+    head_text, tail_text, codes = info
+    return ([text + head_text, tail_text, codes], size + len(text), depth)
 
 def make_safe_python_string(text):
     text = text.replace("\\", "\\\\")
     text = text.replace("'", "\\'")
+    text = text.replace("\"", "\\\"")
     text = text.replace("\n", "\\n")
-
     return text
+
+
+#
+# Actual code for emitting
+#
+
+Wrap_column = 100
+
+def emit_code(code, indent=0, trailer=""):
+    #emit(0, flatten_code(code) + "\n")
+    #return
+    info, size, depth = code
+    if isinstance(info, str) or indent*Indent + size < Wrap_column:
+        emit(indent, flatten_code(code) +  trailer + "\n")
+        return
+    head_text, tail_text, codes = info
+    emit(indent, head_text + "\n")
+    for code in codes:
+        emit_code(code, indent + 1, ",")
+    emit(indent, tail_text +  trailer + "\n")
+
+def flatten_code(code):
+    info = code[0]
+    if isinstance(info, str):
+        return info
+    head_text, tail_text, codes = info
+    return head_text + Separator.join([flatten_code(c) for c in codes]) + tail_text
+
+def emit(indent, text):
+    global OUT
+    OUT.write(' ' * (Indent * indent) + text)
+
+
 
 # ---------------------------------------------------------------------------
 # Pieces of the output Python file
@@ -672,56 +315,30 @@ def emit_file_header():
     from time import localtime, strftime
 
     now = strftime("%a %b %d %H:%M:%S %Y", localtime())
-    print("# NatLink macro definitions for NaturallySpeaking", file=OUT)
-    print("# coding: Windows-1252", file=OUT)
-    print("# Generated by vcl2py " + VocolaVersion + ", " + now, file=OUT)
-    print('''
-import string
-import natlink
-try:
-    from natlinkcore.natlinkutils import *
-except ImportError:
-    from natlinkutils import *
-from VocolaUtils import *
+    print >>OUT, "# NatLink macro definitions for NatLink"
+    print >>OUT, "# coding: Windows-1252"
+    print >>OUT, "# Generated by vcl2py " + VocolaVersion + ", " + now
+    print >>OUT, '''
+from __future__ import print_function
+
+from vocola_NatLink_runtime import *
 
 
-class ThisGrammar(GrammarBase):
+#
+# Our grammar's rules:
+#
 
-    gramSpec = """
-''', end='', file=OUT)
+grammar = Grammar(__file__)
 
-def emit_file_middle():
-    print('''    """
-    
-    def initialize(self):
-        self.load(self.gramSpec)
-        self.currentModule = ("","",0)
-        self.rule_state = {}
-''', end='', file=OUT)
 
-def emit_file_middle2():
-    print('''    
-    def activate_rule(self, rule, window, status):
-        current = self.rule_state.get(rule)
-        active = (current == window)
-        if status == active: return
-        if current:
-            self.deactivate(rule)
-            self.rule_state[rule] = None
-        if status:
-            try:
-                self.activate(rule, window)
-                self.rule_state[rule] = window
-            except natlink.BadWindow:
-                pass
-''', end='', file=OUT)
+''',
 
 def emit_file_trailer():
-    print('''thisGrammar = ThisGrammar()
-thisGrammar.initialize()
+    print >>OUT, '''
 
+grammar.load_grammar()
 def unload():
-    global thisGrammar
-    if thisGrammar: thisGrammar.unload()
-    thisGrammar = None
-''', end='', file=OUT)
+    global grammar
+    if grammar: grammar.unload_grammar()
+    grammar = None
+''',
