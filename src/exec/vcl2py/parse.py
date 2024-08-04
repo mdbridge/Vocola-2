@@ -34,7 +34,8 @@ def parse_input(in_file, in_folder, extension_functions, debug):
     Should_emit_dictation_support = False
     Statement_count               = 1
 
-    return parse_file(in_file), Definitions, Function_definitions, Statement_count, Should_emit_dictation_support, File_empty
+    return parse_file(in_file), Definitions, Function_definitions, Statement_count, \
+        Should_emit_dictation_support, File_empty
 
 
 # ---------------------------------------------------------------------------
@@ -466,8 +467,6 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
         terms = parse_terms(TOKEN_EQUALS)
     else:
         terms = parse_terms(separators | TOKEN_EQUALS)
-    if needs_actions:
-        check_can_get_concrete_term(terms)
 
     command          = {}
     command["TYPE"]  = "command"
@@ -483,21 +482,6 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
         command["ACTIONS"] = parse_actions(separators)
 
     return command
-
-def check_can_get_concrete_term(terms):
-    for term in terms:
-        if term_is_concrete_or_inlineable(term):
-            return True
-    return True # <<<>>>
-    # error("At least one term must not be optional or <_anything>",
-    #       terms[0]["POSITION"])
-
-def term_is_concrete_or_inlineable(term):
-    type = term["TYPE"]
-    if   type == "menu":      return True
-    elif type == "variable":  return True 
-    elif type == "dictation": return False
-    else: return not term["OPTIONAL"]
 
 def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
     starting_position = get_current_position()

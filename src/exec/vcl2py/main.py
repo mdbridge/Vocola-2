@@ -335,7 +335,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
             for name, function_definition in function_definitions.items():
                 print(unparse_function_definition(function_definition), end="", file=out)
             print("\nSTATEMENT_COUNT: " + str(statement_count), file=out)
-            print("FILE_EMPTY: " + str(file_empty), file=out)
+            print("\nFILE_EMPTY: " + str(file_empty), file=out)
         return logged_errors()
 
     # Prepend a "global" context statement if necessary
