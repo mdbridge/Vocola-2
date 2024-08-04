@@ -21,15 +21,17 @@ New in 2.9:
   This is a simple but conservative restriction that should be unlikely
   to kick in.  If needed, it will be loosened.
 
+* You may now use <_anything> as a command by itself; for example,
+    <_anything> = "You said '$1'!";
+  This will generally capture any dictation not caught by a more
+  specific command.
+
 * Optional parts of a command are no longer handled by creating versions
   of the command with and without the optional part.  Instead, the
   generated grammar now directly encodes the optionality without
   duplication; this should reduce grammar complexity.  For complicated
   sets of grammars, this can reduce the delay when switching windows by
   up to 6 times.
-
->* Attempting to use <_anything> as a command by itself now prints an
-  error rather than crashing the compiler.
 
 >* format_words...
 
