@@ -650,9 +650,8 @@ def split_out_references(word_node):
 
 def create_reference_node(n, position):
     global Debug, Variable_terms
-    if int(n) > len(Variable_terms):
+    if int(n) < 1 or int(n) > len(Variable_terms):
         error("Reference '$" + n + "' out of range", position)
-    term = Variable_terms[int(n) - 1]
     if Debug>=2: print_log("Found reference:  $" + n)
     action = {}
     action["TYPE"] = "reference"
