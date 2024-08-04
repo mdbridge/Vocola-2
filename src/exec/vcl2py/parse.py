@@ -34,7 +34,8 @@ def parse_input(in_file, in_folder, extension_functions, debug):
     Should_emit_dictation_support = False
     Statement_count               = 1
 
-    return parse_file(in_file), Definitions, Function_definitions, Statement_count, Should_emit_dictation_support, File_empty
+    return parse_file(in_file), Definitions, Function_definitions, Statement_count, \
+        Should_emit_dictation_support, File_empty
 
 
 # ---------------------------------------------------------------------------
@@ -356,7 +357,6 @@ def parse_variable_definition():    # definition = variable ':=' menu_body ';'
     eat(TOKEN_COLON_EQUALS)
     menu = parse_menu_body(TOKEN_SEMICOLON)
     eat(TOKEN_SEMICOLON)
-    verify_referenced_menu(menu)
     statement["MENU"] = menu
     if Debug>=1: print_log(unparse_definition (statement), True)
     return statement
@@ -466,8 +466,6 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
         terms = parse_terms(TOKEN_EQUALS)
     else:
         terms = parse_terms(separators | TOKEN_EQUALS)
-    if needs_actions:
-        check_can_get_concrete_term(terms)
 
     command          = {}
     command["TYPE"]  = "command"
@@ -481,23 +479,24 @@ def parse_command(separators, needs_actions=False): # command = terms ['=' actio
     if needs_actions or peek(TOKEN_EQUALS):
         eat(TOKEN_EQUALS)
         command["ACTIONS"] = parse_actions(separators)
+    else:
+        verify_no_need_actions(terms, False)
 
     return command
 
-def check_can_get_concrete_term(terms):
+def verify_no_need_actions(terms, other_terms):
+    if len(terms) != 1: other_terms = True
+    if not other_terms: return
     for term in terms:
-        if term_is_concrete_or_inlineable(term):
-            return True
-    return True # <<<>>>
-    # error("At least one term must not be optional or <_anything>",
-    #       terms[0]["POSITION"])
-
-def term_is_concrete_or_inlineable(term):
-    type = term["TYPE"]
-    if   type == "menu":      return True
-    elif type == "variable":  return True 
-    elif type == "dictation": return False
-    else: return not term["OPTIONAL"]
+        type = term["TYPE"]
+        if type == "variable":
+            error("Alternatives combining variables with other terms must be assigned actions",
+                  term["POSITION"])
+        elif type == "menu":
+            error("Alternatives combining inline lists with other terms must be assigned actions",
+                  term["POSITION"])
+        elif type == "optionalterms":
+            verify_no_need_actions(term["TERMS"], other_terms)
 
 def parse_terms(separators):    # <terms> ::= (<term> | '[' <terms> ']')+
     starting_position = get_current_position()
@@ -654,7 +653,6 @@ def create_reference_node(n, position):
     if int(n) > len(Variable_terms):
         error("Reference '$" + n + "' out of range", position)
     term = Variable_terms[int(n) - 1]
-    if term["TYPE"] == "menu": verify_referenced_menu(term)
     if Debug>=2: print_log("Found reference:  $" + n)
     action = {}
     action["TYPE"] = "reference"
@@ -829,57 +827,6 @@ def expand_variables(actions):
 
 # ---------------------------------------------------------------------------
 # Parse-time error checking of references
-
-def verify_referenced_menu(menu, parent_has_actions=False, parent_has_alternatives=False):
-    commands         = menu["COMMANDS"]
-    has_alternatives = parent_has_alternatives or (len(commands) != 1)
-
-    for command in commands:
-        has_actions = parent_has_actions
-        if "ACTIONS" in command:
-            has_actions = True
-            # <<<>>>
-            # if parent_has_actions:
-            #     error("Nested in-line lists with associated actions may not themselves contain actions",
-            #           menu["POSITION"])
-
-        terms = command["TERMS"]
-        verify_menu_terms(terms, has_actions, has_alternatives, False)
-
-def verify_menu_terms(terms, has_actions, has_alternatives, other_terms):
-    if len(terms) != 1: other_terms = True
-    for term in terms:
-        type = term["TYPE"]
-        if   type == "word" and term["OPTIONAL"]:
-            #error("Alternative cannot contain an optional word",
-            #      term["POSITION"])
-            implementation_error("Alternative cannot contain an optional word")
-        elif type == "optionalterms":
-            verify_menu_terms(term["TERMS"], has_actions, has_alternatives,
-                              other_terms)
-        elif type == "variable" or type == "dictation":
-	    continue # <<<>>>
-            error("Alternative cannot contain a variable", term["POSITION"])
-        elif type == "menu":
-            # <<<>>>
-            # if other_terms:
-            #     error("An inline list cannot be combined with anything else to make up an alternative",
-            #           term["POSITION"])
-            verify_referenced_menu(term, has_actions, has_alternatives)
-        elif type == "range":
-            # <<<>>>
-            # # allow a single range with no actions if it is the only
-            # # alternative in the (nested) set:
-            # if other_terms:
-            #     error("A range cannot be combined with anything else to make up an alternative",
-            #           term["POSITION"])
-            # if has_actions:
-            #     error("A range alternative may not have associated actions",
-            #           term["POSITION"])
-            # if has_alternatives:
-            #     error("A range alternative must be the only alternative in an alternative set",
-            #           term["POSITION"])
-            pass
 
 def add_forward_reference(variable, position):
     forward_reference = {}
