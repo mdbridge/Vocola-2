@@ -21,20 +21,21 @@ from VocolaUtils import (VocolaRuntimeError, VocolaRuntimeAbort,
 #   0: no verbose output
 #   1: basic output per command recognized
 #   2: output for most command execution steps, details of resulting actions from parse
-#   3: output for loading/unloading grammars and activating/deactivating rules
+#   3: output for loading/unloading grammars and activating/deactivating rules,
 #      output for EvalTemplate steps
 
-vocola_verbosity = 1
+# Initial verbosity:
+Vocola_verbosity = 0
 
 def get_vocola_verbosity():
-    return vocola_verbosity
+    return Vocola_verbosity
 
 def set_vocola_verbosity(level):
-    global vocola_verbosity
-    vocola_verbosity = level
+    global Vocola_verbosity
+    Vocola_verbosity = level
 
 def vlog(level, *args, **kwargs):
-    if level <= vocola_verbosity:
+    if level <= Vocola_verbosity:
         print(*args, **kwargs)
 
 
