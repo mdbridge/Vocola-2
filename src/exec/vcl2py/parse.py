@@ -824,6 +824,7 @@ def expand_variables(actions):
             implementation_error("unsupported action type in include actions")
     return result
 
+
 # ---------------------------------------------------------------------------
 # Parse-time error checking of references
 
@@ -848,11 +849,60 @@ def check_forward_references():
             Include_stack_line = forward_reference["STACK_LINE"]
             log_parse_error("Reference to undefined variable '<" + variable + ">'",
                             position)
-
+            
             Include_stack_file = stack_file
             Include_stack_line = stack_line
 
 
+# ---------------------------------------------------------------------------
+# Parse-time error checking of variable definitions
+
+def extract_menu_dependencies(menu):
+    result = set()
+    for command in menu["COMMANDS"]:
+        result.update(extract_command_dependencies(command))
+    return result
+
+def extract_command_dependencies(command):
+    return extract_terms_dependencies(command["TERMS"])
+
+def extract_terms_dependencies(terms):
+    result = set()
+    for term in terms:
+        if   term["TYPE"] == "optionalterms":
+            result.update(extract_terms_dependencies(term["TERMS"]))
+        elif term["TYPE"] == "variable":
+            result.add(term["TEXT"])
+        elif term["TYPE"] == "menu":
+            result.update(extract_menu_dependencies(term))
+    return result
+
+def check_variable_definitions():
+    global Definitions
+    depends_on = {}
+    for name, statement in Definitions.items():
+        menu = statement["MENU"]
+        depends_on[name] = extract_menu_dependencies(menu)
+    #print(repr(depends_on))
+
+    for name in Definitions:
+        if is_recursive_definition(name, depends_on):
+            log_parse_error("Variable <" + name + "> is defined (possibly indirectly) in terms of itself")
+
+def is_recursive_definition(name, depends_on):
+    marked = set()
+    def helper(dependencies):
+        for dependency in dependencies:
+            if dependency == name: return True
+            if dependency in marked: return False
+            if not dependency in Definitions: return False
+            marked.add(dependency)
+            if helper(depends_on[dependency]): return True
+        return False
+    return helper(depends_on[name])
+
+
+# ---------------------------------------------------------------------------
 
 import vcl2py.lex as lex
 lex.log_parse_error = log_parse_error  # temporary kludge

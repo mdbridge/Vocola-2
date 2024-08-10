@@ -13,7 +13,7 @@ from vcl2py.generate  import generate_grammar
 from vcl2py.iil       import unparse_grammar
 from vcl2py.lex       import initialize_token_properties
 from vcl2py.log       import *
-from vcl2py.parse     import parse_input, check_forward_references
+from vcl2py.parse     import parse_input, check_forward_references, check_variable_definitions
 from vcl2py.transform import transform
 
 
@@ -324,6 +324,7 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
         = parse_input(input_name, in_folder, extension_functions, Debug)
     if logged_errors() == 0:
         check_forward_references()
+        check_variable_definitions()
     if stage == "parse":
         with open(out_file, "w") as out:
             print("STATEMENTS:", file=out)
