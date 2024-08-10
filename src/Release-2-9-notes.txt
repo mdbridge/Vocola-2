@@ -5,7 +5,9 @@ New in 2.9:
   Those lists (e.g., <inner>) can in turn refer to other lists and so
   on.
 
-> Recursive loops are not allowed.
+* Lists may not be defined recursively; for example, the following is
+  not allowed:
+    <loop> := <loop>;
 
 ! List entries containing lists may refer to those lists in the usual
   way in any definitions of those entries; for example,
