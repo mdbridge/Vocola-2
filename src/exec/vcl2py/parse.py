@@ -19,7 +19,6 @@ def parse_input(in_file, in_folder, extension_functions, debug):
     global Included_files, Include_stack_file, Include_stack_line
     global Functions, Function_definitions, Definitions, Statement_count
     global Forward_references, Last_include_position
-    global Should_emit_dictation_support, File_empty
 
     Definitions                   = {}
     Functions                     = {}
@@ -30,12 +29,10 @@ def parse_input(in_file, in_folder, extension_functions, debug):
     Include_stack_file            = []  # short names (relative to In_folder)
     Include_stack_line            = []
     Last_include_position         = None
-    File_empty                    = True
     Should_emit_dictation_support = False
-    Statement_count               = 1
+    Statement_count               = 0
 
-    return parse_file(in_file), Definitions, Function_definitions, Statement_count, \
-        Should_emit_dictation_support, File_empty
+    return parse_file(in_file), Definitions, Function_definitions
 
 
 # ---------------------------------------------------------------------------
@@ -233,8 +230,8 @@ def parse_statements():    # statements = (context | top_command | definition)*
                 log_parse_error("Redefinition of <"+name+">", starting_position)
             Definitions[name] = statement
         elif statement["TYPE"] == "command":
-            statement["NAME"] = str(Statement_count)
             Statement_count += 1
+            statement["NAME"] = str(Statement_count)
 
         #print unparse_statements([statement]),
         if statement["TYPE"] != "include":
@@ -414,10 +411,9 @@ def parse_formals():    # formals = [name (',' name)*]
     return safe_formals
 
 def parse_top_command():    # top_command = terms '=' action* ';'
-    global Debug, File_empty
+    global Debug
     statement = parse_command(TOKEN_SEMICOLON, True)
     eat(TOKEN_SEMICOLON)
-    File_empty = False
     if Debug>=1: print_log(unparse_command (statement, True))
     return statement
 
