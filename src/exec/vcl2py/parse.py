@@ -881,7 +881,7 @@ def check_variable_definitions():
         depends_on[name] = extract_menu_dependencies(menu)
     #print(repr(depends_on))
 
-    for name in Definitions:
+    for name in sorted(Definitions.keys()):
         if is_recursive_definition(name, depends_on):
             log_parse_error("Variable <" + name + "> is defined (possibly indirectly) in terms of itself")
 
