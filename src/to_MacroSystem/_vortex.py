@@ -43,7 +43,7 @@ try:
 except ImportError:
     from natlinkutils import *
 import VocolaUtils
-from vocola_common_runtime import vlog
+from vocola_common_runtime import (vlog, verr)
 
 import vocola_ext_clipboard
 import vocola_ext_keys
