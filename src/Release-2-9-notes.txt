@@ -7,7 +7,7 @@ New in 2.9:
 
 * Lists may not be defined recursively; for example, the following is
   not allowed:
-    <loop> := <loop>;
+    <loop> := loop [<loop>];
 
 ! List entries containing lists may refer to those lists in the usual
   way in any definitions of those entries; for example,
@@ -71,22 +71,10 @@ New in 2.9:
 * There are currently two backends, one targeting NatLink directly and
   one targeting Dragonfly on NatLink.  Vocola is set up to use the first
   backend out-of-the-box.  The second backend has not been fully tested
-  yet and is known to have some limitations currently due to Dragonfly
-  issues (Dragonfly doesn't support multiple grammar priorities and has
-  issues with recognizing non-ASCII words).
-> double check dragonfly issues
+  yet and is known to have some limitations mostly due to Dragonfly
+  issues.  To be written before the final release: a description of these
+  limitations.
 
 * Grammar rules for unused lists are no longer emitted; this means there
   is no runtime overhead for including lists that you don't end up
   using.
-
-
-
-* stages...
-
-* Python 3 support
-
-* pretty print output?
-
-
-* testing
