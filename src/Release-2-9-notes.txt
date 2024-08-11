@@ -23,6 +23,13 @@ New in 2.9:
   This is a simple but conservative restriction that should be unlikely
   to kick in.  If needed, it will be loosened.
 
+* For clarity, runtime errors while executing an alternative in a list
+  now complain about that alternative rather than the the overall
+  command.  For example in the following,
+    test <thing> = $1;
+    <thing> := divide badly = Eval(0/0);
+  Vocola will complain about "divide badly" rather than "test <thing>".
+
 * You may now use <_anything> as a command by itself; for example,
     <_anything> = "You said '$1'!";
   This will generally capture any dictation not caught by a more
@@ -40,6 +47,13 @@ New in 2.9:
 
 ! Fixed bug where title-specific commands could prevent
   non-title-specific commands of the same grammar from working.
+
+* Vocola now has optional verbose debugging output for recognizing and
+  executing commands.  This can be helpful for figuring out which
+  command from where is being recognized, with which words, and what
+  steps are taken to execute it.  How long executing a command takes can
+  also be printed.  Initial verbosity level is zero (no output), but the
+  level can be changed using the Vocola extension.
 
 
 ! Vocola code generation has been rewritten to first produce a
@@ -69,12 +83,6 @@ New in 2.9:
 
 
 * stages...
-
-* error output listing which subcommand
-
-* ability to turn on verbose output for runtime
-  * dynamically changeable verbose level
-  * print out timing...
 
 * Python 3 support
 
