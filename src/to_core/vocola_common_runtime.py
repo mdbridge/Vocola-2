@@ -38,6 +38,11 @@ def vlog(level, *args, **kwargs):
     if level <= Vocola_verbosity:
         print(*args, **kwargs)
 
+def verr(level, *args, **kwargs):
+    if level <= Vocola_verbosity:
+        kwargs["file"] = sys.stderr
+        print(*args, **kwargs)
+
 
 ##
 ## Sending text
