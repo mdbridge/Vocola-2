@@ -176,7 +176,6 @@ class Modifier(Element):
 #
 
 def format_words(word_list):
-    # word_list = [word.encode('Windows-1252') for word in word_list]
     format_words2(word_list)  # for print side effect
     try:
         from natlink import nsformat

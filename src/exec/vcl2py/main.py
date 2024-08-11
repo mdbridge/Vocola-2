@@ -13,7 +13,7 @@ from vcl2py.generate  import generate_grammar
 from vcl2py.iil       import unparse_grammar
 from vcl2py.lex       import initialize_token_properties
 from vcl2py.log       import *
-from vcl2py.parse     import parse_input, check_forward_references
+from vcl2py.parse     import parse_input, check_forward_references, check_variable_definitions
 from vcl2py.transform import transform
 
 
@@ -319,11 +319,11 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
 
     if Debug>=1: print_log("\n==============================")
 
-    statements, definitions, function_definitions, statement_count, \
-        should_emit_dictation_support, file_empty \
+    statements, definitions, function_definitions \
         = parse_input(input_name, in_folder, extension_functions, Debug)
     if logged_errors() == 0:
         check_forward_references()
+        check_variable_definitions()
     if stage == "parse":
         with open(out_file, "w") as out:
             print("STATEMENTS:", file=out)
@@ -334,8 +334,6 @@ def convert_file(in_folder, in_file, out_folder, extension_functions, params):
             print("\nFUNCTIONS:", file=out)
             for name, function_definition in function_definitions.items():
                 print(unparse_function_definition(function_definition), end="", file=out)
-            print("\nSTATEMENT_COUNT: " + str(statement_count), file=out)
-            print("\nFILE_EMPTY: " + str(file_empty), file=out)
         return logged_errors()
 
     # Prepend a "global" context statement if necessary

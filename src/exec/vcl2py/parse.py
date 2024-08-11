@@ -19,7 +19,6 @@ def parse_input(in_file, in_folder, extension_functions, debug):
     global Included_files, Include_stack_file, Include_stack_line
     global Functions, Function_definitions, Definitions, Statement_count
     global Forward_references, Last_include_position
-    global Should_emit_dictation_support, File_empty
 
     Definitions                   = {}
     Functions                     = {}
@@ -30,12 +29,10 @@ def parse_input(in_file, in_folder, extension_functions, debug):
     Include_stack_file            = []  # short names (relative to In_folder)
     Include_stack_line            = []
     Last_include_position         = None
-    File_empty                    = True
     Should_emit_dictation_support = False
-    Statement_count               = 1
+    Statement_count               = 0
 
-    return parse_file(in_file), Definitions, Function_definitions, Statement_count, \
-        Should_emit_dictation_support, File_empty
+    return parse_file(in_file), Definitions, Function_definitions
 
 
 # ---------------------------------------------------------------------------
@@ -233,8 +230,8 @@ def parse_statements():    # statements = (context | top_command | definition)*
                 log_parse_error("Redefinition of <"+name+">", starting_position)
             Definitions[name] = statement
         elif statement["TYPE"] == "command":
-            statement["NAME"] = str(Statement_count)
             Statement_count += 1
+            statement["NAME"] = str(Statement_count)
 
         #print unparse_statements([statement]),
         if statement["TYPE"] != "include":
@@ -414,10 +411,9 @@ def parse_formals():    # formals = [name (',' name)*]
     return safe_formals
 
 def parse_top_command():    # top_command = terms '=' action* ';'
-    global Debug, File_empty
+    global Debug
     statement = parse_command(TOKEN_SEMICOLON, True)
     eat(TOKEN_SEMICOLON)
-    File_empty = False
     if Debug>=1: print_log(unparse_command (statement, True))
     return statement
 
@@ -650,9 +646,8 @@ def split_out_references(word_node):
 
 def create_reference_node(n, position):
     global Debug, Variable_terms
-    if int(n) > len(Variable_terms):
+    if int(n) < 1 or int(n) > len(Variable_terms):
         error("Reference '$" + n + "' out of range", position)
-    term = Variable_terms[int(n) - 1]
     if Debug>=2: print_log("Found reference:  $" + n)
     action = {}
     action["TYPE"] = "reference"
@@ -825,6 +820,7 @@ def expand_variables(actions):
             implementation_error("unsupported action type in include actions")
     return result
 
+
 # ---------------------------------------------------------------------------
 # Parse-time error checking of references
 
@@ -849,11 +845,60 @@ def check_forward_references():
             Include_stack_line = forward_reference["STACK_LINE"]
             log_parse_error("Reference to undefined variable '<" + variable + ">'",
                             position)
-
+            
             Include_stack_file = stack_file
             Include_stack_line = stack_line
 
 
+# ---------------------------------------------------------------------------
+# Parse-time error checking of variable definitions
+
+def extract_menu_dependencies(menu):
+    result = set()
+    for command in menu["COMMANDS"]:
+        result.update(extract_command_dependencies(command))
+    return result
+
+def extract_command_dependencies(command):
+    return extract_terms_dependencies(command["TERMS"])
+
+def extract_terms_dependencies(terms):
+    result = set()
+    for term in terms:
+        if   term["TYPE"] == "optionalterms":
+            result.update(extract_terms_dependencies(term["TERMS"]))
+        elif term["TYPE"] == "variable":
+            result.add(term["TEXT"])
+        elif term["TYPE"] == "menu":
+            result.update(extract_menu_dependencies(term))
+    return result
+
+def check_variable_definitions():
+    global Definitions
+    depends_on = {}
+    for name, statement in Definitions.items():
+        menu = statement["MENU"]
+        depends_on[name] = extract_menu_dependencies(menu)
+    #print(repr(depends_on))
+
+    for name in sorted(Definitions.keys()):
+        if is_recursive_definition(name, depends_on):
+            log_parse_error("Variable <" + name + "> is defined (possibly indirectly) in terms of itself")
+
+def is_recursive_definition(name, depends_on):
+    marked = set()
+    def helper(dependencies):
+        for dependency in dependencies:
+            if dependency == name: return True
+            if dependency in marked: return False
+            if not dependency in Definitions: return False
+            marked.add(dependency)
+            if helper(depends_on[dependency]): return True
+        return False
+    return helper(depends_on[name])
+
+
+# ---------------------------------------------------------------------------
 
 import vcl2py.lex as lex
 lex.log_parse_error = log_parse_error  # temporary kludge
