@@ -61,8 +61,8 @@ Build the release:
 
 
 Tag then push the release:
-    git tag -a v2.8.8
-Version 2.8.8, released July 21, 2024
+    git tag -a v2.9BETA
+Version 2.9BETA, released August 17, 2024
 
     git checkout master
     git push  
