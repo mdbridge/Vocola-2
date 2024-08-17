@@ -14,7 +14,7 @@ delete those branches (later)
 
 Check release notes complete
        # see what changed:
-     git log HEAD --not 2.8.7
+     git log HEAD --not v2.8.8
 
 
 Bump version number:
@@ -22,26 +22,18 @@ Bump version number:
     make clean
 
     cd src
-    find . -type f -exec grep --color=always -H -i '2\.8\.' {} \; -print | grep -v .git
-      ./to_MacroSystem/_vocola_main.py:    print("Vocola version 2.8.7ALPHA starting...")
-      ./to_MacroSystem/_vocola_main.py
-      ./Release-2-8-notes.txt:New in 2.8.7:
-      ./Release-2-8-notes.txt:New in 2.8.6:
-      ./Release-2-8-notes.txt:New in 2.8.5:
-      ./Release-2-8-notes.txt:New in 2.8.4:
-      ./Release-2-8-notes.txt:New in 2.8.3:
-      ./Release-2-8-notes.txt:New in 2.8.2:
-      ./Release-2-8-notes.txt:New in 2.8.1:
-      ./Release-2-8-notes.txt
-      ./README.html:<title>README file for Vocola 2.8.7ALPHA distribution</title>
-      ./README.html:    This version, 2.8.7ALPHA, requires Dragon NaturallySpeaking (DNS)
-      ./README.html
-      ./exec/vcl2py/main.py:VocolaVersion = "2.8.7ALPHA"
-      ./exec/vcl2py/main.py
-      ./extensions/vocola_ext_vocola.py:from VocolaUtils import VocolaRuntimeAbort  # version 2.8.5+
-      ./extensions/vocola_ext_vocola.py
-      ./extensions/README.txt:As of Vocola 2.8.7, the following standard extensions come preinstalled:
-      ./extensions/README.txt
+    find . -type f -exec grep --color=always -H -i '2\.9' {} \; -print | grep -v .git
+    ./to_MacroSystem/_vocola_main.py:    print("Vocola version 2.9ALPHA starting...")
+    ./to_MacroSystem/_vocola_main.py
+    ./README.html:<title>README file for Vocola 2.9ALPHA distribution</title>
+    ./README.html:    This version, 2.9ALPHA, requires Dragon NaturallySpeaking (DNS)
+    ./README.html
+    ./exec/vcl2py/main.py:VocolaVersion = "2.9ALPHA"
+    ./exec/vcl2py/main.py
+    ./extensions/vocola_ext_vocola.py:    from vocola_common_runtime import set_vocola_verbosity    # Vocola version 2.9+ only
+    ./extensions/vocola_ext_vocola.py
+    ./Release-2-9-notes.txt:New in 2.9:
+    ./Release-2-9-notes.txt
 
     git commit -a
 
