@@ -35,18 +35,9 @@ New in 2.9:
   This will generally capture any dictation not caught by a more
   specific command.
 
-* Optional parts of a command are no longer handled by creating versions
-  of the command with and without the optional part.  Instead, the
-  generated grammar now directly encodes the optionality without
-  duplication; this should reduce grammar complexity.  For complicated
-  sets of grammars, this can reduce the delay when switching windows by
-  up to 6 times.
-
->* format_words...
-
-
 ! Fixed bug where title-specific commands could prevent
   non-title-specific commands of the same grammar from working.
+
 
 * Vocola now has optional verbose debugging output for recognizing and
   executing commands.  This can be helpful for figuring out which
@@ -54,6 +45,17 @@ New in 2.9:
   steps are taken to execute it.  How long executing a command takes can
   also be printed.  Initial verbosity level is zero (no output), but the
   level can be changed using the Vocola extension.
+
+* Optional parts of a command are no longer handled by creating versions
+  of the command with and without the optional part.  Instead, the
+  generated grammar now directly encodes the optionality without
+  duplication; this should reduce grammar complexity.  For complicated
+  sets of grammars, this can reduce the delay when switching windows by
+  up to 6 times.
+
+* Grammar rules for unused lists are no longer emitted; this means there
+  is no runtime overhead for including lists that you don't end up
+  using.
 
 
 ! Vocola code generation has been rewritten to first produce a
@@ -74,7 +76,3 @@ New in 2.9:
   yet and is known to have some limitations mostly due to Dragonfly
   issues.  To be written before the final release: a description of these
   limitations.
-
-* Grammar rules for unused lists are no longer emitted; this means there
-  is no runtime overhead for including lists that you don't end up
-  using.
