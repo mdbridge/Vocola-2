@@ -17,7 +17,7 @@ from vcl2py.parse     import parse_input, check_forward_references, check_variab
 from vcl2py.transform import transform
 
 
-VocolaVersion = "2.9ALPHA+Vortex"
+VocolaVersion = "2.9BETA+Vortex"
 
 
 # ---------------------------------------------------------------------------

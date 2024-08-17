@@ -14,7 +14,7 @@ delete those branches (later)
 
 Check release notes complete
        # see what changed:
-     git log HEAD --not 2.8.7
+     git log HEAD --not v2.8.8
 
 
 Bump version number:
@@ -22,26 +22,18 @@ Bump version number:
     make clean
 
     cd src
-    find . -type f -exec grep --color=always -H -i '2\.8\.' {} \; -print | grep -v .git
-      ./to_MacroSystem/_vocola_main.py:    print("Vocola version 2.8.7ALPHA starting...")
-      ./to_MacroSystem/_vocola_main.py
-      ./Release-2-8-notes.txt:New in 2.8.7:
-      ./Release-2-8-notes.txt:New in 2.8.6:
-      ./Release-2-8-notes.txt:New in 2.8.5:
-      ./Release-2-8-notes.txt:New in 2.8.4:
-      ./Release-2-8-notes.txt:New in 2.8.3:
-      ./Release-2-8-notes.txt:New in 2.8.2:
-      ./Release-2-8-notes.txt:New in 2.8.1:
-      ./Release-2-8-notes.txt
-      ./README.html:<title>README file for Vocola 2.8.7ALPHA distribution</title>
-      ./README.html:    This version, 2.8.7ALPHA, requires Dragon NaturallySpeaking (DNS)
-      ./README.html
-      ./exec/vcl2py/main.py:VocolaVersion = "2.8.7ALPHA"
-      ./exec/vcl2py/main.py
-      ./extensions/vocola_ext_vocola.py:from VocolaUtils import VocolaRuntimeAbort  # version 2.8.5+
-      ./extensions/vocola_ext_vocola.py
-      ./extensions/README.txt:As of Vocola 2.8.7, the following standard extensions come preinstalled:
-      ./extensions/README.txt
+    find . -type f -exec grep --color=always -H -i '2\.9' {} \; -print | grep -v .git
+    ./to_MacroSystem/_vocola_main.py:    print("Vocola version 2.9ALPHA starting...")
+    ./to_MacroSystem/_vocola_main.py
+    ./README.html:<title>README file for Vocola 2.9ALPHA distribution</title>
+    ./README.html:    This version, 2.9ALPHA, requires Dragon NaturallySpeaking (DNS)
+    ./README.html
+    ./exec/vcl2py/main.py:VocolaVersion = "2.9ALPHA"
+    ./exec/vcl2py/main.py
+    ./extensions/vocola_ext_vocola.py:    from vocola_common_runtime import set_vocola_verbosity    # Vocola version 2.9+ only
+    ./extensions/vocola_ext_vocola.py
+    ./Release-2-9-notes.txt:New in 2.9:
+    ./Release-2-9-notes.txt
 
     git commit -a
 
@@ -53,8 +45,8 @@ Bump copyright notices?
 Build the release:
     make clean
     make
-    cp build/Vocola.zip releases/Vocola-2-8-8.zip
-    git add releases/Vocola-2-8-8.zip
+    cp build/Vocola.zip releases/Vocola-2-9-beta.zip
+    git add releases/Vocola-2-9-beta.zip
     git commit -a
 
 
@@ -69,8 +61,8 @@ Build the release:
 
 
 Tag then push the release:
-    git tag -a v2.8.8
-Version 2.8.8, released July 21, 2024
+    git tag -a v2.9BETA
+Version 2.9BETA, released August 17, 2024
 
     git checkout master
     git push  
@@ -83,9 +75,10 @@ Update Vocola website:
     git pull
     cd src/v2
 
-    cp ~/voice/Vocola_development/Vocola_2/src/Release-2-8-notes.txt .
-    cp ~/voice/Vocola_development/Vocola_2/releases/Vocola-2-8-8.zip .
-    git add Vocola-2-8-8.zip
+    cp ~/voice/Vocola_development/Vocola_2/src/Release-2-9-notes.txt .
+    git add Release-2-9-notes.txt
+    cp ~/voice/Vocola_development/Vocola_2/releases/Vocola-2-9-beta.zip .
+    git add Vocola-2-9-beta.zip
 
     <edit ~/voice/Vocola_development/Vocola_net/src/v2/VocolaVersions.html to add new version>
 

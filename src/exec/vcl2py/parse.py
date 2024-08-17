@@ -890,8 +890,8 @@ def is_recursive_definition(name, depends_on):
     def helper(dependencies):
         for dependency in dependencies:
             if dependency == name: return True
-            if dependency in marked: return False
-            if not dependency in Definitions: return False
+            if dependency in marked: continue
+            if not dependency in Definitions: continue
             marked.add(dependency)
             if helper(depends_on[dependency]): return True
         return False
