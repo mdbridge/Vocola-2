@@ -75,9 +75,10 @@ Update Vocola website:
     git pull
     cd src/v2
 
-    cp ~/voice/Vocola_development/Vocola_2/src/Release-2-8-notes.txt .
-    cp ~/voice/Vocola_development/Vocola_2/releases/Vocola-2-8-8.zip .
-    git add Vocola-2-8-8.zip
+    cp ~/voice/Vocola_development/Vocola_2/src/Release-2-9-notes.txt .
+    git add Release-2-9-notes.txt
+    cp ~/voice/Vocola_development/Vocola_2/releases/Vocola-2-9-beta.zip .
+    git add Vocola-2-9-beta.zip
 
     <edit ~/voice/Vocola_development/Vocola_net/src/v2/VocolaVersions.html to add new version>
 
