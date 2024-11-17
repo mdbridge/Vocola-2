@@ -87,6 +87,8 @@ Update Vocola website:
 
     # after a short delay, changes should be live on https://vocola.net/v2/VocolaVersions
 
+Also need to update latest version on:
+    ~/voice/Vocola_development/Vocola_net/src/v2/InstallVocola.html
 
 
 Draft then send out announcement to KnowBrainer third-party command utilities forum
