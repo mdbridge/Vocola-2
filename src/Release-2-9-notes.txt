@@ -74,5 +74,19 @@ New in 2.9:
   one targeting Dragonfly on NatLink.  Vocola is set up to use the first
   backend out-of-the-box.  The second backend has not been fully tested
   yet and is known to have some limitations mostly due to Dragonfly
-  issues.  To be written before the final release: a description of these
-  limitations.
+  issues.  Known limitations when using dragonfly2==1.0.0-rc2 include:
+    * All Vocola commands are implemented as Dragon application-specific
+      commands
+      * This means Vocola global commands are effectively
+        application-specific in terms of priority
+        * See https://vocola.net/v2/AmbiguousUtterances for more on
+          command priorities
+      * This also means that all loaded grammars are unloaded every time
+        you switch windows
+        * This can substantially slow down recognition of commands when
+          you switch windows when you are using complicated grammars
+        * By contrast, with the non-Dragonfly backend, global command grammars
+          are never unloaded unless modified
+    * Combining <_anything> with other lists in a single command can
+      produce command parsing failures
+    * Commands containing "a" fail to be recognized
