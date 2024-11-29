@@ -62,7 +62,7 @@ Build the release:
 
 Tag then push the release:
     git tag -a v2.9
-Version 2.9, released August 17, 2024
+Version 2.9, released November 29, 2024
 
     git checkout master
     git push  
