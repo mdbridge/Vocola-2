@@ -116,6 +116,6 @@ Build the Vortex release:
     git switch vortex
     make clean
     make
-    cp build/Vocola.zip vortex-releases/Vocola-vortex8.zip
-    git add vortex-releases/Vocola-vortex8.zip
+    cp build/Vocola.zip vortex-releases/Vocola-vortex9.zip
+    git add vortex-releases/Vocola-vortex9.zip
     git commit -a
