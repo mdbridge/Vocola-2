@@ -1,3 +1,113 @@
+Announcing the next major version of Vocola 2, 2.9.
+
+This version has a lot of new powerful features including lists that can contain lists.  Full release notes are at the end of this message.
+
+To upgrade to the new release, you may install it over any recent NatLink for Python 2 installation by downloading https://vocola.net/v2/Vocola-2-9.zip then
+
+    unzip it to a temporary location, say T
+    run (e.g., double click) T/install.bat
+    (re)start Dragon
+
+- Mark
+
+Release notes for Vocola 2.9:
+
+New in 2.9:
+
+! Vocola lists may now contain lists; for example,
+    <outer> := ( <inner> | just <l>=$1 | 1..20 );
+  Those lists (e.g., <inner>) can in turn refer to other lists and so
+  on.
+
+* Lists may not be defined recursively; for example, the following is
+  not allowed:
+    <loop> := loop [<loop>];
+
+! List entries containing lists may refer to those lists in the usual
+  way in any definitions of those entries; for example,
+    type (0..20 | minus 1..20 = -$1) = $1{tab};
+  Here the first $1 in the subcommand "minus 1..20 = -$1" refers to the
+  value of the "1..20" list.  Thus "go up minus 3" will result in
+  sending the keys "-3{tab}".
+
+* List entries containing a variable or inline list plus one or more
+  other terms require an action assignment to tell Vocola how to combine
+  the inputs; for example,
+    <motion> := <direction> 1..10 = {$1_$2};
+  This is a simple but conservative restriction that should be unlikely
+  to kick in.  If needed, it will be loosened.
+
+* For clarity, runtime errors while executing an alternative in a list
+  now complain about that alternative rather than the the overall
+  command.  For example in the following,
+    test <thing> = $1;
+    <thing> := divide badly = Eval(0/0);
+  Vocola will complain about "divide badly" rather than "test <thing>".
+
+* You may now use <_anything> as a command by itself; for example,
+    <_anything> = "You said '$1'!";
+  This will generally capture any dictation not caught by a more
+  specific command.
+
+! Fixed bug where title-specific commands could prevent
+  non-title-specific commands of the same grammar from working.
+
+
+* Vocola now has optional verbose debugging output for recognizing and
+  executing commands.  This can be helpful for figuring out which
+  command from where is being recognized, with which words, and what
+  steps are taken to execute it.  How long executing a command takes can
+  also be printed.  Initial verbosity level is zero (no output), but the
+  level can be changed using the Vocola extension.
+
+* Optional parts of a command are no longer handled by creating versions
+  of the command with and without the optional part.  Instead, the
+  generated grammar now directly encodes the optionality without
+  duplication; this should reduce grammar complexity.  For complicated
+  sets of grammars, this can reduce the delay when switching windows by
+  up to 6 times.
+
+* Grammar rules for unused lists are no longer emitted; this means there
+  is no runtime overhead for including lists that you don't end up
+  using.
+
+
+! Vocola code generation has been rewritten to first produce a
+  backend-agnostic Internal Instruction Language (IIL), which a backend
+  then translates into a Python file that uses new runtime libraries to
+  implement the needed functionality.
+
+  This should make it much easier to re-target Vocola and improve the
+  runtime functionality.
+
+* The runtime for NatLink now independently parses the words that come
+  back from Dragon; this allows using much more flexible grammars (e.g.,
+  lists containing lists).
+
+* There are currently two backends, one targeting NatLink directly and
+  one targeting Dragonfly on NatLink.  Vocola is set up to use the first
+  backend out-of-the-box.  The second backend has not been fully tested
+  yet and is known to have some limitations mostly due to Dragonfly
+  issues.  Known limitations when using dragonfly2==1.0.0-rc2 include:
+    * All Vocola commands are implemented as Dragon application-specific
+      commands
+      * This means Vocola global commands are effectively
+        application-specific in terms of priority
+        * See https://vocola.net/v2/AmbiguousUtterances for more on
+          command priorities
+      * This also means that all global Vocola commands are unloaded
+        every time you switch windows
+        * This can substantially slow down recognition of commands when
+          you switch windows when you are using complicated grammars
+        * By contrast, with the non-Dragonfly backend, global command
+          grammars are never unloaded unless modified
+    * Combining <_anything> with other lists in a single command can
+      produce command parsing failures
+    * Commands containing "a" fail to be recognized
+
+================================================================================
+
+
 Announcing a Beta test of the next major version of Vocola 2, 2.9.
 
 This version has a lot of new powerful features including lists that can
