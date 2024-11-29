@@ -106,5 +106,7 @@ Draft then send out announcement to KnowBrainer third-party command utilities fo
 bump version number to next # + ALPHA
 git commit -a
 
+<checkout vortex branch for instructions for releasing a new version of vortex>
+
 rebase Mark's branches as needed
 update ~/infra/bootstrap/my_install_Vocola.bat as needed
