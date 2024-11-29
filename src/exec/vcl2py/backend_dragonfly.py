@@ -3,15 +3,6 @@ from vcl2py.ast import *
 from vcl2py.log import *
 
 def output(out_file, grammar, params):
-    # <<<>>>
-    # this is a hack to cover for the fact that dragonfly doesn't have priorities yet
-    global InvertExecutables
-    InvertExecutables = False
-    if len(grammar["EXECUTABLE"]) == 0:
-        if re.match(r'.*(short|range).*', out_file):
-            InvertExecutables = True
-            grammar["EXECUTABLE"] = ['emacs', 'xwin']
-
     global Grammar, VocolaVersion
     Grammar = grammar
     VocolaVersion = params["Vocola_version"]
@@ -139,7 +130,6 @@ def code_for_context(titles):
         make_python_list(executables) + ",titles=" + \
         make_python_list(titles) + \
         (",high_priority=True" if high_priority else "") + \
-        (",invert_executables=True" if InvertExecutables else "") + \
         ")\n"
     emit(0, text)
     return make_variable(context_variable)

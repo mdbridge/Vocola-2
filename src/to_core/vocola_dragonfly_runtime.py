@@ -77,28 +77,30 @@ class Modifier:
 
 def format_words(word_list):
     word_list = [word.encode('Windows-1252') for word in word_list]
-    format_words2(word_list)  # for print side effect
+    result = ""
+    for word in word_list:
+        # Convert to written form if necessary, e.g. "@\at-sign" --> "@"
+        backslashPosition = str.find(word, "\\")
+        if backslashPosition > 0:
+            word = word[:backslashPosition]
+        if result != "":
+            result = result + " "
+        result = result + word
+    vlog(1, "    format_words: %s -> '%s'"  % (repr(word_list), result))
+    return result
+
+def format_words2(word_list):
+    format_words(word_list)  # for print side effect
+    word_list = [word.encode('Windows-1252') for word in word_list]
     try:
         from natlink import nsformat
     except ImportError:
         import nsformat
     state = [nsformat.flag_no_space_next]
     result, _new_state = nsformat.formatWords(word_list, state)
-    vlog(1, "    format_words: %s -> '%s'"  % (repr(word_list), result))
-    return result
-
-def format_words2(word_list):
-    result = ""
-    for word in word_list:
-        # Convert to written form if necessary, e.g. "@\at-sign" --> "@"
-        backslashPosition = str.find(word, "\\\\")
-        if backslashPosition > 0:
-            word = word[:backslashPosition]
-        if result != "":
-            result = result + " "
-        result = result + word
     vlog(1, "    format_words2: %s -> '%s'"  % (repr(word_list), result))
     return result
+
 
 
 ##
@@ -137,13 +139,9 @@ class With(Modifier):
     def __init__(self, element, actions):
         Modifier.__init__(self, element)
         self.action = Prog(actions)
-        self.filename      = "<unknown>"
-        self.line          = 0
-        self.specification = "unknown command"
 
     def transform(self, value):
-        return CatchAction(self.filename, self.line, self.specification, 
-                           self.action.bind(self.get_bindings(value)))
+        return self.action.bind(self.get_bindings(value))
 
     def get_bindings(self, value):
         bindings = {}
