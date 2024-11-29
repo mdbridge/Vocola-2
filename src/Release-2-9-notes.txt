@@ -81,12 +81,12 @@ New in 2.9:
         application-specific in terms of priority
         * See https://vocola.net/v2/AmbiguousUtterances for more on
           command priorities
-      * This also means that all loaded grammars are unloaded every time
-        you switch windows
+      * This also means that all global Vocola commands are unloaded
+        every time you switch windows
         * This can substantially slow down recognition of commands when
           you switch windows when you are using complicated grammars
-        * By contrast, with the non-Dragonfly backend, global command grammars
-          are never unloaded unless modified
+        * By contrast, with the non-Dragonfly backend, global command
+          grammars are never unloaded unless modified
     * Combining <_anything> with other lists in a single command can
       produce command parsing failures
     * Commands containing "a" fail to be recognized
