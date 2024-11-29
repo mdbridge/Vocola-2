@@ -45,8 +45,8 @@ Bump copyright notices?
 Build the release:
     make clean
     make
-    cp build/Vocola.zip releases/Vocola-2-9-beta.zip
-    git add releases/Vocola-2-9-beta.zip
+    cp build/Vocola.zip releases/Vocola-2-9.zip
+    git add releases/Vocola-2-9.zip
     git commit -a
 
 
@@ -61,8 +61,8 @@ Build the release:
 
 
 Tag then push the release:
-    git tag -a v2.9BETA
-Version 2.9BETA, released August 17, 2024
+    git tag -a v2.9
+Version 2.9, released August 17, 2024
 
     git checkout master
     git push  
