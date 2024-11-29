@@ -1,6 +1,6 @@
 New in 2.9.1:
 
-* 
+* ... Updated version of Date extension...
 
 
 New in 2.9:
